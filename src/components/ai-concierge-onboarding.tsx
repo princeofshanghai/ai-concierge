@@ -165,20 +165,22 @@ function OnboardingDetailsForm({
   mode,
   onBack,
   onChange,
+  onContinueWithLinkedIn,
   onStartConversation,
   onUseAnotherAccount,
 }: Omit<
   AiConciergeOnboardingProps,
-  "onContinueManual" | "onContinueWithLinkedIn"
+  "onContinueManual"
 >) {
   const isPrefilled = mode === "prefill";
+  const isManual = mode === "manual";
   const initials = `${details.firstName.charAt(0)}${details.lastName.charAt(0)}`
     .trim()
     .toUpperCase();
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto px-5 py-5">
+      <div className="flex-1 overflow-y-auto px-5 pb-14 pt-5">
         <button
           type="button"
           onClick={onBack}
@@ -201,27 +203,32 @@ function OnboardingDetailsForm({
           <h3 className="font-panel-display text-[24px] font-semibold leading-[1.2] tracking-[0.01em] text-black/90">
             {isPrefilled ? "Review your details" : "Enter your details"}
           </h3>
-          {!isPrefilled ? (
-            <p className="font-panel-text mt-3 text-[15px] leading-[1.5] text-black/65">
-              We need a few details to personalize the conversation and
-              connect you with the right sales specialist.
-            </p>
+          {isManual ? (
+            <div className="mt-3 flex items-center gap-1.5">
+              <p className="font-panel-text text-[13px] leading-[1.35] text-black/55">
+                Want to save time?
+              </p>
+              <button
+                type="button"
+                onClick={onContinueWithLinkedIn}
+                className="font-panel-text inline-flex text-[13px] font-medium leading-[1.35] text-linkedin-blue transition-colors hover:text-linkedin-blue-dark"
+              >
+                Use LinkedIn profile
+              </button>
+            </div>
           ) : null}
-          <p className="font-panel-text mt-3 text-[13px] leading-[1.5] text-black/50">
-            All fields are required to begin.
-          </p>
         </div>
 
         {isPrefilled ? (
-          <div className="mt-5 flex items-center gap-3 rounded-[18px] border border-black/8 bg-[rgba(10,102,194,0.03)] px-3 py-2.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,rgba(10,102,194,0.14)_0%,rgba(10,102,194,0.08)_100%)] text-[14px] font-semibold text-linkedin-blue">
+          <div className="mt-4 inline-flex max-w-full items-center gap-2.5 rounded-full border border-black/6 bg-black/[0.04] px-2.5 py-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#dfe7f2] text-[12px] font-semibold text-black/70">
               {initials || "LI"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-panel-text truncate text-[14px] font-semibold leading-[1.35] text-black/90">
+              <p className="font-panel-text truncate text-[13px] font-semibold leading-[1.25] text-black/90">
                 {details.firstName} {details.lastName}
               </p>
-              <p className="font-panel-text truncate text-[13px] leading-[1.35] text-black/50">
+              <p className="font-panel-text truncate text-[12px] leading-[1.25] text-black/50">
                 {details.email}
               </p>
             </div>
@@ -229,7 +236,7 @@ function OnboardingDetailsForm({
               type="button"
               onClick={onUseAnotherAccount}
               aria-label="Use another account"
-              className="font-panel-text shrink-0 text-[12px] font-medium leading-[1.35] text-linkedin-blue transition-colors hover:text-linkedin-blue-dark"
+              className="font-panel-text shrink-0 text-[12px] font-medium leading-[1.25] text-linkedin-blue transition-colors hover:text-linkedin-blue-dark"
             >
               Switch
             </button>
@@ -314,18 +321,18 @@ export function AiConciergeOnboarding({
 }: AiConciergeOnboardingProps) {
   if (mode === "welcome") {
     return (
-      <div className="relative flex h-full flex-col justify-center overflow-hidden px-5 py-8">
+      <div className="relative flex h-full flex-col overflow-hidden px-5 pb-8 pt-12">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-[-16%] top-[-8%] h-[280px] rounded-full bg-[radial-gradient(circle_at_top,rgba(10,102,194,0.18),rgba(10,102,194,0.05)_38%,rgba(255,255,255,0)_72%)]"
         />
         <div className="relative">
           <h3 className="font-panel-display text-[28px] font-semibold leading-[1.1] tracking-[0.01em] text-black/90">
-            Start with AI Concierge
+            Before we begin
           </h3>
           <p className="font-panel-text mt-4 text-[15px] leading-[1.6] text-black/65">
-            To personalize the conversation and connect you with the right
-            sales specialist, we need a few details before you begin.
+            We need a few details to personalize the conversation and connect
+            you with the right sales specialist.
           </p>
 
           <div className="mt-8 flex flex-col gap-3">
@@ -348,6 +355,7 @@ export function AiConciergeOnboarding({
       mode={mode}
       onBack={onBack}
       onChange={onChange}
+      onContinueWithLinkedIn={onContinueWithLinkedIn}
       onStartConversation={onStartConversation}
       onUseAnotherAccount={onUseAnotherAccount}
     />
