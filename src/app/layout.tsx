@@ -3,9 +3,19 @@ import "./globals.css";
 import { communityPro, manrope, sourceSans } from "./fonts";
 
 export const metadata: Metadata = {
-  title: "LinkedIn Hire",
+  title: "AI concierge prototype",
   description:
-    "Prototype microsite landing page for learning about LinkedIn Recruiter and contacting sales.",
+    "Design prototype of LinkedIn microsite AI concierge - qualifying leads and routing to sales",
+  openGraph: {
+    title: "AI concierge prototype",
+    description:
+      "Design prototype of LinkedIn microsite AI concierge - qualifying leads and routing to sales",
+  },
+  twitter: {
+    title: "AI concierge prototype",
+    description:
+      "Design prototype of LinkedIn microsite AI concierge - qualifying leads and routing to sales",
+  },
 };
 
 export default function RootLayout({
