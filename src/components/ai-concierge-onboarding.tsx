@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 type ConciergeContactDetails = {
@@ -14,6 +15,7 @@ type ConciergeContactDetails = {
 
 type AiConciergeOnboardingProps = {
   details: ConciergeContactDetails;
+  isPanelExpanded?: boolean;
   isValid: boolean;
   mode: "manual" | "prefill" | "welcome";
   onBack: () => void;
@@ -26,14 +28,6 @@ type AiConciergeOnboardingProps = {
   onStartConversation: () => void;
   onUseAnotherAccount: () => void;
 };
-
-const COUNTRY_OPTIONS = [
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Australia",
-  "India",
-];
 
 const ROLE_OPTIONS = [
   "Recruiter",
@@ -161,6 +155,7 @@ function OnboardingSelectField({
 
 function OnboardingDetailsForm({
   details,
+  isPanelExpanded = false,
   isValid,
   mode,
   onBack,
@@ -174,135 +169,142 @@ function OnboardingDetailsForm({
 >) {
   const isPrefilled = mode === "prefill";
   const isManual = mode === "manual";
-  const initials = `${details.firstName.charAt(0)}${details.lastName.charAt(0)}`
-    .trim()
-    .toUpperCase();
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto px-5 pb-14 pt-5">
-        <button
-          type="button"
-          onClick={onBack}
-          className="font-panel-text mb-5 inline-flex items-center gap-2 text-[14px] font-medium leading-[1.4] text-black/60 transition-colors hover:text-black/80"
+      <div className="flex-1 overflow-y-auto px-5 pb-20 pt-5">
+        <div
+          className={[
+            "mx-auto w-full max-w-[360px]",
+            isPanelExpanded ? "sm:max-w-[448px]" : "",
+          ].join(" ")}
         >
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
-            <path
-              d="M10 3.5L5.5 8L10 12.5"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.5"
-            />
-          </svg>
-          Back
-        </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="font-panel-text mb-5 inline-flex items-center gap-2 text-[14px] font-medium leading-[1.4] text-black/60 transition-colors hover:text-black/80"
+          >
+            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
+              <path
+                d="M10 3.5L5.5 8L10 12.5"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+              />
+            </svg>
+            Back
+          </button>
 
-        <div className="max-w-[320px]">
-          <h3 className="font-panel-display text-[24px] font-semibold leading-[1.2] tracking-[0.01em] text-black/90">
-            {isPrefilled ? "Review your details" : "Enter your details"}
-          </h3>
-          {isManual ? (
-            <div className="mt-3 flex items-center gap-1.5">
-              <p className="font-panel-text text-[13px] leading-[1.35] text-black/55">
-                Want to save time?
-              </p>
+          <div
+            className={[
+              "max-w-[320px]",
+              isPanelExpanded ? "sm:max-w-[384px]" : "",
+            ].join(" ")}
+          >
+            <h3 className="font-panel-display text-[24px] font-semibold leading-[1.2] tracking-[0.01em] text-black/90">
+              {isPrefilled ? "Review your details" : "Enter your details"}
+            </h3>
+            {isManual ? (
+              <div className="mt-3 flex items-center gap-1.5">
+                <p className="font-panel-text text-[13px] leading-[1.35] text-black/55">
+                  Want to save time?
+                </p>
+                <button
+                  type="button"
+                  onClick={onContinueWithLinkedIn}
+                  className="font-panel-text inline-flex text-[13px] font-medium leading-[1.35] text-linkedin-blue transition-colors hover:text-linkedin-blue-dark"
+                >
+                  Use LinkedIn profile
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          {isPrefilled ? (
+            <div className="mt-4 inline-flex max-w-full items-center gap-2.5 rounded-full border border-black/6 bg-black/[0.04] px-2.5 py-2">
+              <Image
+                src="/figma/chat/linkedin-avatar.png"
+                alt=""
+                width={32}
+                height={32}
+                aria-hidden="true"
+                className="h-8 w-8 shrink-0 rounded-full"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-panel-text truncate text-[13px] font-semibold leading-[1.25] text-black/90">
+                  {details.firstName} {details.lastName}
+                </p>
+                <p className="font-panel-text truncate text-[12px] leading-[1.25] text-black/50">
+                  {details.email}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={onContinueWithLinkedIn}
-                className="font-panel-text inline-flex text-[13px] font-medium leading-[1.35] text-linkedin-blue transition-colors hover:text-linkedin-blue-dark"
+                onClick={onUseAnotherAccount}
+                aria-label="Use another account"
+                className="font-panel-text shrink-0 text-[12px] font-medium leading-[1.25] text-linkedin-blue transition-colors hover:text-linkedin-blue-dark"
               >
-                Use LinkedIn profile
+                Switch
               </button>
             </div>
           ) : null}
-        </div>
 
-        {isPrefilled ? (
-          <div className="mt-4 inline-flex max-w-full items-center gap-2.5 rounded-full border border-black/6 bg-black/[0.04] px-2.5 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#dfe7f2] text-[12px] font-semibold text-black/70">
-              {initials || "LI"}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-panel-text truncate text-[13px] font-semibold leading-[1.25] text-black/90">
-                {details.firstName} {details.lastName}
-              </p>
-              <p className="font-panel-text truncate text-[12px] leading-[1.25] text-black/50">
-                {details.email}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onUseAnotherAccount}
-              aria-label="Use another account"
-              className="font-panel-text shrink-0 text-[12px] font-medium leading-[1.25] text-linkedin-blue transition-colors hover:text-linkedin-blue-dark"
+          <form
+            className="mt-5 flex flex-col gap-4 pb-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onStartConversation();
+            }}
+          >
+            <div
+              className={[
+                "grid gap-4",
+                isPanelExpanded ? "sm:grid-cols-2" : "",
+              ].join(" ")}
             >
-              Switch
-            </button>
-          </div>
-        ) : null}
+              <OnboardingTextField
+                label="First name"
+                autoComplete="given-name"
+                value={details.firstName}
+                onChange={(value) => onChange("firstName", value)}
+              />
+              <OnboardingTextField
+                label="Last name"
+                autoComplete="family-name"
+                value={details.lastName}
+                onChange={(value) => onChange("lastName", value)}
+              />
+            </div>
+            <OnboardingTextField
+              label="Company"
+              autoComplete="organization"
+              value={details.company}
+              onChange={(value) => onChange("company", value)}
+            />
+            <OnboardingTextField
+              label="Email"
+              autoComplete="email"
+              type="email"
+              value={details.email}
+              onChange={(value) => onChange("email", value)}
+            />
+            <OnboardingSelectField
+              label="Your role"
+              placeholder="Select your role"
+              options={ROLE_OPTIONS}
+              value={details.role}
+              onChange={(value) => onChange("role", value)}
+            />
 
-        <form
-          className="mt-5 flex flex-col gap-4 pb-6"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onStartConversation();
-          }}
-        >
-          <OnboardingTextField
-            label="First name"
-            autoComplete="given-name"
-            value={details.firstName}
-            onChange={(value) => onChange("firstName", value)}
-          />
-          <OnboardingTextField
-            label="Last name"
-            autoComplete="family-name"
-            value={details.lastName}
-            onChange={(value) => onChange("lastName", value)}
-          />
-          <OnboardingTextField
-            label="Company"
-            autoComplete="organization"
-            value={details.company}
-            onChange={(value) => onChange("company", value)}
-          />
-          <OnboardingTextField
-            label="Email"
-            autoComplete="email"
-            type="email"
-            value={details.email}
-            onChange={(value) => onChange("email", value)}
-          />
-          <OnboardingTextField
-            label="Phone number"
-            autoComplete="tel"
-            type="tel"
-            value={details.phoneNumber}
-            onChange={(value) => onChange("phoneNumber", value)}
-          />
-          <OnboardingSelectField
-            label="Country/region"
-            placeholder="Select country or region"
-            options={COUNTRY_OPTIONS}
-            value={details.countryRegion}
-            onChange={(value) => onChange("countryRegion", value)}
-          />
-          <OnboardingSelectField
-            label="Your role"
-            placeholder="Select your role"
-            options={ROLE_OPTIONS}
-            value={details.role}
-            onChange={(value) => onChange("role", value)}
-          />
-
-          <div className="pt-2">
-            <OnboardingActionButton type="submit" disabled={!isValid}>
-              Start conversation
-            </OnboardingActionButton>
-          </div>
-        </form>
+            <div className="pt-2">
+              <OnboardingActionButton type="submit" disabled={!isValid}>
+                Start conversation
+              </OnboardingActionButton>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -310,6 +312,7 @@ function OnboardingDetailsForm({
 
 export function AiConciergeOnboarding({
   details,
+  isPanelExpanded = false,
   isValid,
   mode,
   onBack,
@@ -326,13 +329,13 @@ export function AiConciergeOnboarding({
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-[-16%] top-[-8%] h-[280px] rounded-full bg-[radial-gradient(circle_at_top,rgba(10,102,194,0.18),rgba(10,102,194,0.05)_38%,rgba(255,255,255,0)_72%)]"
         />
-        <div className="relative">
+        <div className="relative mx-auto w-full max-w-[360px]">
           <h3 className="font-panel-display text-[28px] font-semibold leading-[1.1] tracking-[0.01em] text-black/90">
             Before we begin
           </h3>
           <p className="font-panel-text mt-4 text-[15px] leading-[1.6] text-black/65">
-            We need a few details to personalize the conversation and connect
-            you with the right sales specialist.
+            Share a few details so AI Concierge can tailor the conversation to
+            your hiring needs and connect you with the right specialist.
           </p>
 
           <div className="mt-8 flex flex-col gap-3">
@@ -351,6 +354,7 @@ export function AiConciergeOnboarding({
   return (
     <OnboardingDetailsForm
       details={details}
+      isPanelExpanded={isPanelExpanded}
       isValid={isValid}
       mode={mode}
       onBack={onBack}

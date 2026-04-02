@@ -1,5 +1,5 @@
 import { RecruiterLandingPage } from "@/components/recruiter-landing-page";
 
 export default function Home() {
-  return <RecruiterLandingPage />;
+  return <RecruiterLandingPage variant="baseline" />;
 }

@@ -1,10 +1,13 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 type ContactSalesButtonProps = {
   ariaControls?: string;
   ariaExpanded?: boolean;
   className?: string;
   label?: string;
+  leadingIcon?: ReactNode;
   onClick?: () => void;
   size?: "sm" | "md";
   variant?: "outline" | "solid";
@@ -27,6 +30,7 @@ export function ContactSalesButton({
   ariaExpanded,
   className = "",
   label = "Contact sales",
+  leadingIcon,
   onClick,
   size = "md",
   variant = "solid",
@@ -38,13 +42,14 @@ export function ContactSalesButton({
       aria-expanded={ariaExpanded}
       onClick={onClick}
       className={[
-        "font-panel-text inline-flex cursor-pointer items-center justify-center rounded-full font-semibold whitespace-nowrap transition-colors duration-200",
+        "font-panel-text inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-colors duration-200",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
         sizeClasses[size],
         variantClasses[variant],
         className,
       ].join(" ")}
     >
+      {leadingIcon ? <span aria-hidden="true">{leadingIcon}</span> : null}
       {label}
     </button>
   );
