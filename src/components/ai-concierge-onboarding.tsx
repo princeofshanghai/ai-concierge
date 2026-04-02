@@ -2,6 +2,10 @@
 
 import Image from "next/image";
 import type { ReactNode } from "react";
+import {
+  FormSelectField,
+  FormTextField,
+} from "@/components/form-fields";
 
 type ConciergeContactDetails = {
   company: string;
@@ -66,90 +70,6 @@ function OnboardingActionButton({
     >
       {children}
     </button>
-  );
-}
-
-function OnboardingTextField({
-  autoComplete,
-  label,
-  onChange,
-  type = "text",
-  value,
-}: {
-  autoComplete?: string;
-  label: string;
-  onChange: (value: string) => void;
-  type?: "email" | "tel" | "text";
-  value: string;
-}) {
-  return (
-    <label className="flex flex-col gap-2">
-      <span className="font-panel-text text-[13px] font-medium leading-[1.4] text-black/70">
-        {label}
-      </span>
-      <input
-        autoComplete={autoComplete}
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="font-panel-text h-11 rounded-[14px] border border-black/10 bg-white px-4 text-[15px] leading-[1.5] text-black/90 outline-none transition-colors placeholder:text-black/30 focus:border-black/70"
-      />
-    </label>
-  );
-}
-
-function OnboardingSelectField({
-  label,
-  onChange,
-  options,
-  placeholder,
-  value,
-}: {
-  label: string;
-  onChange: (value: string) => void;
-  options: string[];
-  placeholder: string;
-  value: string;
-}) {
-  return (
-    <label className="flex flex-col gap-2">
-      <span className="font-panel-text text-[13px] font-medium leading-[1.4] text-black/70">
-        {label}
-      </span>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className={[
-            "font-panel-text h-11 w-full appearance-none rounded-[14px] border border-black/10 bg-white px-4 pr-10 text-[15px] leading-[1.5] outline-none transition-colors focus:border-black/70",
-            value ? "text-black/90" : "text-black/30",
-          ].join(" ")}
-        >
-          <option value="" disabled>
-            {placeholder}
-          </option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 16 16"
-          className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/50"
-        >
-          <path
-            d="M4 6.5L8 10L12 6.5"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.5"
-          />
-        </svg>
-      </div>
-    </label>
   );
 }
 
@@ -264,38 +184,38 @@ function OnboardingDetailsForm({
                 isPanelExpanded ? "sm:grid-cols-2" : "",
               ].join(" ")}
             >
-              <OnboardingTextField
+              <FormTextField
                 label="First name"
                 autoComplete="given-name"
                 value={details.firstName}
-                onChange={(value) => onChange("firstName", value)}
+                onValueChange={(value) => onChange("firstName", value)}
               />
-              <OnboardingTextField
+              <FormTextField
                 label="Last name"
                 autoComplete="family-name"
                 value={details.lastName}
-                onChange={(value) => onChange("lastName", value)}
+                onValueChange={(value) => onChange("lastName", value)}
               />
             </div>
-            <OnboardingTextField
+            <FormTextField
               label="Company"
               autoComplete="organization"
               value={details.company}
-              onChange={(value) => onChange("company", value)}
+              onValueChange={(value) => onChange("company", value)}
             />
-            <OnboardingTextField
+            <FormTextField
               label="Email"
               autoComplete="email"
               type="email"
               value={details.email}
-              onChange={(value) => onChange("email", value)}
+              onValueChange={(value) => onChange("email", value)}
             />
-            <OnboardingSelectField
+            <FormSelectField
               label="Your role"
               placeholder="Select your role"
               options={ROLE_OPTIONS}
               value={details.role}
-              onChange={(value) => onChange("role", value)}
+              onValueChange={(value) => onChange("role", value)}
             />
 
             <div className="pt-2">

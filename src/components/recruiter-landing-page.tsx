@@ -74,13 +74,14 @@ function LandingPageVariantSwitcher({ hidden = false }: { hidden?: boolean }) {
   const links = [
     { href: "/", label: "V1" },
     { href: "/internal/ai-concierge-cta", label: "V2" },
+    { href: "/stakeholder-notes-slides.html", label: "Notes" },
   ];
 
   return (
     <div className="fixed left-3 top-3 z-[70] sm:left-5 sm:top-5">
       <div className="rounded-2xl border border-black/15 bg-white/95 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur">
         <p className="font-panel-text px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">
-          CTA
+          Views
         </p>
         <div className="flex items-center gap-1">
           {links.map((link) => {
