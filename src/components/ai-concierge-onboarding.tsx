@@ -340,7 +340,17 @@ export function AiConciergeOnboarding({
 
           <div className="mt-8 flex flex-col gap-3">
             <OnboardingActionButton onClick={onContinueWithLinkedIn}>
-              Use LinkedIn profile
+              <span className="inline-flex items-center gap-2">
+                <Image
+                  src="/figma/chat/linkedin-avatar.png"
+                  alt=""
+                  width={20}
+                  height={20}
+                  aria-hidden="true"
+                  className="h-5 w-5 shrink-0 rounded-full"
+                />
+                <span>Use LinkedIn profile</span>
+              </span>
             </OnboardingActionButton>
             <OnboardingActionButton secondary onClick={onContinueManual}>
               Enter details manually

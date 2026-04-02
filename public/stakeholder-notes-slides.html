@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Concierge Notes</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: #fff;
+        color: #111;
+        font-family:
+          Georgia,
+          "Times New Roman",
+          serif;
+      }
+
+      main {
+        scroll-snap-type: y mandatory;
+      }
+
+      section {
+        min-height: 100vh;
+        scroll-snap-align: start;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 64px;
+      }
+
+      .slide {
+        width: min(1440px, calc(100vw - 128px));
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: lowercase;
+        color: #666;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        font-weight: 400;
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+
+      h1 {
+        font-size: clamp(56px, 11vw, 112px);
+      }
+
+      h2 {
+        font-size: clamp(36px, 6.4vw, 58px);
+      }
+
+      p,
+      li {
+        font-size: clamp(18px, 1.9vw, 24px);
+        line-height: 1.42;
+      }
+
+      p {
+        margin: 24px 0 0;
+        max-width: 48ch;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 28px 0 0;
+        display: grid;
+        gap: 14px;
+        max-width: none;
+      }
+
+      .lede {
+        max-width: min(1120px, 100%);
+        font-size: clamp(24px, 3vw, 38px);
+        line-height: 1.28;
+      }
+
+      li::before {
+        content: "— ";
+      }
+
+      .note {
+        margin-top: 42px;
+        font-size: 14px;
+        color: #777;
+        letter-spacing: 0.02em;
+      }
+
+      .principles {
+        display: grid;
+        gap: 28px;
+        margin-top: 32px;
+        max-width: min(1080px, 100%);
+      }
+
+      .principle {
+        display: grid;
+        gap: 8px;
+      }
+
+      .principle-title {
+        margin: 0;
+        font-size: clamp(26px, 2.8vw, 34px);
+        line-height: 1.08;
+      }
+
+      .principle-copy {
+        margin: 0;
+        max-width: 52ch;
+        font-size: clamp(17px, 1.55vw, 20px);
+        line-height: 1.42;
+        color: #555;
+      }
+
+      .persona {
+        display: grid;
+        gap: 16px;
+        margin-top: 28px;
+        max-width: min(1120px, 100%);
+      }
+
+      .persona p {
+        margin: 0;
+        max-width: 46ch;
+        font-size: clamp(19px, 1.9vw, 25px);
+        line-height: 1.36;
+      }
+
+      .persona p:first-child {
+        font-size: clamp(24px, 2.3vw, 32px);
+        line-height: 1.16;
+      }
+
+      .jtbd {
+        margin-top: 28px;
+        max-width: min(1200px, 100%);
+      }
+
+      .jtbd p {
+        margin: 0;
+        max-width: min(1160px, 100%);
+        font-size: clamp(24px, 2.8vw, 36px);
+        line-height: 1.22;
+      }
+
+      .nav {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        display: flex;
+        gap: 10px;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .nav a {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px solid #ccc;
+      }
+
+      @media (max-width: 720px) {
+        section {
+          padding: 28px;
+          align-items: flex-start;
+        }
+
+        .slide {
+          padding-top: 56px;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="overview">
+        <div class="slide">
+          <p class="eyebrow">1 / overview</p>
+          <h1>AI Concierge</h1>
+          <p class="lede">
+            a guided experience that feels consultative to the user while we
+            qualify behind the scenes and route them to the appropriate next step
+            (AE, SDR, direct purchase)
+          </p>
+        </div>
+      </section>
+
+      <section id="principles">
+        <div class="slide">
+          <p class="eyebrow">2 / design principles</p>
+          <h2>Design principles</h2>
+          <div class="principles">
+            <div class="principle">
+              <p class="principle-title">Qualify without feeling like a form</p>
+              <p class="principle-copy">
+                Gather BANT-like signals in the background without making the
+                conversation feel like intake.
+              </p>
+            </div>
+            <div class="principle">
+              <p class="principle-title">Start broad, then narrow</p>
+              <p class="principle-copy">
+                Begin at the hiring-solutions level, then get more specific as
+                the assistant learns the hiring motion.
+              </p>
+            </div>
+            <div class="principle">
+              <p class="principle-title">Make the next step feel earned</p>
+              <p class="principle-copy">
+                Recommend the right path only after the user has enough context
+                to see why it is relevant.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="persona">
+        <div class="slide">
+          <p class="eyebrow">3 / persona</p>
+          <h2>Jamie Chen</h2>
+          <div class="persona">
+            <p>Director of Talent Acquisition at Northstar Health</p>
+            <p>
+              leading hiring across a 1,200-person healthcare software company
+            </p>
+            <p>
+              needs help figuring out which hiring solution fits a team hiring
+              across multiple functions, including harder-to-fill roles
+            </p>
+            <p>
+              high intent, but not fully decided
+            </p>
+            <p>
+              skeptical of anything that feels like a disguised lead form
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="jtbd">
+        <div class="slide">
+          <p class="eyebrow">4 / job to be done</p>
+          <h2>JTBD</h2>
+          <div class="jtbd">
+            <p>
+              As a talent acquisition leader, I need to understand which hiring
+              solution best fits my team’s hiring motion so that I can move
+              forward confidently with the right solution and support.
+            </p>
+          </div>
+          <p class="note">then walk through the happy path</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="nav">
+      <a href="#overview">1</a>
+      <a href="#principles">2</a>
+      <a href="#persona">3</a>
+      <a href="#jtbd">4</a>
+    </div>
+  </body>
+</html>
