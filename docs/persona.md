@@ -79,7 +79,7 @@ Jamie is trying to understand:
 - what LinkedIn Recruiter actually helps with
 - how it differs from LinkedIn Jobs
 - whether it would help the team fill harder-to-fill roles more effectively
-- whether the value is strong enough to justify talking to a specialist
+- whether the value is strong enough to justify talking to a representative
 
 ## Likely mindset when entering the flow
 Jamie is:
@@ -116,7 +116,7 @@ When walking through the prototype, we should frame the story like this:
 - Jamie lands on the LinkedIn Recruiter microsite because the team is actively hiring and is struggling with proactive sourcing.
 - Jamie is interested, but not ready to jump straight into a sales conversation.
 - Jamie opens AI Concierge to understand whether Recruiter fits the team's hiring needs.
-- The assistant helps Jamie learn, asks a few lightweight follow-ups, and earns the right to recommend a conversation with a specialist.
+- The assistant helps Jamie learn, asks a few lightweight follow-ups, and earns the right to recommend a conversation with a representative.
 
 ## Working decisions
 - Use Jamie Chen as the default walkthrough persona.

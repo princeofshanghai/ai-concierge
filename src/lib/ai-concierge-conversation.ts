@@ -5,11 +5,11 @@ type ConversationStage =
   | "opening"
   | "awaiting_hiring_motion"
   | "awaiting_fit_context"
+  | "awaiting_urgency"
   | "awaiting_next_step"
   | "awaiting_handoff_choice"
   | "explore"
-  | "booking_pending"
-  | "callback_pending";
+  | "booking_pending";
 
 type StartingSituation =
   | "solution_fit"
@@ -37,8 +37,14 @@ type HiringUseCase =
   | "technical"
   | "unknown";
 export type LikelySolution = "recruiter" | "lighter_touch" | "unknown";
-type Readiness = "exploring" | "pricing" | "specialist" | "unknown";
-export type NextStepMode = "meeting" | "callback" | null;
+type Readiness = "exploring" | "pricing" | "representative" | "unknown";
+type Urgency =
+  | "this_quarter"
+  | "next_few_months"
+  | "planning_ahead"
+  | "still_exploring"
+  | "unknown";
+export type NextStepMode = "meeting" | null;
 
 export type AiConciergeConversationState = {
   hiringComplexity: HiringComplexity;
@@ -50,6 +56,7 @@ export type AiConciergeConversationState = {
   readiness: Readiness;
   stage: ConversationStage;
   startingSituation: StartingSituation;
+  urgency: Urgency;
 };
 
 export type EntryMode = "manual" | "prefill";
@@ -65,10 +72,6 @@ const OPENING_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   {
     id: "solution-fit",
     label: "We're not sure which hiring solution fits",
-  },
-  {
-    id: "consistent-hiring",
-    label: "We hire consistently across teams",
   },
   {
     id: "hard-to-fill",
@@ -125,34 +128,50 @@ const ROLE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "role-specialized", label: "Hard-to-fill roles" },
 ];
 
+const URGENCY_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "urgency-this-quarter", label: "This quarter" },
+  { id: "urgency-next-few-months", label: "In the next few months" },
+  { id: "urgency-planning-ahead", label: "We're planning ahead" },
+  { id: "urgency-still-exploring", label: "Still exploring" },
+];
+
 const RECRUITER_NEXT_STEP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "keep-exploring", label: "Keep exploring" },
   { id: "pricing-details", label: "How is pricing structured?" },
-  { id: "talk-recruiter-specialist", label: "Talk to a Recruiter specialist" },
+  {
+    id: "talk-recruiter-representative",
+    label: "Talk to a sales representative",
+  },
 ];
 
 const GENERAL_NEXT_STEP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "keep-exploring", label: "Keep exploring" },
   { id: "pricing-details", label: "How is pricing structured?" },
-  { id: "talk-hiring-specialist", label: "Talk to a hiring specialist" },
+  { id: "talk-hiring-representative", label: "Talk to a sales representative" },
 ];
 
 const RECRUITER_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "compare-jobs", label: "How is it different from LinkedIn Jobs?" },
   { id: "worth-it", label: "When is Recruiter worth it?" },
-  { id: "talk-recruiter-specialist", label: "Talk to a Recruiter specialist" },
+  {
+    id: "talk-recruiter-representative",
+    label: "Talk to a sales representative",
+  },
 ];
 
 const GENERAL_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "compare-options", label: "Which option seems closest?" },
   { id: "pricing-details", label: "How is pricing structured?" },
-  { id: "talk-hiring-specialist", label: "Talk to a hiring specialist" },
+  { id: "talk-hiring-representative", label: "Talk to a sales representative" },
 ];
 
 const HANDOFF_BRIDGE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  { id: "see-available-times", label: "See available times" },
-  { id: "request-phone-call", label: "Request a phone call" },
-  { id: "keep-exploring", label: "Keep exploring" },
+  { id: "book-meeting", label: "Book meeting" },
+];
+
+const LIVE_HANDOFF_BRIDGE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "chat-live-now", label: "Chat live now" },
+  { id: "book-meeting", label: "Book meeting" },
 ];
 
 const DEFAULT_STATE: AiConciergeConversationState = {
@@ -165,20 +184,16 @@ const DEFAULT_STATE: AiConciergeConversationState = {
   likelySolution: "unknown",
   nextStepMode: null,
   readiness: "unknown",
+  urgency: "unknown",
 };
 
 export function createOpeningTurn({
   contactDetails,
-  entryMode,
 }: {
   contactDetails: ConciergeContactDetails;
-  entryMode: EntryMode;
 }): AssistantTurn {
-  const intro =
-    entryMode === "manual" ? "thanks for sharing your details. " : "";
-
   return {
-    body: `Hi ${contactDetails.firstName}, ${intro}I can help you figure out which hiring solutions could make sense for ${contactDetails.company}, answer questions about how they fit different hiring needs, and connect you with a specialist if that becomes useful.\n\nHere are a few ways to get started:`,
+    body: `Hi ${contactDetails.firstName}, I can help you explore which hiring solutions fit ${contactDetails.company}, answer your questions, and connect you with a representative if helpful.\n\nHere are a few ways to get started:`,
     nextState: DEFAULT_STATE,
     suggestedReplies: OPENING_SUGGESTIONS,
     suggestedReplyDisplay: "inline",
@@ -201,7 +216,7 @@ export function createReturnToChatTurn({
 
   if (state.likelySolution === "lighter_touch") {
     return {
-      body: `No problem. I can keep helping you compare which hiring option could fit ${contactDetails.company} best, and we can revisit the specialist option anytime.`,
+      body: `No problem. I can keep helping you compare which hiring option could fit ${contactDetails.company} best, and we can revisit the representative option anytime.`,
       nextState,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
@@ -209,7 +224,7 @@ export function createReturnToChatTurn({
   }
 
   return {
-    body: `No problem. I can keep helping you understand where Recruiter could fit for ${contactDetails.company}, and we can revisit the specialist option anytime.`,
+    body: `No problem. I can keep helping you understand where Recruiter could fit for ${contactDetails.company}, and we can revisit the representative option anytime.`,
     nextState,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -231,14 +246,15 @@ export function getAssistantTurn({
     case "awaiting_hiring_motion":
       return createHiringMotionResponse(input, state);
     case "awaiting_fit_context":
-      return createFitContextResponse(input, state, contactDetails);
+      return createFitContextResponse(input, state);
+    case "awaiting_urgency":
+      return createUrgencyResponse(state, input, contactDetails);
     case "awaiting_next_step":
     case "explore":
       return createNextStepResponse(input, state, contactDetails);
     case "awaiting_handoff_choice":
       return createHandoffChoiceResponse(input, state, contactDetails);
     case "booking_pending":
-    case "callback_pending":
       return {
         body: "I can also answer any other questions you have while we get that set up.",
         nextState: state,
@@ -415,7 +431,6 @@ function createHiringMotionResponse(
 function createFitContextResponse(
   input: string,
   state: AiConciergeConversationState,
-  contactDetails: ConciergeContactDetails,
 ): AssistantTurn {
   const roleContext = summarizeHiringContext(input);
   const likelySolution = determineLikelySolution({
@@ -424,23 +439,42 @@ function createFitContextResponse(
     hiringUseCase: roleContext.hiringUseCase,
   });
 
-  const recommendation = createRecommendationMessage({
-    company: contactDetails.company,
-    likelySolution,
-    summary: roleContext.summary,
-  });
-
   return {
-    body: `${recommendation}\n\n${createNextStepQuestion(contactDetails.company, likelySolution)}`,
+    body: "That gives me a better sense of the hiring pattern.\n\nHow soon do you need to make progress on this?",
     nextState: {
       ...state,
-      stage: "awaiting_next_step",
+      stage: "awaiting_urgency",
       hiringSummary: roleContext.summary,
       hiringUseCase: roleContext.hiringUseCase,
       hiringComplexity: roleContext.hiringComplexity,
       likelySolution,
     },
-    suggestedReplies: createNextStepSuggestions(likelySolution),
+    suggestedReplies: URGENCY_SUGGESTIONS,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+function createUrgencyResponse(
+  state: AiConciergeConversationState,
+  input: string,
+  contactDetails: ConciergeContactDetails,
+): AssistantTurn {
+  const urgency = classifyUrgency(input);
+  const recommendation = createRecommendationMessage({
+    company: contactDetails.company,
+    likelySolution: state.likelySolution,
+    summary: state.hiringSummary ?? "several functions",
+    urgency,
+  });
+
+  return {
+    body: `${recommendation}\n\n${createNextStepQuestion(contactDetails.company, state.likelySolution)}`,
+    nextState: {
+      ...state,
+      stage: "awaiting_next_step",
+      urgency,
+    },
+    suggestedReplies: createNextStepSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
   };
 }
@@ -452,24 +486,30 @@ function createNextStepResponse(
 ): AssistantTurn {
   const normalized = normalizeInput(input);
   const roleClause = createRoleClause(state.hiringSummary);
-  const specialistLabel =
-    state.likelySolution === "recruiter"
-      ? "Recruiter specialist"
-      : "hiring specialist";
+  const representativeLabel = "sales representative";
 
-  if (normalized.includes("talk to a") || normalized.includes("specialist")) {
+  if (
+    normalized.includes("talk to a") ||
+    normalized.includes("specialist") ||
+    normalized.includes("representative")
+  ) {
     return {
       body:
-        state.likelySolution === "recruiter"
-          ? `That makes sense. Based on what you shared, a short conversation with a Recruiter specialist could be a useful next step for ${contactDetails.company}.\n\nI can show you a few available times, request a phone call, or we can keep exploring first.`
-          : `That makes sense. A short conversation with a hiring specialist could help narrow the right option for ${contactDetails.company}.\n\nI can show you a few available times, request a phone call, or we can keep exploring first.`,
+        state.likelySolution === "lighter_touch"
+          ? `That makes sense. If you'd like, I can connect you with a sales rep here in chat now, or help you book time.`
+          : state.likelySolution === "recruiter"
+          ? `That makes sense. Based on what you shared, a short conversation with a sales representative could be a useful next step for ${contactDetails.company}.\n\nI can help you book a meeting.`
+          : `That makes sense. A short conversation with a sales representative could help narrow the right option for ${contactDetails.company}.\n\nI can help you book a meeting.`,
       nextState: {
         ...state,
         stage: "awaiting_handoff_choice",
-        readiness: "specialist",
+        readiness: "representative",
         nextStepMode: null,
       },
-      suggestedReplies: HANDOFF_BRIDGE_SUGGESTIONS,
+      suggestedReplies:
+        state.likelySolution === "lighter_touch"
+          ? LIVE_HANDOFF_BRIDGE_SUGGESTIONS
+          : HANDOFF_BRIDGE_SUGGESTIONS,
       suggestedReplyDisplay: "inline",
     };
   }
@@ -478,7 +518,7 @@ function createNextStepResponse(
     return {
       body:
         state.likelySolution === "recruiter"
-          ? "Pricing usually depends on hiring volume, role complexity, and the level of support your team needs. For teams with broader ongoing or harder-to-fill hiring needs, that is usually where Recruiter becomes easier to justify. If helpful, I can keep helping you gauge fit or connect you with a Recruiter specialist for specifics."
+          ? "Pricing usually depends on hiring volume, role complexity, and the level of support your team needs. For teams with broader ongoing or harder-to-fill hiring needs, that is usually where Recruiter becomes easier to justify. If helpful, I can keep helping you gauge fit or connect you with a sales representative for specifics."
           : "Pricing usually depends on hiring volume, role complexity, and how much ongoing support the team needs. If your hiring is more occasional, it may make sense to compare a lighter-touch option before jumping into a full proactive sourcing workflow.",
       nextState: {
         ...state,
@@ -539,7 +579,7 @@ function createNextStepResponse(
   }
 
   return {
-    body: `I can keep helping you understand what could fit ${contactDetails.company}, or, if helpful, connect you with a ${specialistLabel}.`,
+    body: `I can keep helping you understand what could fit ${contactDetails.company}, or, if helpful, connect you with a ${representativeLabel}.`,
     nextState: state,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -560,12 +600,17 @@ function createHandoffChoiceResponse(
     });
   }
 
-  if (normalized.includes("available times") || normalized.includes("see")) {
+  if (
+    normalized.includes("book meeting") ||
+    normalized.includes("book a meeting") ||
+    (normalized.includes("book") && normalized.includes("meeting")) ||
+    normalized.includes("available times")
+  ) {
     return {
       body:
         state.likelySolution === "lighter_touch"
-          ? `Here are a few times to talk with a hiring specialist about which option could fit ${contactDetails.company} best.`
-          : `Here are a few times to talk with a Recruiter specialist about ${contactDetails.company}.`,
+          ? `Here are a few times to talk with a sales representative about which option could fit ${contactDetails.company} best.`
+          : `Here are a few times to talk with a sales representative about ${contactDetails.company}.`,
       nextState: {
         ...state,
         stage: "booking_pending",
@@ -576,15 +621,10 @@ function createHandoffChoiceResponse(
 
   if (normalized.includes("phone") || normalized.includes("call")) {
     return {
-      body:
-        state.likelySolution === "lighter_touch"
-          ? `No problem. I can help you request a phone call with a hiring specialist.`
-          : `No problem. I can help you request a phone call with a Recruiter specialist.`,
-      nextState: {
-        ...state,
-        stage: "callback_pending",
-        nextStepMode: "callback",
-      },
+      body: "I can help you book a meeting here in chat.",
+      nextState: state,
+      suggestedReplies: HANDOFF_BRIDGE_SUGGESTIONS,
+      suggestedReplyDisplay: "inline",
     };
   }
 
@@ -629,20 +669,24 @@ function createRecommendationMessage({
   company,
   likelySolution,
   summary,
+  urgency,
 }: {
   company: string;
   likelySolution: LikelySolution;
   summary: string;
+  urgency: Urgency;
 }) {
+  const urgencyPhrase = createUrgencyPhrase(urgency);
+
   if (likelySolution === "lighter_touch") {
-    return `It sounds like ${company} is hiring for ${summary}. Because the hiring need sounds more occasional or limited in scope, a lighter-touch hiring option may be worth comparing before jumping into a full proactive sourcing workflow.`;
+    return `It sounds like ${company} is hiring for ${summary}, and ${urgencyPhrase}. Because the hiring need sounds more occasional or limited in scope, a lighter-touch hiring option may be worth comparing before jumping into a full proactive sourcing workflow.`;
   }
 
   if (summary === "harder-to-fill roles") {
-    return "It sounds like the biggest pressure is around harder-to-fill roles. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.";
+    return `It sounds like the biggest pressure is around harder-to-fill roles, and ${urgencyPhrase}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
   }
 
-  return `It sounds like ${company} is hiring for ${summary}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
+  return `It sounds like ${company} is hiring for ${summary}, and ${urgencyPhrase}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
 }
 
 function createNextStepQuestion(
@@ -650,10 +694,10 @@ function createNextStepQuestion(
   likelySolution: LikelySolution,
 ) {
   if (likelySolution === "lighter_touch") {
-    return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a specialist about which option could fit ${company} best?`;
+    return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about which option could fit ${company} best?`;
   }
 
-  return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a specialist about what this could look like for ${company}?`;
+  return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about what this could look like for ${company}?`;
 }
 
 function createNextStepSuggestions(likelySolution: LikelySolution) {
@@ -843,6 +887,59 @@ function classifyPricingScope(input: string): HiringMotion {
   }
 
   return "unknown";
+}
+
+function classifyUrgency(input: string): Urgency {
+  const normalized = normalizeInput(input);
+
+  if (
+    normalized.includes("this quarter") ||
+    normalized.includes("this q") ||
+    normalized.includes("quarter")
+  ) {
+    return "this_quarter";
+  }
+
+  if (
+    normalized.includes("next few months") ||
+    normalized.includes("few months") ||
+    normalized.includes("next couple months")
+  ) {
+    return "next_few_months";
+  }
+
+  if (
+    normalized.includes("planning ahead") ||
+    normalized.includes("plan ahead") ||
+    normalized.includes("later this year")
+  ) {
+    return "planning_ahead";
+  }
+
+  if (
+    normalized.includes("still exploring") ||
+    normalized.includes("still figuring") ||
+    normalized.includes("just exploring")
+  ) {
+    return "still_exploring";
+  }
+
+  return "unknown";
+}
+
+function createUrgencyPhrase(urgency: Urgency) {
+  switch (urgency) {
+    case "this_quarter":
+      return "the need feels fairly near-term";
+    case "next_few_months":
+      return "this looks like something you'll need to make progress on soon";
+    case "planning_ahead":
+      return "this feels more like planning ahead than an immediate fire drill";
+    case "still_exploring":
+      return "you're still figuring out the right path";
+    case "unknown":
+      return "this seems important enough to evaluate now";
+  }
 }
 
 function isPricingIntent(normalized: string) {

@@ -7,7 +7,7 @@ Use it to answer:
 - what the assistant should do in the first few turns
 - why each message exists
 - how the visible conversation connects to hidden lead routing
-- when the flow should stay in guide mode vs move toward a specialist
+- when the flow should stay in guide mode vs move toward a representative
 
 Related docs:
 - [conversation-strategy.md](conversation-strategy.md)
@@ -85,15 +85,14 @@ They should not:
 
 Recommended opening suggestions:
 - `We're not sure which hiring solution fits`
-- `We hire consistently across teams`
 - `We need help with harder-to-fill roles`
 - `We'd like pricing guidance`
 
 Why these work:
-- they are all the same kind of input
 - they sound like real things a buyer might say
 - they help the assistant diagnose before recommending
 - they keep the backend routing logic hidden
+- they leave some openness instead of feeling like a full menu
 
 ## Recommended Phase 1 structure
 The visible flow should follow this shape:
@@ -101,8 +100,9 @@ The visible flow should follow this shape:
 2. starting situation
 3. hiring motion diagnosis
 4. specific fit diagnosis
-5. reflected recommendation
-6. next-step choice
+5. urgency / priority
+6. reflected recommendation
+7. next-step choice
 
 This gives the conversation more room without making it feel like a form.
 
@@ -123,13 +123,13 @@ Why this matters:
 ### Step 1: Opening
 Example, manual entry:
 
-> Hi Jamie, thanks for sharing your details. I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a specialist if that becomes useful.
+> Hi Jamie, thanks for sharing your details. I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a representative if that becomes useful.
 >
 > Here are a few ways to get started:
 
 Example, prefill:
 
-> Hi Jamie, I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a specialist if that becomes useful.
+> Hi Jamie, I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a representative if that becomes useful.
 >
 > Here are a few ways to get started:
 
@@ -215,14 +215,40 @@ Why this step matters:
 - it gives the assistant enough specificity to recommend something
 - it is where Recruiter can begin to feel earned instead of predetermined
 
-### Step 5: Reflected recommendation
+### Step 5: Urgency / priority
+Once role context is clear, the assistant should add one timing signal before recommending the next step.
+
+Recommended version:
+
+> That gives me a better sense of the hiring pattern.
+>
+> How soon do you need to make progress on this?
+
+Suggested replies:
+- `This quarter`
+- `In the next few months`
+- `We're planning ahead`
+- `Still exploring`
+
+Visible purpose:
+- add a real timing signal without sounding like sales discovery
+
+Hidden signal:
+- `timeline / urgency`
+
+Why this step matters:
+- it makes the conversation feel more commercially grounded
+- it helps distinguish interesting fit from near-term need
+- it captures a useful BANT-like signal without asking a blunt business-impact question
+
+### Step 6: Reflected recommendation
 Preferred version:
 
-> It sounds like you're hiring for engineering and product roles, including some harder-to-fill positions. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.
+> It sounds like Northstar Health is hiring consistently across engineering and product, and the need is fairly near-term. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.
 
 Fallback version:
 
-> It sounds like you're hiring across several functions, with some harder-to-fill roles. A more proactive sourcing approach is often useful in that situation, which is where Recruiter can become more relevant.
+> It sounds like you're hiring across several functions, and this feels like a real near-term priority. A more proactive sourcing approach is often useful in that situation, which is where Recruiter can become more relevant.
 
 Visible purpose:
 - reflect back what the assistant learned
@@ -230,21 +256,22 @@ Visible purpose:
 
 Hidden effect:
 - stronger confidence in likely solution category
+- stronger confidence in urgency and route quality
 
 Why this step matters:
 - it makes the assistant feel interpretive, not repetitive
 - it introduces Recruiter after context exists
 - it gives the user something useful before asking them to choose a next step
 
-### Step 6: Next-step choice
+### Step 7: Next-step choice
 Recommended question:
 
-> Would it be more helpful to keep exploring, get pricing guidance, or talk with a specialist about what this could look like for Northstar Health?
+> Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about what this could look like for Northstar Health?
 
 Suggested replies:
 - `Keep exploring`
 - `How is pricing structured?`
-- `Talk to a Recruiter specialist`
+- `Talk to a Recruiter representative`
 
 Visible purpose:
 - offer a clear next move without forcing a handoff
@@ -255,6 +282,30 @@ Hidden signal:
 Why this step matters:
 - readiness is captured as a consequence of guidance, not as an early qualification question
 - this is where the system can begin to lean toward one of the hidden routing outcomes
+
+### Step 8: Bridge step before handoff
+If the user chooses the representative path, the assistant should not open booking immediately.
+
+Recommended version:
+
+> That makes sense. Based on what you shared, a short conversation with a Recruiter representative could be a useful next step for Northstar Health.
+>
+> I can help you book a meeting, or we can keep exploring first.
+
+Suggested replies:
+- `Book meeting`
+- `Keep exploring`
+
+Visible purpose:
+- make the transition feel intentional instead of abrupt
+- give the user one more chance to stay in guide mode
+
+Hidden effect:
+- stronger confidence that the user is ready for human follow-up
+
+Why this step matters:
+- the booking surface is a meaningful mode shift
+- the bridge makes that shift feel earned and reversible
 
 ## Alternate entry paths
 
@@ -347,7 +398,7 @@ Practical mapping:
 - `Authority`
   inferred mainly from onboarding context such as role, company, and seniority
 - `Timeline`
-  inferred from urgency language and from the user's next-step choice, such as `Keep exploring` versus `Talk to a Recruiter specialist`
+  inferred from urgency language and from the user's next-step choice, such as `Keep exploring` versus `Talk to a Recruiter representative`
 - `Budget`
   hinted at through pricing interest, but not asked directly in the MVP
 
@@ -358,25 +409,23 @@ Important guardrails:
 - hiring motion and product fit are often more useful than strict BANT phrasing on `/hire`
 
 ## Booking handoff
-Booking and callback should feel like part of the same experience, not a redirect.
+Booking should feel like part of the same experience, not a redirect.
 
 Recommended pattern:
-- user chooses `Talk to a Recruiter specialist`
+- user chooses `Talk to a Recruiter representative`
 - assistant confirms why that next step is relevant
 - assistant offers a short bridge choice:
-  - `See available times`
-  - `Request a phone call`
+  - `Book meeting`
   - `Keep exploring`
 - desktop opens a right-side next-step surface
 - mobile uses a step change inside the same panel
 
 Important:
 - `Keep exploring` should continue the conversation
-- callback is a contact method, not a separate routing outcome
 - the shell pattern should work for more than booking
 
 Recommended booking card:
-- Headline: `Talk to a Recruiter specialist`
+- Headline: `Talk to a Recruiter representative`
 - Supporting copy: `Based on what you shared, a short conversation can help you see whether Recruiter is a fit for hiring engineering and product talent at Northstar Health.`
 - Meta: `20-minute conversation`
 - Reassurance: `No prep needed`
@@ -397,7 +446,7 @@ When to use:
 - stronger commercial confidence
 
 Visible purpose:
-- recommend a higher-value specialist conversation
+- recommend a higher-value representative conversation
 
 Next-step surface:
 - booking surface
@@ -407,7 +456,7 @@ Example title:
 - `Talk to an account executive`
 
 Primary action:
-- `See available times`
+- `Book meeting`
 
 ### SDR live handoff
 When to use:
@@ -422,7 +471,7 @@ Next-step surface:
 - live-connect surface, not a scheduler
 
 Example title:
-- `Connect with a specialist`
+- `Connect with a representative`
 
 Primary action:
 - `Connect now`
@@ -444,10 +493,10 @@ Next-step surface:
 - booking surface
 
 Example title:
-- `Talk to a specialist`
+- `Talk to a representative`
 
 Primary action:
-- `See available times`
+- `Book meeting`
 
 ### Lower-touch / direct purchase
 When to use:
@@ -469,7 +518,7 @@ Primary action:
 
 Optional secondary actions:
 - `Keep exploring`
-- `Talk to a specialist anyway`
+- `Talk to a representative anyway`
 
 ### Redirect / no-sales
 When to use:
@@ -503,7 +552,7 @@ Use this structure:
 - middle question: hiring motion diagnosis
 - next question: specific fit diagnosis
 - recommendation: likely-fit guidance
-- next-step choice: explore, pricing, or specialist
+- next-step choice: explore, pricing, or representative
 
 This lets you speak clearly about the logic even if final AI copy changes over time.
 

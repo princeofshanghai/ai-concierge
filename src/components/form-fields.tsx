@@ -33,17 +33,17 @@ type FormSelectFieldProps = BaseFieldProps &
 
 const FIELD_SIZE_STYLES = {
   large: {
-    control: "h-10 px-3 text-[15px] leading-[1.35] tracking-[-0.015em]",
+    control: "ai-type-body-md h-10 px-3",
     controlWithAdornment: "pr-10",
-    label: "text-[12px] leading-[1.25]",
-    meta: "text-[12px] leading-[1.25]",
+    label: "ai-type-label-xs",
+    meta: "ai-type-body-xs",
     adornmentOffset: "right-3",
   },
   small: {
-    control: "h-8 px-2.5 text-[14px] leading-[1.25] tracking-[-0.01em]",
+    control: "ai-type-body-sm h-8 px-2.5",
     controlWithAdornment: "pr-8",
-    label: "text-[12px] leading-[1.25]",
-    meta: "text-[12px] leading-[1.25]",
+    label: "ai-type-label-xs",
+    meta: "ai-type-body-xs",
     adornmentOffset: "right-2.5",
   },
 } satisfies Record<
@@ -71,14 +71,14 @@ function getControlStateClasses({
   hasError?: boolean;
 }) {
   if (disabled) {
-    return "border-transparent bg-black/[0.06] text-black/35";
+    return "border-transparent bg-ai-surface-overlay-hover text-ai-text-placeholder";
   }
 
   if (hasError) {
-    return "border-[#cb112d]/85 text-black/90 hover:border-[#cb112d] focus-within:border-[#8a0015] focus-within:ring-1 focus-within:ring-[#8a0015]/20";
+    return "border-ai-text-negative text-ai-text-primary hover:border-ai-text-negative focus-within:border-ai-text-negative-hover focus-within:ring-1 focus-within:ring-ai-danger-focus-ring";
   }
 
-  return "border-black/55 text-black/90 hover:border-black/75 focus-within:border-black/90 focus-within:ring-1 focus-within:ring-black/15";
+  return "border-ai-border-strong text-ai-text-primary hover:border-ai-border-focus focus-within:border-ai-border-focus focus-within:ring-1 focus-within:ring-ai-neutral-focus-ring";
 }
 
 function DefaultSelectIndicator() {
@@ -114,9 +114,9 @@ function FieldContainer({
     <label className={["flex flex-col gap-1", className].join(" ")}>
       <span
         className={[
-          "font-panel-text font-semibold",
+          "",
           sizeStyles.label,
-          disabled ? "text-black/32" : "text-black/74",
+          disabled ? "text-ai-text-disabled" : "text-ai-text-secondary",
         ].join(" ")}
       >
         {label}
@@ -130,13 +130,13 @@ function FieldContainer({
           <span
             id={supportingText ? descriptionId : undefined}
             className={[
-              "font-panel-text",
+              "",
               sizeStyles.meta,
               disabled
-                ? "text-black/30"
+                ? "text-ai-text-disabled"
                 : errorText
-                  ? "text-[#cb112d]"
-                  : "text-black/52",
+                  ? "text-ai-text-negative"
+                  : "text-ai-text-meta",
             ].join(" ")}
           >
             {supportingText ?? " "}
@@ -144,9 +144,9 @@ function FieldContainer({
           {counter ? (
             <span
               className={[
-                "font-panel-text shrink-0 text-right",
+                "shrink-0 text-right",
                 sizeStyles.meta,
-                errorText ? "text-[#cb112d]" : "text-black/45",
+                errorText ? "text-ai-text-negative" : "text-ai-text-tertiary",
               ].join(" ")}
             >
               {counter}
@@ -191,7 +191,7 @@ export function FormTextField({
     >
       <div
         className={[
-          "relative flex items-center overflow-hidden rounded-[4px] border bg-white transition-[border-color,box-shadow,background-color,color]",
+          "relative flex items-center overflow-hidden rounded-[4px] border bg-ai-surface-base transition-[border-color,box-shadow,background-color,color]",
           getControlStateClasses({
             disabled,
             hasError: Boolean(errorText),
@@ -207,17 +207,19 @@ export function FormTextField({
           aria-invalid={errorText ? true : undefined}
           onChange={(event) => onValueChange(event.target.value)}
           className={[
-            "font-panel-text w-full min-w-0 bg-transparent outline-none placeholder:text-black/35",
+            "w-full min-w-0 bg-transparent outline-none placeholder:text-ai-text-placeholder",
             sizeStyles.control,
             hasAdornment ? sizeStyles.controlWithAdornment : "",
-            disabled ? "cursor-not-allowed text-black/35" : "text-black/90",
+            disabled
+              ? "cursor-not-allowed text-ai-text-placeholder"
+              : "text-ai-text-primary",
           ].join(" ")}
         />
         {trailingAdornment ? (
           <span
             aria-hidden="true"
             className={[
-              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-black/70",
+              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-ai-text-secondary",
               sizeStyles.adornmentOffset,
             ].join(" ")}
           >
@@ -262,7 +264,7 @@ export function FormSelectField({
     >
       <div
         className={[
-          "relative flex items-center overflow-hidden rounded-[4px] border bg-white transition-[border-color,box-shadow,background-color,color]",
+          "relative flex items-center overflow-hidden rounded-[4px] border bg-ai-surface-base transition-[border-color,box-shadow,background-color,color]",
           getControlStateClasses({
             disabled,
             hasError: Boolean(errorText),
@@ -278,14 +280,14 @@ export function FormSelectField({
           aria-invalid={errorText ? true : undefined}
           onChange={(event) => onValueChange(event.target.value)}
           className={[
-            "font-panel-text w-full min-w-0 appearance-none bg-transparent outline-none",
+            "w-full min-w-0 appearance-none bg-transparent outline-none",
             sizeStyles.control,
             sizeStyles.controlWithAdornment,
             disabled
-              ? "cursor-not-allowed text-black/35"
+              ? "cursor-not-allowed text-ai-text-placeholder"
               : value
-                ? "text-black/90"
-                : "text-black/35",
+                ? "text-ai-text-primary"
+                : "text-ai-text-placeholder",
           ].join(" ")}
         >
           <option value="" disabled>
@@ -304,7 +306,7 @@ export function FormSelectField({
         <span
           aria-hidden="true"
           className={[
-            "pointer-events-none absolute top-1/2 -translate-y-1/2 text-black/70",
+            "pointer-events-none absolute top-1/2 -translate-y-1/2 text-ai-text-secondary",
             sizeStyles.adornmentOffset,
           ].join(" ")}
         >

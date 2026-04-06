@@ -32,7 +32,7 @@ Right now the chat moves a little too quickly from:
 to
 - narrow qualification
 to
-- specialist suggestion
+- representative suggestion
 
 The result is that the flow can feel compressed, especially when the user starts with a broad fit question like:
 - `Which hiring solution is right for us?`
@@ -244,7 +244,7 @@ This is the recommended shape for the broadest happy-path entry.
 ### Message 1: Opening
 Example:
 
-> Hi Jamie, I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a specialist if that becomes useful.
+> Hi Jamie, I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a representative if that becomes useful.
 >
 > Here are a few ways to get started:
 
@@ -316,7 +316,7 @@ Hidden signal:
 - likely commercial value
 
 Routing impact:
-- strengthens higher-value and specialist-fit signals
+- strengthens higher-value and representative-fit signals
 
 ### Message 4: Recommendation
 If the user says `Mix of roles` or shares multiple role types
@@ -333,17 +333,17 @@ Hidden signal:
 - solution fit confidence
 
 Routing impact:
-- improves confidence for specialist routing
+- improves confidence for representative routing
 
 ### Message 5: Next-step choice
 Example:
 
-> Would it be more helpful to keep exploring, get pricing guidance, or talk with a specialist about what this could look like for Northstar Health?
+> Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about what this could look like for Northstar Health?
 
 Suggested replies:
 - `Keep exploring`
 - `We'd like pricing guidance`
-- `Talk to a Recruiter specialist`
+- `Talk to a Recruiter representative`
 
 Visible purpose:
 - offer a clear next step without making the handoff feel forced

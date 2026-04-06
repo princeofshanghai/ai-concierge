@@ -1,0 +1,163 @@
+.page {
+  min-height: 100vh;
+  background: #fff;
+  color: #111;
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+}
+
+.main {
+  scroll-snap-type: y mandatory;
+}
+
+.section {
+  min-height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px;
+}
+
+.slide {
+  width: min(1440px, calc(100vw - 128px));
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  color: #666;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.title,
+.sectionTitle {
+  margin: 0;
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.title {
+  font-size: clamp(56px, 11vw, 112px);
+}
+
+.sectionTitle {
+  font-size: clamp(36px, 6.4vw, 58px);
+}
+
+.body,
+.principleCopy,
+.personaBody,
+.note {
+  font-size: clamp(18px, 1.9vw, 24px);
+  line-height: 1.42;
+}
+
+.body {
+  margin: 24px 0 0;
+  max-width: 48ch;
+}
+
+.lede {
+  margin: 24px 0 0;
+  max-width: min(1120px, 100%);
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.28;
+}
+
+.principles {
+  display: grid;
+  gap: 28px;
+  margin-top: 32px;
+  max-width: min(1080px, 100%);
+}
+
+.principle {
+  display: grid;
+  gap: 8px;
+}
+
+.principleTitle {
+  margin: 0;
+  font-size: clamp(26px, 2.8vw, 34px);
+  line-height: 1.08;
+}
+
+.principleCopy {
+  margin: 0;
+  max-width: 52ch;
+  color: #555;
+  font-size: clamp(17px, 1.55vw, 20px);
+}
+
+.persona {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+  max-width: min(1120px, 100%);
+}
+
+.personaBody {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(19px, 1.9vw, 25px);
+  line-height: 1.36;
+}
+
+.personaBody:first-child {
+  font-size: clamp(24px, 2.3vw, 32px);
+  line-height: 1.16;
+}
+
+.jtbd {
+  margin-top: 28px;
+  max-width: min(1200px, 100%);
+}
+
+.jtbdText {
+  margin: 0;
+  max-width: min(1160px, 100%);
+  font-size: clamp(24px, 2.8vw, 36px);
+  line-height: 1.22;
+}
+
+.note {
+  margin-top: 42px;
+  color: #777;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.sectionNav {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  gap: 10px;
+  color: #666;
+  font-size: 12px;
+}
+
+.sectionNavLink {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid #ccc;
+}
+
+@media (max-width: 720px) {
+  .section {
+    align-items: flex-start;
+    padding: 28px;
+  }
+
+  .slide {
+    width: 100%;
+    padding-top: 88px;
+  }
+}

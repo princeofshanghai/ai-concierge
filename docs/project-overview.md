@@ -47,7 +47,7 @@ Short version:
 Create a faster, more helpful path from hiring interest to the right next step, while qualifying the lead in the background.
 
 That next step may be:
-- a specialist handoff
+- a representative handoff
 - an SDR handoff
 - a lower-touch purchase path
 - a redirect to another destination
@@ -145,7 +145,7 @@ Today it focuses on:
 - an AI chat panel triggered from sales CTAs
 - a guide-first conversation
 - a simplified happy path that narrows toward Recruiter-oriented guidance
-- a specialist-handoff flow
+- a representative-handoff flow
 
 It does not yet fully implement all 5 routing endings. Those should be treated as the target model the prototype is building toward.
 

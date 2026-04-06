@@ -102,8 +102,8 @@ The current prototype should focus on a narrower, believable subset of the large
   - answer common fit and product questions
   - ask a small number of lightweight follow-up questions
   - narrow toward Recruiter when appropriate
-  - suggest a specialist when that feels earned
-- A happy-path specialist handoff
+  - suggest a representative when that feels earned
+- A happy-path representative handoff
 - A believable booking flow
 - A small number of alternate branches:
   - curious but not ready
@@ -126,13 +126,13 @@ The current prototype should focus on a narrower, believable subset of the large
 - The onboarding / prefill step
 - The first few chat turns
 - The sense that the assistant understands the user's situation
-- The specialist recommendation
+- The representative recommendation
 - The booking transition and confirmation
 
 ## What can be faked
 - Identity and prefill
 - Lead classification
-- Specialist availability
+- Representative availability
 - Booking inventory
 - Routing logic
 - Sales operational systems
@@ -146,13 +146,13 @@ The current prototype should focus on a narrower, believable subset of the large
 4. User confirms or enters basic details
 5. Chat begins
 
-### Flow 2: Guide + qualify + specialist handoff
+### Flow 2: Guide + qualify + representative handoff
 1. AI opens with a broad hiring-solutions framing
 2. User picks a starting situation or types a question
 3. AI gives a useful response first
 4. AI asks 1 to 2 lightweight follow-ups
 5. AI narrows toward the most relevant solution
-6. AI suggests a specialist if the handoff feels earned
+6. AI suggests a representative if the handoff feels earned
 7. User books time and sees confirmation
 
 ### Flow 3: Curious but not ready
@@ -215,7 +215,7 @@ The booking handoff should:
 - Onboarding / prefill step exists
 - Chat supports a guide-first happy path
 - Chat supports at least a few realistic alternate paths
-- Specialist handoff exists
+- Representative handoff exists
 - Booking flow exists
 - Confirmation state exists
 

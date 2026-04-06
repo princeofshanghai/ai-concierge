@@ -14,9 +14,9 @@ export function ChatUserMessage({
   return (
     <div
       className={[
-        "ml-auto rounded-bl-[24px] rounded-tl-[24px] rounded-tr-[24px] rounded-br-none bg-[#ebf1ff] px-6 py-5",
+        "ml-auto rounded-bl-[24px] rounded-tl-[24px] rounded-tr-[24px] rounded-br-none bg-ai-surface-user-message px-6 py-5",
         isPanelExpanded ? "max-w-[440px]" : "max-w-[352px]",
-        "font-panel-text text-[14px] leading-[1.5] tracking-[-0.15px] text-black",
+        "ai-type-body-sm-open text-ai-text-primary",
         className,
       ].join(" ")}
     >

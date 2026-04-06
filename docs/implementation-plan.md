@@ -23,9 +23,9 @@ We are past the first implementation pass of **Phase 2**.
 
 That means:
 - the core happy-path chat has been implemented and refined around `/hire`
-- the conversation now includes a bridge step before specialist handoff
-- the next-step surface is built for specialist booking and fake callback
-- the prototype shell now supports more than one next-step mode
+- the conversation now includes a bridge step before representative handoff
+- the next-step surface is built for representative booking
+- the prototype shell now supports a shared next-step booking surface
 - the remaining work is to build the other routing outcomes
 
 ## Build philosophy
@@ -61,7 +61,7 @@ What was built:
 - situation-led starting prompts
 - hiring-motion diagnosis before product specificity
 - reflected recommendation and next-step choice
-- bridge step before specialist handoff
+- bridge step before representative handoff
 - inline and composer-based suggestion patterns for different stages
 
 Primary implementation files:
@@ -78,7 +78,7 @@ Review questions for this phase:
 - Does the opening feel smart but not creepy?
 - Does the pacing from help to qualification feel natural?
 - Does the role reflection feel specific enough?
-- Does the specialist CTA feel earned?
+- Does the representative CTA feel earned?
 
 Current refinement focus:
 - keep the visible chat guide-first while hidden qualification becomes clearer
@@ -93,19 +93,17 @@ Verification completed:
 Status: Implemented, in polish
 
 Goal:
-- turn the specialist CTA into a believable next-step flow
+- turn the representative CTA into a believable next-step flow
 
 What is built:
-- when the user chooses `Talk to a Recruiter specialist`, the assistant now shows a bridge step first
+- when the user chooses `Talk to a Recruiter representative`, the assistant now shows a bridge step first
 - the bridge uses inline blue bubbles:
-  - `See available times`
-  - `Request a phone call`
+  - `Book meeting`
   - `Keep exploring`
 - desktop opens a right-side next-step surface
 - mobile replaces the chat body within the same panel
 - the next-step surface supports:
   - meeting booking
-  - lightweight callback request
   - confirmation
   - `Back to chat`
 - the shell supports both docked and expanded presentation states
@@ -114,7 +112,7 @@ What to keep reviewing in this phase:
 - Does the handoff feel continuous?
 - Does the bridge step make the transition feel less abrupt?
 - Does the next-step surface feel like one consistent shell rather than a one-off booking card?
-- Do booking and callback both feel believable without becoming heavy?
+- Does booking feel believable without becoming heavy?
 
 What not to over-polish yet:
 - final motion
@@ -196,12 +194,12 @@ Why this is the right next chunk:
 Immediate implementation focus:
 - formalize the five routing outcomes in code
 - reuse the current next-step shell for different outcome variants
-- start with `SDR booking` as the lightest extension of the current specialist flow
+- start with `SDR booking` as the lightest extension of the current representative flow
 
 ## Quick reminder
 If work pauses and resumes later, the shortest summary is:
 
 - strategy, persona, and conversation blueprint are defined
 - the core happy-path chat is built and aligned to `/hire`
-- the next-step surface is built for booking and callback
+- the next-step surface is built for booking
 - the next major task is implementing the other routing outcomes inside that shared shell

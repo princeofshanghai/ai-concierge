@@ -6,7 +6,7 @@ This document captures how AI Concierge should behave in the MVP.
 Use it to answer:
 - what the assistant is trying to do
 - how it should qualify without feeling form-heavy
-- when it should stay in guide mode vs suggest a specialist
+- when it should stay in guide mode vs suggest a representative
 
 Related docs:
 - [project-overview.md](project-overview.md)
@@ -34,7 +34,7 @@ The assistant should narrow the conversation in this order:
 1. Identify the hiring challenge or hiring motion.
 2. Map that context to the most likely solution category.
 3. Go deeper on the likely-fit product.
-4. Suggest a specialist if that would add value.
+4. Suggest a representative if that would add value.
 
 This is the main behavior to protect as we design and implement the MVP.
 
@@ -71,7 +71,7 @@ BANT can exist as hidden business logic, but the user-facing conversation should
 - hiring use case
 - hiring motion or scale
 - urgency or timeline
-- readiness to talk to a specialist
+- readiness to talk to a representative
 
 What we should avoid in the MVP:
 - budget-first questions
@@ -105,13 +105,13 @@ For each turn, the assistant should:
 3. Choose the next best move:
    - educate
    - clarify
-   - suggest a specialist
+   - suggest a representative
    - redirect
 
 ## Recommended outcomes
 The MVP should guide toward a small set of outcomes:
 - `Explore`
-- `Qualified for specialist handoff`
+- `Qualified for representative handoff`
 - `Lower-touch / self-serve`
 - `Redirect / wrong intent`
 
@@ -128,7 +128,7 @@ That means:
 Booking should start from chat, but the scheduling UI should not live inside chat bubbles.
 
 Recommended pattern:
-- assistant recommends a specialist inside chat
+- assistant recommends a representative inside chat
 - desktop expands into an attached booking panel
 - mobile replaces the chat body inside the same panel
 - booking feels like a concierge recommendation card, not a full calendar app
@@ -157,5 +157,5 @@ Recommended pattern:
 This strategy is working if:
 - the assistant feels more helpful than a static form
 - qualification feels natural instead of form-like
-- the user understands why a specialist would help
+- the user understands why a representative would help
 - the handoff feels earned, not forced

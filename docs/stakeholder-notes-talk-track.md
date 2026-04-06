@@ -53,7 +53,7 @@ What to emphasize:
 - this aligns directly to the happy path we built
 - the user is looking for clarity, not just a demo
 - the assistant’s job is to help them get to a better decision, not just push them to sales
-- a specialist conversation can still be the right outcome, but it should feel relevant and earned
+- a representative conversation can still be the right outcome, but it should feel relevant and earned
 
 ## Transition Into The Happy Path
 Suggested setup line:
@@ -64,8 +64,8 @@ Suggested setup line:
 2. `We’re not sure which hiring solution fits`
 3. `We hire consistently across teams`
 4. `Engineering and product`
-5. `Talk to a Recruiter specialist`
-6. `See available times`
+5. `Talk to a Recruiter representative`
+6. `Book meeting`
 7. pick a date and time
 8. `Confirm time`
 
@@ -101,10 +101,10 @@ Suggested setup line:
 ### Recommendation + handoff
 - We only introduce Recruiter after the assistant has enough context to earn it.
 - We also added a bridge step before booking so the handoff doesn’t feel abrupt.
-- That bridge gives the user one more choice: see times, request a call, or keep exploring.
+- That bridge gives the user one more choice: see times or keep exploring.
 
 ## Important Accuracy Note
-The current booking prototype is a specialist-booking pattern, not yet a fully explicit AE-only route.
+The current booking prototype is a representative-booking pattern, not yet a fully explicit AE-only route.
 
 Good phrasing:
 - “This shows the human-handoff pattern for a high-intent path.”
