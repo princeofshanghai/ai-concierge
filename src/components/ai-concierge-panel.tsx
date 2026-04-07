@@ -14,6 +14,8 @@ import {
 } from "@/components/ai-concierge-body";
 import { AiConciergeConfettiOverlay } from "@/components/ai-concierge-confetti-overlay";
 import { AiConciergeComposer } from "@/components/ai-concierge-composer";
+import { AiConciergeMeetingCancelDialog } from "@/components/ai-concierge-meeting-cancel-dialog";
+import type { AiConciergeRecommendationArtifact } from "@/components/ai-concierge-recommendation-card";
 import {
   AiConciergeVoiceDock,
   type VoiceModeStatus,
@@ -23,10 +25,12 @@ import { AiConciergePhoneCallPrompt } from "@/components/ai-concierge-phone-call
 import { AiConciergeHeader } from "@/components/ai-concierge-header";
 import {
   AiConciergeNextStepPanel,
+  type BookingPanelInitialSelection,
   type BookingSelection,
 } from "@/components/ai-concierge-next-step-panel";
 import {
   AiConciergeRepresentativeReadyBanner,
+  type AiConciergeRepresentativeMatchArtifact,
   type RepresentativeMeetingDetails,
   type RepresentativeMatchStatus,
 } from "@/components/ai-concierge-representative-booking";
@@ -46,12 +50,19 @@ import {
   PrototypeShellCard,
   PrototypeShellLabel,
 } from "@/components/prototype-shell";
+import {
+  DEFAULT_PROTOTYPE_SCENARIO,
+  getPrototypeScenarioEntryState,
+  type PrototypeScenario,
+} from "@/lib/prototype-scenario";
 
 type AiConciergePanelProps = {
   isOpen: boolean;
   onClose: () => void;
   onClosed?: () => void;
   onExpandedChange?: (isExpanded: boolean) => void;
+  onPrototypeScenarioChange?: (scenario: PrototypeScenario) => void;
+  prototypeScenario?: PrototypeScenario;
 };
 
 type PendingAssistantTurn = ReturnType<typeof createOpeningTurn> & {
@@ -103,8 +114,8 @@ type BrowserWindowWithSpeechRecognition = Window &
 
 const PANEL_EXIT_DURATION_MS = 220;
 const PHONE_CALL_PROMPT_REVEAL_DELAY_MS = 1_800;
-const REPRESENTATIVE_MATCH_DELAY_MS = 2_500;
 const REPRESENTATIVE_MATCH_READY_MS = 6_000;
+const RECOMMENDATION_ACTION_TRANSITION_MS = 260;
 const LIVE_SALES_REPRESENTATIVE_NAME = "David S.";
 
 const EMPTY_CONTACT_DETAILS: ConciergeContactDetails = {
@@ -141,19 +152,34 @@ const REQUIRED_CONTACT_FIELDS: Array<keyof ConciergeContactDetails> = [
   "role",
 ];
 
+type AiConciergePanelState = "chat" | "manual" | "prefill" | "welcome";
+
+function getContactDetailsForScenario(
+  scenario: PrototypeScenario,
+): ConciergeContactDetails {
+  return scenario.authState === "linkedin-connected"
+    ? { ...PREFILLED_CONTACT_DETAILS }
+    : { ...EMPTY_CONTACT_DETAILS };
+}
+
 export function AiConciergePanel({
   isOpen,
   onClose,
   onClosed,
   onExpandedChange,
+  onPrototypeScenarioChange,
+  prototypeScenario = DEFAULT_PROTOTYPE_SCENARIO,
 }: AiConciergePanelProps) {
-  const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
-  const [panelState, setPanelState] = useState<
-    "chat" | "manual" | "prefill" | "welcome"
-  >("welcome");
+  const [isLinkedInConnected, setIsLinkedInConnected] = useState(
+    prototypeScenario.authState === "linkedin-connected",
+  );
+  const [panelState, setPanelState] = useState<AiConciergePanelState>(
+    getPrototypeScenarioEntryState(prototypeScenario),
+  );
   const [isExpanded, setIsExpanded] = useState(false);
-  const [contactDetails, setContactDetails] =
-    useState<ConciergeContactDetails>(EMPTY_CONTACT_DETAILS);
+  const [contactDetails, setContactDetails] = useState<ConciergeContactDetails>(
+    getContactDetailsForScenario(prototypeScenario),
+  );
   const [messages, setMessages] = useState<AiConciergeMessage[]>([]);
   const [conversationState, setConversationState] =
     useState<AiConciergeConversationState | null>(null);
@@ -184,28 +210,38 @@ export function AiConciergePanel({
     useState<RepresentativeMatchStatus | null>(null);
   const [representativeMatchMessageId, setRepresentativeMatchMessageId] =
     useState<string | null>(null);
+  const [pendingRecommendationMessageId, setPendingRecommendationMessageId] =
+    useState<string | null>(null);
   const [isRepresentativeReadyBannerVisible, setIsRepresentativeReadyBannerVisible] =
     useState(false);
   const [isRepresentativeReadyCardVisible, setIsRepresentativeReadyCardVisible] =
     useState<boolean | null>(null);
   const [representativeBookedSelection, setRepresentativeBookedSelection] =
     useState<BookingSelection | null>(null);
+  const [representativeBookingDraft, setRepresentativeBookingDraft] =
+    useState<BookingPanelInitialSelection | null>(null);
   const [bookingCelebrationTrigger, setBookingCelebrationTrigger] = useState(0);
+  const [threadScrollSignal, setThreadScrollSignal] = useState(0);
   const [isLiveAgentReplyPending, setIsLiveAgentReplyPending] = useState(false);
   const [liveSalesChatStatus, setLiveSalesChatStatus] = useState<
     "active" | "connecting" | "idle"
   >("idle");
   const [isMatchedBookingSurfaceVisible, setIsMatchedBookingSurfaceVisible] =
     useState(false);
+  const [isMeetingCancelDialogOpen, setIsMeetingCancelDialogOpen] =
+    useState(false);
+  const [isMeetingCancelSubmitting, setIsMeetingCancelSubmitting] =
+    useState(false);
   const nextAssistantMessageNumberRef = useRef(2);
   const thinkingTimerRef = useRef<number | null>(null);
   const streamingTimerRef = useRef<number | null>(null);
   const phoneCallRequestTimerRef = useRef<number | null>(null);
   const phoneCallPromptTimerRef = useRef<number | null>(null);
-  const representativeMatchDelayTimerRef = useRef<number | null>(null);
+  const recommendationActionTimerRef = useRef<number | null>(null);
   const representativeMatchReadyTimerRef = useRef<number | null>(null);
   const liveSalesJoinTimerRef = useRef<number | null>(null);
   const liveSalesReplyTimerRef = useRef<number | null>(null);
+  const meetingCancelTimerRef = useRef<number | null>(null);
   const dictateRecognitionRef =
     useRef<BrowserSpeechRecognitionLike | null>(null);
   const pendingAssistantResponseRef =
@@ -268,6 +304,10 @@ export function AiConciergePanel({
     !isVoiceModeActive &&
     !shouldShowRepresentativeReadyBanner &&
     (phoneCallPromptState === "requested" || isPhoneCallPromptVisible);
+  const onboardingCopyVariant =
+    prototypeScenario.entryVariant === "confirm-details-first"
+      ? "direct-entry"
+      : "default";
 
   const stopVoiceRecognition = useCallback(() => {
     const recognition = recognitionRef.current;
@@ -349,14 +389,16 @@ export function AiConciergePanel({
   );
 
   const clearRepresentativeMatchTimers = useCallback(() => {
-    if (representativeMatchDelayTimerRef.current !== null) {
-      window.clearTimeout(representativeMatchDelayTimerRef.current);
-      representativeMatchDelayTimerRef.current = null;
-    }
-
     if (representativeMatchReadyTimerRef.current !== null) {
       window.clearTimeout(representativeMatchReadyTimerRef.current);
       representativeMatchReadyTimerRef.current = null;
+    }
+  }, []);
+
+  const clearRecommendationActionTimer = useCallback(() => {
+    if (recommendationActionTimerRef.current !== null) {
+      window.clearTimeout(recommendationActionTimerRef.current);
+      recommendationActionTimerRef.current = null;
     }
   }, []);
 
@@ -372,21 +414,100 @@ export function AiConciergePanel({
     }
   }, []);
 
+  const clearMeetingCancelTimer = useCallback(() => {
+    if (meetingCancelTimerRef.current !== null) {
+      window.clearTimeout(meetingCancelTimerRef.current);
+      meetingCancelTimerRef.current = null;
+    }
+  }, []);
+
   const resetRepresentativeMatchFlow = useCallback(() => {
+    clearRecommendationActionTimer();
     clearRepresentativeMatchTimers();
+    clearMeetingCancelTimer();
     setRepresentativeMatchStatus(null);
     setRepresentativeMatchMessageId(null);
+    setPendingRecommendationMessageId(null);
     setIsRepresentativeReadyBannerVisible(false);
     setIsRepresentativeReadyCardVisible(null);
     setRepresentativeBookedSelection(null);
+    setRepresentativeBookingDraft(null);
     setIsMatchedBookingSurfaceVisible(false);
-  }, [clearRepresentativeMatchTimers]);
+    setIsMeetingCancelDialogOpen(false);
+    setIsMeetingCancelSubmitting(false);
+  }, [
+    clearMeetingCancelTimer,
+    clearRecommendationActionTimer,
+    clearRepresentativeMatchTimers,
+  ]);
 
   const resetLiveSalesChatFlow = useCallback(() => {
     clearLiveSalesTimers();
     setIsLiveAgentReplyPending(false);
     setLiveSalesChatStatus("idle");
   }, [clearLiveSalesTimers]);
+
+  const clearPhoneCallTimers = useCallback(() => {
+    if (phoneCallRequestTimerRef.current !== null) {
+      window.clearTimeout(phoneCallRequestTimerRef.current);
+      phoneCallRequestTimerRef.current = null;
+    }
+
+    if (phoneCallPromptTimerRef.current !== null) {
+      window.clearTimeout(phoneCallPromptTimerRef.current);
+      phoneCallPromptTimerRef.current = null;
+    }
+  }, []);
+
+  const resetPanelToScenario = useCallback(
+    (scenario: PrototypeScenario) => {
+      const nextContactDetails = getContactDetailsForScenario(scenario);
+
+      closeVoiceMode();
+      stopDictationRecognition();
+      clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+      clearPhoneCallTimers();
+      resetRepresentativeMatchFlow();
+      resetLiveSalesChatFlow();
+
+      pendingAssistantResponseRef.current = null;
+      awaitedVoiceAssistantMessageIdRef.current = null;
+      dictateBaseDraftRef.current = "";
+      dictateTranscriptRef.current = "";
+      voiceTranscriptRef.current = "";
+      composerDraftRef.current = "";
+      nextAssistantMessageNumberRef.current = 2;
+
+      setIsLinkedInConnected(scenario.authState === "linkedin-connected");
+      setPanelState(getPrototypeScenarioEntryState(scenario));
+      setContactDetails(nextContactDetails);
+      setMessages([]);
+      setConversationState(null);
+      setComposerDraft("");
+      setFocusComposerSignal((currentValue) => currentValue + 1);
+      setDictateStatusMessage(null);
+      setIsAssistantResponding(false);
+      setIsPhoneCallDialogOpen(false);
+      setIsPhoneCallSubmitting(false);
+      setPhoneCallNumberDraft(nextContactDetails.phoneNumber);
+      setPhoneCallPromptState("available");
+      setIsPhoneCallPromptVisible(false);
+    },
+    [
+      clearPhoneCallTimers,
+      closeVoiceMode,
+      resetLiveSalesChatFlow,
+      resetRepresentativeMatchFlow,
+      stopDictationRecognition,
+    ],
+  );
+
+  const syncPrototypeScenario = useCallback(
+    (scenario: PrototypeScenario) => {
+      onPrototypeScenarioChange?.(scenario);
+    },
+    [onPrototypeScenarioChange],
+  );
 
   const updateRepresentativeMatchMessage = useCallback(
     (
@@ -407,6 +528,24 @@ export function AiConciergePanel({
                   meetingDetails: updates.meetingDetails,
                   status: updates.status,
                 },
+              }
+            : message,
+        ),
+      );
+    },
+    [],
+  );
+
+  const replaceAssistantArtifact = useCallback(
+    (messageId: string, artifact: AiConciergeMessage["artifact"]) => {
+      setMessages((currentMessages) =>
+        currentMessages.map((message) =>
+          message.id === messageId && message.role === "assistant"
+            ? {
+                ...message,
+                artifact,
+                suggestedReplies: undefined,
+                suggestedReplyDisplay: undefined,
               }
             : message,
         ),
@@ -481,15 +620,6 @@ export function AiConciergePanel({
       setRepresentativeBookedSelection(null);
       setIsMatchedBookingSurfaceVisible(false);
 
-      // Shortened prototype timing keeps the matched flow reviewable without a real backend.
-      representativeMatchDelayTimerRef.current = window.setTimeout(() => {
-        setRepresentativeMatchStatus((currentStatus) =>
-          currentStatus === "matching" ? "delayed" : currentStatus,
-        );
-        updateRepresentativeMatchMessage(messageId, { status: "delayed" });
-        representativeMatchDelayTimerRef.current = null;
-      }, REPRESENTATIVE_MATCH_DELAY_MS);
-
       representativeMatchReadyTimerRef.current = window.setTimeout(() => {
         setRepresentativeMatchStatus("ready");
         updateRepresentativeMatchMessage(messageId, { status: "ready" });
@@ -506,12 +636,29 @@ export function AiConciergePanel({
 
   const openMatchedBookingSurface = useCallback(() => {
     setIsRepresentativeReadyBannerVisible(false);
+    setIsMeetingCancelDialogOpen(false);
     setIsMatchedBookingSurfaceVisible(true);
   }, []);
 
   const handleDismissRepresentativeReadyBanner = useCallback(() => {
     setIsRepresentativeReadyBannerVisible(false);
   }, []);
+
+  const handleOpenMeetingCancelDialog = useCallback(() => {
+    if (representativeMatchStatus !== "booked" || !representativeBookedSelection) {
+      return;
+    }
+
+    setIsMeetingCancelDialogOpen(true);
+  }, [representativeBookedSelection, representativeMatchStatus]);
+
+  const handleCloseMeetingCancelDialog = useCallback(() => {
+    if (isMeetingCancelSubmitting) {
+      return;
+    }
+
+    setIsMeetingCancelDialogOpen(false);
+  }, [isMeetingCancelSubmitting]);
 
   const handleBackToChat = useCallback(() => {
     if (isMatchedBookingSurfaceVisible) {
@@ -535,6 +682,7 @@ export function AiConciergePanel({
       ...clearSuggestedReplies(currentMessages),
       createAssistantMessage(
         assistantTurn.body,
+        assistantTurn.openingSupport,
         assistantTurn.suggestedReplies,
         assistantTurn.suggestedReplyDisplay,
         assistantMessageNumber,
@@ -562,17 +710,11 @@ export function AiConciergePanel({
     releaseDictationRecognition();
     stopVoiceRecognition();
     stopAssistantSpeech();
-
-    if (phoneCallRequestTimerRef.current !== null) {
-      window.clearTimeout(phoneCallRequestTimerRef.current);
-      phoneCallRequestTimerRef.current = null;
-    }
-    if (phoneCallPromptTimerRef.current !== null) {
-      window.clearTimeout(phoneCallPromptTimerRef.current);
-      phoneCallPromptTimerRef.current = null;
-    }
+    clearPhoneCallTimers();
+    clearRecommendationActionTimer();
     clearRepresentativeMatchTimers();
     clearLiveSalesTimers();
+    clearMeetingCancelTimer();
 
     const voiceResetTimer = window.setTimeout(() => {
       setIsPhoneCallDialogOpen(false);
@@ -580,12 +722,15 @@ export function AiConciergePanel({
       setIsPhoneCallPromptVisible(false);
       setRepresentativeMatchStatus(null);
       setRepresentativeMatchMessageId(null);
+      setPendingRecommendationMessageId(null);
       setIsRepresentativeReadyBannerVisible(false);
       setIsRepresentativeReadyCardVisible(null);
       setRepresentativeBookedSelection(null);
       setIsLiveAgentReplyPending(false);
       setLiveSalesChatStatus("idle");
       setIsMatchedBookingSurfaceVisible(false);
+      setIsMeetingCancelDialogOpen(false);
+      setIsMeetingCancelSubmitting(false);
       closeVoiceMode();
     }, 0);
 
@@ -599,6 +744,9 @@ export function AiConciergePanel({
     };
   }, [
     clearLiveSalesTimers,
+    clearMeetingCancelTimer,
+    clearPhoneCallTimers,
+    clearRecommendationActionTimer,
     clearRepresentativeMatchTimers,
     closeVoiceMode,
     isOpen,
@@ -615,6 +763,13 @@ export function AiConciergePanel({
       }
 
       if (event.key === "Escape") {
+        if (isMeetingCancelDialogOpen) {
+          if (!isMeetingCancelSubmitting) {
+            setIsMeetingCancelDialogOpen(false);
+          }
+          return;
+        }
+
         if (isPhoneCallDialogOpen) {
           if (!isPhoneCallSubmitting) {
             setIsPhoneCallDialogOpen(false);
@@ -648,6 +803,8 @@ export function AiConciergePanel({
     handleBackToChat,
     isAssistantResponding,
     isExpanded,
+    isMeetingCancelDialogOpen,
+    isMeetingCancelSubmitting,
     isPhoneCallDialogOpen,
     isPhoneCallSubmitting,
     isOpen,
@@ -658,18 +815,20 @@ export function AiConciergePanel({
   useEffect(() => {
     return () => {
       clearResponseTimers(thinkingTimerRef, streamingTimerRef);
-      if (phoneCallRequestTimerRef.current !== null) {
-        window.clearTimeout(phoneCallRequestTimerRef.current);
-        phoneCallRequestTimerRef.current = null;
-      }
+      clearPhoneCallTimers();
+      clearRecommendationActionTimer();
       clearRepresentativeMatchTimers();
       clearLiveSalesTimers();
+      clearMeetingCancelTimer();
       releaseDictationRecognition();
       stopVoiceRecognition();
       stopAssistantSpeech();
     };
   }, [
+    clearPhoneCallTimers,
     clearLiveSalesTimers,
+    clearMeetingCancelTimer,
+    clearRecommendationActionTimer,
     clearRepresentativeMatchTimers,
     releaseDictationRecognition,
     stopAssistantSpeech,
@@ -765,6 +924,9 @@ export function AiConciergePanel({
                     ...message,
                     body: nextBody,
                     artifact: isComplete ? assistantTurn.artifact : undefined,
+                    openingSupport: isComplete
+                      ? assistantTurn.openingSupport
+                      : undefined,
                     status: isComplete ? "complete" : "streaming",
                     suggestedReplies: isComplete
                       ? assistantTurn.suggestedReplies
@@ -799,6 +961,34 @@ export function AiConciergePanel({
     [startLiveSalesHandoffFlow, startRepresentativeMatchFlow],
   );
 
+  const queueRepresentativeAssistantTurn = useCallback(
+    (
+      assistantTurn: PendingAssistantTurn,
+      options?: {
+        bookingDraft?: BookingPanelInitialSelection | null;
+      },
+    ) => {
+      const assistantMessageNumber = nextAssistantMessageNumberRef.current;
+      const assistantMessageId = createAssistantMessageId(assistantMessageNumber);
+
+      nextAssistantMessageNumberRef.current += 2;
+      setIsAssistantResponding(true);
+      pendingAssistantResponseRef.current = {
+        assistantMessageId,
+        stopState: conversationState,
+      };
+      setRepresentativeBookingDraft(options?.bookingDraft ?? null);
+      setMessages((currentMessages) => [
+        ...clearSuggestedReplies(currentMessages),
+        createThinkingAssistantMessage(assistantMessageNumber),
+      ]);
+      streamAssistantTurn(assistantTurn, assistantMessageId);
+
+      return assistantMessageId;
+    },
+    [conversationState, streamAssistantTurn],
+  );
+
   const sendMessage = useCallback(
     (body: string) => {
       const trimmedBody = body.trim();
@@ -827,7 +1017,7 @@ export function AiConciergePanel({
         return null;
       }
 
-      let assistantTurn = getAssistantTurn({
+      let assistantTurn: PendingAssistantTurn = getAssistantTurn({
         contactDetails,
         input: trimmedBody,
         state: conversationState,
@@ -839,6 +1029,7 @@ export function AiConciergePanel({
         })
       ) {
         assistantTurn = createRepresentativeMatchingTurn(conversationState);
+        setRepresentativeBookingDraft(null);
       } else if (
         shouldUseLiveSalesHandoff({
           input: trimmedBody,
@@ -846,12 +1037,22 @@ export function AiConciergePanel({
         })
       ) {
         assistantTurn = createLiveSalesHandoffTurn(conversationState);
+      } else if (
+        shouldShowRepresentativeRecommendationCard({
+          assistantTurn,
+          state: conversationState,
+        })
+      ) {
+        assistantTurn = {
+          ...assistantTurn,
+          artifact: createRepresentativeRecommendationArtifact(),
+        };
       }
+      setIsAssistantResponding(true);
       const assistantMessageNumber = nextAssistantMessageNumberRef.current;
       const assistantMessageId = createAssistantMessageId(assistantMessageNumber);
 
       nextAssistantMessageNumberRef.current += 2;
-      setIsAssistantResponding(true);
       pendingAssistantResponseRef.current = {
         assistantMessageId,
         stopState: conversationState,
@@ -1353,11 +1554,20 @@ export function AiConciergePanel({
     setContactDetails((currentDetails) =>
       mergeMissingContactDetails(currentDetails, PREFILLED_CONTACT_DETAILS),
     );
+    syncPrototypeScenario({
+      authState: "linkedin-connected",
+      entryVariant: prototypeScenario.entryVariant,
+      openingPromptVariant: prototypeScenario.openingPromptVariant,
+    });
     setPanelState("prefill");
   };
 
   const handleGetStarted = () => {
-    setPanelState(isLinkedInConnected ? "prefill" : "manual");
+    setPanelState(
+      isLinkedInConnected || prototypeScenario.authState === "linkedin-connected"
+        ? "prefill"
+        : "manual",
+    );
   };
 
   const handleBackFromDetails = () => {
@@ -1366,13 +1576,19 @@ export function AiConciergePanel({
 
   const handleUseAnotherAccount = () => {
     setIsLinkedInConnected(false);
-    setContactDetails(EMPTY_CONTACT_DETAILS);
+    setContactDetails({ ...EMPTY_CONTACT_DETAILS });
+    syncPrototypeScenario({
+      authState: "signed-out",
+      entryVariant: prototypeScenario.entryVariant,
+      openingPromptVariant: prototypeScenario.openingPromptVariant,
+    });
     setPanelState("manual");
   };
 
   const restartConversation = () => {
     const openingTurn = createOpeningTurn({
       contactDetails,
+      openingPromptVariant: prototypeScenario.openingPromptVariant,
     });
     const openingAssistantMessageNumber = 1;
     const openingAssistantMessageId = createAssistantMessageId(
@@ -1382,14 +1598,7 @@ export function AiConciergePanel({
     closeVoiceMode();
     stopDictationRecognition();
     clearResponseTimers(thinkingTimerRef, streamingTimerRef);
-    if (phoneCallRequestTimerRef.current !== null) {
-      window.clearTimeout(phoneCallRequestTimerRef.current);
-      phoneCallRequestTimerRef.current = null;
-    }
-    if (phoneCallPromptTimerRef.current !== null) {
-      window.clearTimeout(phoneCallPromptTimerRef.current);
-      phoneCallPromptTimerRef.current = null;
-    }
+    clearPhoneCallTimers();
     resetRepresentativeMatchFlow();
     resetLiveSalesChatFlow();
     setComposerDraft("");
@@ -1419,10 +1628,9 @@ export function AiConciergePanel({
     setPanelState("chat");
   };
 
-  const handleRestartConversation = () => {
-    restartConversation();
-    setPanelState("chat");
-  };
+  const handleRestartConversation = useCallback(() => {
+    resetPanelToScenario(prototypeScenario);
+  }, [prototypeScenario, resetPanelToScenario]);
 
   const dismissAvailablePhoneCallPrompt = () => {
     if (phoneCallPromptState !== "available") {
@@ -1455,6 +1663,12 @@ export function AiConciergePanel({
     setFocusComposerSignal((currentValue) => currentValue + 1);
   };
 
+  const handleOpeningPromptInsert = (prompt: string) => {
+    dismissAvailablePhoneCallPrompt();
+    setComposerDraft(prompt);
+    setFocusComposerSignal((currentValue) => currentValue + 1);
+  };
+
   const handleComposerDraftChange = (draft: string) => {
     if (draft.trim().length > 0) {
       dismissAvailablePhoneCallPrompt();
@@ -1462,6 +1676,124 @@ export function AiConciergePanel({
 
     setComposerDraft(draft);
   };
+
+  const handleBookAgain = useCallback(() => {
+    if (
+      !conversationState ||
+      isAssistantResponding ||
+      isLiveAgentReplyPending ||
+      isLiveSalesChatConnecting
+    ) {
+      return;
+    }
+
+    const assistantTurn = createRepresentativeMatchingTurn(conversationState);
+
+    closeVoiceMode();
+    stopDictationRecognition();
+    setDictateStatusMessage(null);
+    setIsMatchedBookingSurfaceVisible(false);
+    setIsRepresentativeReadyBannerVisible(false);
+
+    queueRepresentativeAssistantTurn(assistantTurn, {
+      bookingDraft: createRepresentativeRebookingDraft(
+        representativeBookedSelection,
+      ),
+    });
+  }, [
+    closeVoiceMode,
+    conversationState,
+    isAssistantResponding,
+    isLiveAgentReplyPending,
+    isLiveSalesChatConnecting,
+    queueRepresentativeAssistantTurn,
+    representativeBookedSelection,
+    stopDictationRecognition,
+  ]);
+
+  const handleRecommendationPrimaryAction = useCallback((messageId: string) => {
+    if (
+      !conversationState ||
+      pendingRecommendationMessageId !== null ||
+      isAssistantResponding ||
+      isLiveAgentReplyPending ||
+      isLiveSalesChatConnecting
+    ) {
+      return;
+    }
+
+    const assistantTurn = createRepresentativeMatchingTurn(conversationState);
+
+    clearRecommendationActionTimer();
+    clearRepresentativeMatchTimers();
+    resetLiveSalesChatFlow();
+    closeVoiceMode();
+    stopDictationRecognition();
+    setDictateStatusMessage(null);
+    setIsMatchedBookingSurfaceVisible(false);
+    setIsRepresentativeReadyBannerVisible(false);
+    setRepresentativeBookingDraft(null);
+    setConversationState(assistantTurn.nextState);
+    setPendingRecommendationMessageId(messageId);
+
+    recommendationActionTimerRef.current = window.setTimeout(() => {
+      recommendationActionTimerRef.current = null;
+      setPendingRecommendationMessageId(null);
+      replaceAssistantArtifact(
+        messageId,
+        assistantTurn.artifact ?? createRepresentativeMatchingArtifact(),
+      );
+      startRepresentativeMatchFlow(messageId);
+    }, RECOMMENDATION_ACTION_TRANSITION_MS);
+  }, [
+    clearRecommendationActionTimer,
+    clearRepresentativeMatchTimers,
+    closeVoiceMode,
+    conversationState,
+    isAssistantResponding,
+    isLiveAgentReplyPending,
+    isLiveSalesChatConnecting,
+    pendingRecommendationMessageId,
+    replaceAssistantArtifact,
+    resetLiveSalesChatFlow,
+    startRepresentativeMatchFlow,
+    stopDictationRecognition,
+  ]);
+
+  const handleConfirmMeetingCancellation = useCallback(() => {
+    if (
+      !representativeBookedSelection ||
+      !representativeMatchMessageId ||
+      representativeMatchStatus !== "booked"
+    ) {
+      return;
+    }
+
+    clearMeetingCancelTimer();
+    setIsMeetingCancelSubmitting(true);
+
+    meetingCancelTimerRef.current = window.setTimeout(() => {
+      meetingCancelTimerRef.current = null;
+      setRepresentativeMatchStatus("canceled");
+      updateRepresentativeMatchMessage(representativeMatchMessageId, {
+        meetingDetails: createCanceledRepresentativeMeetingDetails(
+          representativeBookedSelection,
+        ),
+        status: "canceled",
+      });
+      setIsMeetingCancelSubmitting(false);
+      setIsMeetingCancelDialogOpen(false);
+      setIsMatchedBookingSurfaceVisible(false);
+      setIsRepresentativeReadyBannerVisible(false);
+      setThreadScrollSignal((currentValue) => currentValue + 1);
+    }, 700);
+  }, [
+    clearMeetingCancelTimer,
+    representativeBookedSelection,
+    representativeMatchMessageId,
+    representativeMatchStatus,
+    updateRepresentativeMatchMessage,
+  ]);
 
   const handleNextStepConfirmed = (selection: BookingSelection) => {
     const assistantMessageNumber = nextAssistantMessageNumberRef.current;
@@ -1474,6 +1806,7 @@ export function AiConciergePanel({
     clearRepresentativeMatchTimers();
     if (representativeMatchStatus && representativeMatchMessageId) {
       setRepresentativeBookedSelection(selection);
+      setRepresentativeBookingDraft(selection);
       setRepresentativeMatchStatus("booked");
       updateRepresentativeMatchMessage(representativeMatchMessageId, {
         meetingDetails,
@@ -1481,6 +1814,8 @@ export function AiConciergePanel({
       });
       setIsRepresentativeReadyBannerVisible(false);
       setIsMatchedBookingSurfaceVisible(false);
+      setIsMeetingCancelDialogOpen(false);
+      setThreadScrollSignal((currentValue) => currentValue + 1);
       if (!isUpdatingExistingMeeting) {
         setBookingCelebrationTrigger((currentValue) => currentValue + 1);
       }
@@ -1492,6 +1827,7 @@ export function AiConciergePanel({
       ...currentMessages,
       createAssistantMessage(
         confirmationBody,
+        undefined,
         undefined,
         undefined,
         assistantMessageNumber,
@@ -1676,15 +2012,32 @@ export function AiConciergePanel({
                     <div className="hidden min-h-0 border-r border-ai-divider bg-ai-surface-base sm:flex sm:flex-col sm:animate-[ai-concierge-chat-column-in_260ms_ease-out]">
                       <AiConciergeBody
                         messages={messages}
+                        onBookAgain={handleBookAgain}
                         onBookMeeting={openMatchedBookingSurface}
+                        onInsertOpeningPrompt={handleOpeningPromptInsert}
+                        onManageBooking={openMatchedBookingSurface}
+                        onRecommendationPrimaryAction={
+                          handleRecommendationPrimaryAction
+                        }
+                        pendingRecommendationMessageId={
+                          pendingRecommendationMessageId
+                        }
                         onSelectSuggestedReply={handleSuggestedReply}
-                        scrollToLatestSignal={bookingCelebrationTrigger}
+                        scrollToLatestSignal={threadScrollSignal}
                       />
                     </div>
                     <AiConciergeNextStepPanel
+                      bookingMode={
+                        representativeMatchStatus === "booked" ? "manage" : "book"
+                      }
                       contactDetails={contactDetails}
-                      initialSelection={representativeBookedSelection}
+                      initialSelection={representativeBookingDraft}
                       onBackToChat={handleBackToChat}
+                      onCancelMeeting={
+                        representativeMatchStatus === "booked"
+                          ? handleOpenMeetingCancelDialog
+                          : undefined
+                      }
                       onConfirmBooking={handleNextStepConfirmed}
                     />
                   </div>
@@ -1700,12 +2053,21 @@ export function AiConciergePanel({
                       <AiConciergeBody
                         isPanelExpanded={isExpanded}
                         messages={messages}
+                        onBookAgain={handleBookAgain}
                         onBookMeeting={openMatchedBookingSurface}
+                        onInsertOpeningPrompt={handleOpeningPromptInsert}
+                        onManageBooking={openMatchedBookingSurface}
+                        onRecommendationPrimaryAction={
+                          handleRecommendationPrimaryAction
+                        }
+                        pendingRecommendationMessageId={
+                          pendingRecommendationMessageId
+                        }
                         onRepresentativeReadyCardVisibilityChange={
                           setIsRepresentativeReadyCardVisible
                         }
                         onSelectSuggestedReply={handleSuggestedReply}
-                        scrollToLatestSignal={bookingCelebrationTrigger}
+                        scrollToLatestSignal={threadScrollSignal}
                       />
                       {shouldShowPhoneCallPrompt ? (
                         <AiConciergePhoneCallPrompt
@@ -1744,7 +2106,7 @@ export function AiConciergePanel({
                           isLiveAgentReplyPending
                             ? `${LIVE_SALES_REPRESENTATIVE_NAME} is replying...`
                             : isLiveSalesChatConnecting
-                              ? "Connecting to sales..."
+                              ? "Connecting to your account rep..."
                               : "Responding..."
                         }
                         dictateStatusMessage={dictateStatusMessage}
@@ -1771,6 +2133,7 @@ export function AiConciergePanel({
               </div>
             ) : (
               <AiConciergeOnboarding
+                copyVariant={onboardingCopyVariant}
                 details={contactDetails}
                 isPanelExpanded={isExpanded}
                 isValid={isContactDetailsValid}
@@ -1793,6 +2156,13 @@ export function AiConciergePanel({
               onConfirm={handleConfirmPhoneCall}
               onPhoneNumberChange={setPhoneCallNumberDraft}
               phoneNumber={phoneCallNumberDraft}
+            />
+            <AiConciergeMeetingCancelDialog
+              isOpen={isMeetingCancelDialogOpen}
+              isSubmitting={isMeetingCancelSubmitting}
+              onClose={handleCloseMeetingCancelDialog}
+              onConfirm={handleConfirmMeetingCancellation}
+              representativeName={LIVE_SALES_REPRESENTATIVE_NAME}
             />
             <AiConciergeConfettiOverlay trigger={bookingCelebrationTrigger} />
           </section>
@@ -1948,6 +2318,8 @@ function isBookMeetingIntent(input: string) {
   const normalized = input.toLowerCase();
 
   return (
+    normalized.includes("schedule a call") ||
+    normalized.includes("schedule call") ||
     normalized.includes("book meeting") ||
     normalized.includes("book a meeting") ||
     (normalized.includes("book") && normalized.includes("meeting")) ||
@@ -1969,18 +2341,49 @@ function createRepresentativeMatchingTurn(
   state: AiConciergeConversationState,
 ): PendingAssistantTurn {
   return {
-    body: "I'm finding the right representative for your situation now. This usually takes about 1 to 2 minutes, and you can keep exploring while I do that.",
+    body: "I'm working on that now.",
     nextState: {
       ...state,
       nextStepMode: null,
       readiness: "exploring",
       stage: "explore",
     },
-    artifact: {
-      type: "representative-match",
-      status: "matching",
-    },
+    artifact: createRepresentativeMatchingArtifact(),
     postCompleteEffect: "representative-match",
+  };
+}
+
+function createRepresentativeMatchingArtifact(): AiConciergeRepresentativeMatchArtifact {
+  return {
+    bodyText:
+      "This may take up to 3 minutes. You can keep chatting in the meantime.",
+    titleText: "Matching you now...",
+    type: "representative-match",
+    status: "matching",
+  };
+}
+
+function shouldShowRepresentativeRecommendationCard({
+  assistantTurn,
+  state,
+}: {
+  assistantTurn: PendingAssistantTurn;
+  state: AiConciergeConversationState;
+}) {
+  return (
+    !assistantTurn.artifact &&
+    assistantTurn.nextState.stage === "awaiting_handoff_choice" &&
+    assistantTurn.nextState.likelySolution === "recruiter" &&
+    state.likelySolution === "recruiter"
+  );
+}
+
+function createRepresentativeRecommendationArtifact(): AiConciergeRecommendationArtifact {
+  return {
+    bodyText: "First I'll match you with the right one",
+    ctaLabel: "Find my rep",
+    titleText: "Talk to a sales rep",
+    type: "recommendation",
   };
 }
 
@@ -1990,8 +2393,7 @@ function createLiveSalesHandoffTurn(
   return {
     body: "",
     artifact: {
-      bodyText: "This usually takes less than a minute.",
-      titleText: "Connecting you to a sales rep...",
+      titleText: "Connecting you now...",
       type: "representative-match",
       status: "matching",
     },
@@ -2012,8 +2414,35 @@ function createRepresentativeMeetingDetails(
     contactHelperText: formatRepresentativeMeetingContactHelperText(selection),
     dateLabel: formatRepresentativeMeetingDateLabel(selection.dateLabel),
     formatLabel: formatRepresentativeMeetingFormatLabel(selection.formatId),
-    representativeName: "David S.",
+    representativeName: LIVE_SALES_REPRESENTATIVE_NAME,
     timeLabel: formatRepresentativeMeetingTimeLabel(selection.timeLabel),
+  };
+}
+
+function createCanceledRepresentativeMeetingDetails(
+  selection: BookingSelection,
+): RepresentativeMeetingDetails {
+  return {
+    contactHelperText: "You can book another time if you'd like.",
+    dateLabel: formatRepresentativeMeetingDateLabel(selection.dateLabel),
+    formatLabel: formatRepresentativeMeetingFormatLabel(selection.formatId),
+    representativeName: LIVE_SALES_REPRESENTATIVE_NAME,
+    timeLabel: formatRepresentativeMeetingTimeLabel(selection.timeLabel),
+  };
+}
+
+function createRepresentativeRebookingDraft(
+  selection: BookingSelection | null,
+): BookingPanelInitialSelection | null {
+  if (!selection) {
+    return null;
+  }
+
+  return {
+    contactEmail: selection.contactEmail,
+    contactPhoneNumber: selection.contactPhoneNumber,
+    formatId: selection.formatId,
+    note: selection.note,
   };
 }
 
@@ -2130,6 +2559,7 @@ function clearSuggestedReplies(
 
 function createAssistantMessage(
   body: string,
+  openingSupport: AiConciergeMessage["openingSupport"],
   suggestedReplies: AiConciergeSuggestedReply[] | undefined,
   suggestedReplyDisplay: AiConciergeMessage["suggestedReplyDisplay"],
   messageNumber: number,
@@ -2138,6 +2568,7 @@ function createAssistantMessage(
     id: createAssistantMessageId(messageNumber),
     role: "assistant",
     body,
+    openingSupport,
     status: "complete",
     suggestedReplies,
     suggestedReplyDisplay,
@@ -2297,7 +2728,7 @@ function createLiveSalesReplyBody({
     return `Thanks, ${greetingName}. That context helps. I can help you figure out which option is most likely to fit your hiring needs and what the next step should be. What's most important for you to sort out first?`;
   }
 
-  return `Thanks, ${greetingName}. I’ve got the context from the conversation so far. I can help you figure out the right next step and answer any sales questions from here. What would be most helpful to cover first?`;
+  return `Thanks, ${greetingName}. I’ve got the context from the conversation so far. I can help you figure out the right next step and answer any questions about which option fits best from here. What would be most helpful to cover first?`;
 }
 
 function getCurrentTimeLabel() {

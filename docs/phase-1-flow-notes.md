@@ -72,7 +72,7 @@ Suggested direction:
 - `We're not sure which hiring solution fits`
 - `We hire consistently across teams`
 - `We need help with harder-to-fill roles`
-- `We'd like pricing guidance`
+- `We have questions about pricing`
 
 Why this is better:
 - all 4 chips are the same type of input
@@ -112,7 +112,7 @@ Hidden signal:
 Why it matters:
 - this is one of the clearest paths toward proactive sourcing products
 
-### `We'd like pricing guidance`
+### `We have questions about pricing`
 Visible purpose:
 - acknowledge commercial interest
 
@@ -185,7 +185,7 @@ Assistant purpose:
 - connect the challenge to likely-fit solutions
 - then ask which roles are hardest to fill
 
-### If user says `We'd like pricing guidance`
+### If user says `We have questions about pricing`
 Assistant purpose:
 - answer at a high level
 - clarify that pricing depends on context
@@ -252,7 +252,7 @@ Suggested replies:
 - `We're not sure which hiring solution fits`
 - `We hire consistently across teams`
 - `We need help with harder-to-fill roles`
-- `We'd like pricing guidance`
+- `We have questions about pricing`
 
 Visible purpose:
 - orient the user
@@ -342,7 +342,7 @@ Example:
 
 Suggested replies:
 - `Keep exploring`
-- `We'd like pricing guidance`
+- `We have questions about pricing`
 - `Talk to a Recruiter representative`
 
 Visible purpose:
@@ -369,7 +369,7 @@ Assistant purpose:
 - connect the challenge to likely-fit solutions
 - then ask which roles are hardest to fill
 
-### If user says `We'd like pricing guidance`
+### If user says `We have questions about pricing`
 Assistant purpose:
 - answer at a high level
 - explain that pricing depends on context

@@ -47,7 +47,7 @@ What to emphasize:
 
 ## Slide 4: JTBD
 Short version:
-- As a talent acquisition leader, I need to understand which hiring solution best fits my team’s hiring motion so that I can move forward confidently with the right solution and support.
+- As a hiring leader, I’m struggling with hard to fill roles and want to understand what LinkedIn solutions are right for my team.
 
 What to emphasize:
 - this aligns directly to the happy path we built

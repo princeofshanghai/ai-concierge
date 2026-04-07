@@ -26,7 +26,7 @@ function LinkedInIdentityChip({
     `${linkedInIdentity.firstName} ${linkedInIdentity.lastName}`.trim();
 
   return (
-    <div className="flex w-full items-center gap-3 rounded-full border border-ai-divider-subtle bg-transparent px-3 py-2.5">
+    <div className="flex w-full items-center gap-3 rounded-full border border-ai-divider-subtle bg-ai-surface-panel-subtle px-3 py-2.5">
       <Avatar
         decorative
         name={fullName}

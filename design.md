@@ -56,6 +56,14 @@ Good reasons to include it:
 
 If the interface is already understandable without extra copy, leave the extra copy out.
 
+## Confirmation Dialogs
+For AI concierge confirmation dialogs, default to the existing panel typography system:
+
+- dialog title: `ai-type-heading-lg`
+- dialog body copy: `ai-type-body-sm`
+
+This keeps confirmation moments visually lighter than full panel page titles while still feeling clear and intentional.
+
 ## What To Avoid
 Avoid creating new UI by default when the existing system already covers the need.
 

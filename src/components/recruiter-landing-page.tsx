@@ -6,6 +6,10 @@ import recruiterHero from "../../public/figma/recruiter-hero.png";
 import { AiConciergePanel } from "@/components/ai-concierge-panel";
 import { ContactSalesButton } from "@/components/contact-sales-button";
 import { InternalPrototypeNav } from "@/components/internal-prototype-nav";
+import {
+  DEFAULT_PROTOTYPE_SCENARIO,
+  type PrototypeScenario,
+} from "@/lib/prototype-scenario";
 
 const navItems = ["Products", "Compare Products", "Resources & Support"];
 
@@ -13,6 +17,10 @@ export function RecruiterLandingPage() {
   const [isChatMounted, setIsChatMounted] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatExpanded, setIsChatExpanded] = useState(false);
+  const [scenarioResetVersion, setScenarioResetVersion] = useState(0);
+  const [prototypeScenario, setPrototypeScenario] = useState<PrototypeScenario>(
+    DEFAULT_PROTOTYPE_SCENARIO,
+  );
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -34,10 +42,25 @@ export function RecruiterLandingPage() {
     setIsChatExpanded(false);
     setIsChatOpen(false);
   };
+  const handlePrototypeScenarioChange = (nextScenario: PrototypeScenario) => {
+    setPrototypeScenario(nextScenario);
+    setScenarioResetVersion((currentValue) => currentValue + 1);
+  };
+  const handlePrototypeScenarioSync = (nextScenario: PrototypeScenario) => {
+    setPrototypeScenario(nextScenario);
+  };
+  const handlePrototypeScenarioRestart = () => {
+    setScenarioResetVersion((currentValue) => currentValue + 1);
+  };
 
   return (
     <>
-      <InternalPrototypeNav hidden={isChatExpanded} />
+      <InternalPrototypeNav
+        hidden={isChatExpanded}
+        onPrototypeScenarioChange={handlePrototypeScenarioChange}
+        onRestartPrototypeScenario={handlePrototypeScenarioRestart}
+        prototypeScenario={prototypeScenario}
+      />
       <div className="min-h-screen bg-background">
         <header className="border-b border-border-subtle">
           <div className="mx-auto flex h-16 w-full max-w-[1030px] items-center justify-between gap-6 px-6 sm:px-10 lg:px-0">
@@ -112,10 +135,15 @@ export function RecruiterLandingPage() {
 
         {isChatMounted ? (
           <AiConciergePanel
+            // Preserve in-flow panel state (for example, LinkedIn prefill) unless
+            // an explicit scenario reset was requested from the prototype controls.
+            key={scenarioResetVersion}
             isOpen={isChatOpen}
             onClose={closeChat}
             onClosed={() => setIsChatMounted(false)}
             onExpandedChange={setIsChatExpanded}
+            onPrototypeScenarioChange={handlePrototypeScenarioSync}
+            prototypeScenario={prototypeScenario}
           />
         ) : null}
       </div>

@@ -16,6 +16,20 @@ const CONFETTI_COLORS = [
   "#54d2a0",
 ];
 
+const BOOKING_CONFETTI_OPTIONS = {
+  angle: 90,
+  colors: CONFETTI_COLORS,
+  decay: 0.94,
+  disableForReducedMotion: true,
+  gravity: 0.62,
+  origin: { x: 0.5, y: 0.18 },
+  particleCount: 200,
+  scalar: 1.05,
+  spread: 128,
+  startVelocity: 24,
+  ticks: 320,
+} as const;
+
 export function AiConciergeConfettiOverlay({
   trigger,
 }: AiConciergeConfettiOverlayProps) {
@@ -43,55 +57,10 @@ export function AiConciergeConfettiOverlay({
       resize: true,
       useWorker: true,
     });
-
-    const duration = 1200;
-    const animationEnd = Date.now() + duration;
-    const sharedOptions = {
-      colors: CONFETTI_COLORS,
-      gravity: 0.9,
-      scalar: 1,
-      startVelocity: 34,
-      ticks: 220,
-    } as const;
-
-    const interval = window.setInterval(() => {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        window.clearInterval(interval);
-        return;
-      }
-
-      const particleCount = Math.max(
-        14,
-        Math.round(34 * (timeLeft / duration)),
-      );
-
-      fire({
-        ...sharedOptions,
-        angle: 60,
-        origin: { x: 0.04, y: 0.24 },
-        particleCount,
-        spread: 78,
-      });
-      fire({
-        ...sharedOptions,
-        angle: 120,
-        origin: { x: 0.96, y: 0.24 },
-        particleCount,
-        spread: 78,
-      });
-      fire({
-        ...sharedOptions,
-        origin: { x: 0.5, y: 0.12 },
-        particleCount: Math.max(12, Math.round(particleCount * 0.7)),
-        spread: 100,
-        startVelocity: 28,
-      });
-    }, 180);
+    fire(BOOKING_CONFETTI_OPTIONS);
 
     return () => {
-      window.clearInterval(interval);
+      fire.reset();
     };
   }, [trigger]);
 

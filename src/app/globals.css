@@ -503,13 +503,13 @@ button {
   33%,
   61% {
     opacity: 1;
-    transform: translateX(12px);
+    transform: translateX(16px);
     z-index: 2;
   }
   66%,
   94% {
     opacity: 1;
-    transform: translateX(24px);
+    transform: translateX(32px);
     z-index: 3;
   }
   100% {
@@ -523,13 +523,13 @@ button {
   0%,
   28% {
     opacity: 1;
-    transform: translateX(12px);
+    transform: translateX(16px);
     z-index: 2;
   }
   33%,
   61% {
     opacity: 1;
-    transform: translateX(24px);
+    transform: translateX(32px);
     z-index: 3;
   }
   66%,
@@ -540,7 +540,7 @@ button {
   }
   100% {
     opacity: 1;
-    transform: translateX(12px);
+    transform: translateX(16px);
     z-index: 2;
   }
 }
@@ -549,7 +549,7 @@ button {
   0%,
   28% {
     opacity: 1;
-    transform: translateX(24px);
+    transform: translateX(32px);
     z-index: 3;
   }
   33%,
@@ -561,12 +561,12 @@ button {
   66%,
   94% {
     opacity: 1;
-    transform: translateX(12px);
+    transform: translateX(16px);
     z-index: 2;
   }
   100% {
     opacity: 1;
-    transform: translateX(24px);
+    transform: translateX(32px);
     z-index: 3;
   }
 }

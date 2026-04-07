@@ -19,15 +19,19 @@ export type BookingSelection = {
   timeLabel: string;
 };
 
+export type BookingPanelInitialSelection = Partial<BookingSelection>;
+
 type BookingContactDetails = {
   email: string;
   phoneNumber: string;
 };
 
 type AiConciergeNextStepPanelProps = {
+  bookingMode?: "book" | "manage";
   contactDetails: BookingContactDetails;
-  initialSelection?: BookingSelection | null;
+  initialSelection?: BookingPanelInitialSelection | null;
   onBackToChat: () => void;
+  onCancelMeeting?: () => void;
   onConfirmBooking: (selection: BookingSelection) => void;
 };
 
@@ -77,9 +81,11 @@ const BOOKING_FORMAT_OPTIONS: Array<{
 const REPRESENTATIVE_NAME = "David S.";
 
 export function AiConciergeNextStepPanel({
+  bookingMode = "book",
   contactDetails,
   initialSelection = null,
   onBackToChat,
+  onCancelMeeting,
   onConfirmBooking,
 }: AiConciergeNextStepPanelProps) {
   const [selectedDateId, setSelectedDateId] = useState<string | null>(
@@ -169,7 +175,7 @@ export function AiConciergeNextStepPanel({
             <div className="flex flex-col gap-5">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="ai-type-heading-lg text-ai-text-primary">
-                  Book a meeting
+                  {bookingMode === "manage" ? "Manage booking" : "Schedule a call"}
                 </h3>
                 <Tag size="small" tone="supportive1" className="w-fit">
                   <span className="inline-flex items-center gap-1">
@@ -185,7 +191,7 @@ export function AiConciergeNextStepPanel({
                     {REPRESENTATIVE_NAME}
                   </p>
                   <p className="ai-type-body-sm-open mt-1 text-ai-text-meta">
-                    Sales representative
+                    Sales rep
                   </p>
                 </div>
               </div>
@@ -328,8 +334,18 @@ export function AiConciergeNextStepPanel({
                     : "bg-ai-surface-overlay-active text-ai-text-disabled",
                 ].join(" ")}
               >
-                Confirm
+                {bookingMode === "manage" ? "Save changes" : "Confirm"}
               </button>
+              {bookingMode === "manage" && onCancelMeeting ? (
+                <Button
+                  variant="tertiary"
+                  emphasis={false}
+                  onClick={onCancelMeeting}
+                  className="w-fit !px-0 hover:!bg-transparent active:!bg-transparent sm:order-first sm:mr-auto"
+                >
+                  Cancel meeting
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -414,7 +430,7 @@ function EditIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
-function getInitialDateId(selection: BookingSelection | null) {
+function getInitialDateId(selection: BookingPanelInitialSelection | null) {
   if (!selection) {
     return null;
   }

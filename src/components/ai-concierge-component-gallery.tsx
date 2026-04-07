@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { AiConciergeBody, type AiConciergeMessage } from "@/components/ai-concierge-body";
+import {
+  AiConciergeBody,
+  type AiConciergeMessage,
+} from "@/components/ai-concierge-body";
 import { AiConciergeComposer } from "@/components/ai-concierge-composer";
+import { AiConciergeConfettiOverlay } from "@/components/ai-concierge-confetti-overlay";
 import { AiConciergeHeader } from "@/components/ai-concierge-header";
 import { AiConciergeNextStepPanel } from "@/components/ai-concierge-next-step-panel";
 import {
@@ -13,6 +17,7 @@ import {
 } from "@/components/ai-concierge-onboarding";
 import { AiConciergePhoneCallDialog } from "@/components/ai-concierge-phone-call-dialog";
 import { AiConciergePhoneCallPrompt } from "@/components/ai-concierge-phone-call-prompt";
+import { AiConciergeRecommendationCard } from "@/components/ai-concierge-recommendation-card";
 import {
   AiConciergeRepresentativeMatchCard,
   AiConciergeRepresentativeReadyBanner,
@@ -47,6 +52,13 @@ const SAMPLE_LINKEDIN_IDENTITY: LinkedInIdentity = {
   email: SAMPLE_CONTACT_DETAILS.email,
 };
 
+const SAMPLE_RECOMMENDATION_ARTIFACT = {
+  bodyText: "First I'll match you with the right one",
+  ctaLabel: "Find my rep",
+  titleText: "Talk to a sales rep",
+  type: "recommendation" as const,
+};
+
 const SAMPLE_BODY_MESSAGES: AiConciergeMessage[] = [
   {
     id: "assistant-message-1",
@@ -62,12 +74,12 @@ const SAMPLE_BODY_MESSAGES: AiConciergeMessage[] = [
   {
     id: "assistant-message-2",
     role: "assistant",
-    body: "A recruiter solution plus a short conversation with sales could help you move quickly.",
+    body: "Based on what you shared, talking to a sales rep looks like the right next step.",
     status: "complete",
     suggestedReplies: [
       {
         id: "suggested-reply-1",
-        label: "Talk to a sales representative",
+        label: "Talk to a sales rep",
       },
       {
         id: "suggested-reply-2",
@@ -102,6 +114,7 @@ function joinClassNames(
 
 export function AiConciergeComponentGallery() {
   const [composerDraft, setComposerDraft] = useState("");
+  const [confettiPreviewTrigger, setConfettiPreviewTrigger] = useState(0);
   const [phoneNumberDraft, setPhoneNumberDraft] = useState(
     SAMPLE_CONTACT_DETAILS.phoneNumber,
   );
@@ -111,28 +124,27 @@ export function AiConciergeComponentGallery() {
   return (
     <>
       <InternalPrototypeNav />
-      <main className="min-h-screen bg-[linear-gradient(180deg,#f6faff_0%,#ffffff_24%,#ffffff_100%)] px-5 pb-16 pt-24 sm:px-8 lg:px-12">
-        <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-12">
-          <section className="max-w-[880px]">
-            <p className="ai-type-heading-sm text-ai-blue-primary">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#f7fbff_0%,#ffffff_26%,#ffffff_100%)] px-6 pb-24 pt-24 sm:px-8">
+        <div className="mx-auto flex w-full max-w-[920px] flex-col gap-20">
+          <header className="max-w-[720px]">
+            <p className="ai-type-body-xs text-ai-blue-primary">
               Internal reference
             </p>
             <h1 className="ai-type-display-md mt-3 text-ai-text-primary">
               AI Concierge components
             </h1>
-            <p className="ai-type-body-md-open mt-4 max-w-[62ch] text-ai-text-meta">
-              A quick system scan for PM and engineering. This page shows the
-              current export names and representative states without turning the
-              whole review into a card gallery.
+            <p className="ai-type-body-md-open mt-5 text-ai-text-primary">
+              A cleaner review surface for checking individual components,
+              reading hierarchy, and previewing the current handoff moments
+              without digging through the full prototype.
             </p>
-            <p className="ai-type-body-sm-open mt-3 max-w-[62ch] text-ai-text-meta">
-              It is intentionally selective: enough to understand the current
-              surfaces, loading and handoff moments, and how the pieces map back
-              to code.
+            <p className="ai-type-body-sm-open mt-3 text-ai-text-meta">
+              Each component now sits in its own row so it is easier to scan,
+              discuss, and compare states one piece at a time.
             </p>
             <nav
               aria-label="Component gallery sections"
-              className="mt-6 flex flex-wrap gap-x-5 gap-y-2"
+              className="mt-8 flex flex-wrap gap-x-5 gap-y-3"
             >
               <SectionLink href="#full-surfaces">Full surfaces</SectionLink>
               <SectionLink href="#conversation-system">
@@ -143,59 +155,63 @@ export function AiConciergeComponentGallery() {
                 Shared primitives
               </SectionLink>
             </nav>
-          </section>
+          </header>
 
           <GallerySection
             id="full-surfaces"
-            description="The largest pieces that define the overall experience and flow ownership."
-            title="Full surfaces"
+            description="The largest surfaces that define the overall AI Concierge flow."
+            title="Full Surfaces"
           >
-            <GalleryItem
-              description="The fixed overlay container that orchestrates onboarding, chat, voice, phone, booking, and celebration states."
-              details="Best reviewed in context because it owns layout transitions and full-screen behavior."
-              name="AiConciergePanel"
+            <ComponentRow
+              description="The orchestration layer that owns onboarding, chat, matching, booking, voice, and celebration transitions."
+              details="Best reviewed in the main prototype because it coordinates full-screen state changes."
+              title="AiConciergePanel"
             >
-              <div className="flex flex-col gap-4">
-                <p className="ai-type-body-md-open max-w-[62ch] text-ai-text-primary">
-                  This is the composition layer rather than a simple standalone
-                  preview. It pulls together the exports below and handles the
-                  state transitions between them.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "AiConciergeHeader",
-                    "AiConciergeOnboarding",
-                    "AiConciergeBody",
-                    "AiConciergeComposer",
-                    "AiConciergePhoneCallPrompt",
-                    "AiConciergeVoiceDock",
-                    "AiConciergePhoneCallDialog",
-                    "AiConciergeNextStepPanel",
-                    "AiConciergeRepresentativeReadyBanner",
-                    "AiConciergeConfettiOverlay",
-                  ].map((childName) => (
-                    <ComponentNamePill key={childName}>{childName}</ComponentNamePill>
-                  ))}
+              <PreviewSurface label="How to review">
+                <div className="flex flex-col gap-5">
+                  <p className="ai-type-body-sm-open max-w-[60ch] text-ai-text-primary">
+                    This is the composition layer rather than a standalone preview.
+                    It is where the onboarding, conversation, matching, booking,
+                    and phone surfaces all come together.
+                  </p>
+                  <ul className="ai-type-body-sm-open flex list-disc flex-col gap-1 pl-5 text-ai-text-secondary">
+                    {[
+                      "AiConciergeHeader",
+                      "AiConciergeOnboarding",
+                      "AiConciergeBody",
+                      "AiConciergeComposer",
+                      "AiConciergeConfettiOverlay",
+                      "AiConciergePhoneCallPrompt",
+                      "AiConciergeVoiceDock",
+                      "AiConciergePhoneCallDialog",
+                      "AiConciergeNextStepPanel",
+                      "AiConciergeRecommendationCard",
+                      "AiConciergeRepresentativeMatchCard",
+                      "AiConciergeRepresentativeReadyBanner",
+                    ].map((childName) => (
+                      <li key={childName}>{childName}</li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/"
+                    className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+                  >
+                    Open the main prototype route
+                  </Link>
                 </div>
-                <p className="ai-type-body-sm-open text-ai-text-meta">
-                  Responsive note: this is the place where compact chat, expanded
-                  panel, and dual-column booking behavior converge.
-                </p>
-                <Link
-                  href="/"
-                  className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
-                >
-                  Open the main prototype route
-                </Link>
-              </div>
-            </GalleryItem>
+              </PreviewSurface>
+            </ComponentRow>
 
-            <GalleryItem
+            <ComponentRow
               description="Entry flow for welcome, LinkedIn prefill, and manual detail collection."
-              details="Representative state shown: prefill. Other supported modes: welcome and manual."
-              name="AiConciergeOnboarding"
+              details="Preview shown: prefill. Welcome-state copy uses 'sales rep' language."
+              title="AiConciergeOnboarding"
             >
-              <Stage className="overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base">
+              <PreviewSurface
+                className="overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
                 <AiConciergeOnboarding
                   details={onboardingDetails}
                   isValid
@@ -213,15 +229,19 @@ export function AiConciergeComponentGallery() {
                   onStartConversation={() => {}}
                   onUseAnotherAccount={() => {}}
                 />
-              </Stage>
-            </GalleryItem>
+              </PreviewSurface>
+            </ComponentRow>
 
-            <GalleryItem
+            <ComponentRow
               description="Scheduling surface for format selection, slot picking, contact destination, and notes."
-              details="Representative state shown: active scheduling. This is the main post-handoff booking experience."
-              name="AiConciergeNextStepPanel"
+              details="Preview shown: active scheduling."
+              title="AiConciergeNextStepPanel"
             >
-              <Stage className="h-[760px] overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base">
+              <PreviewSurface
+                className="h-[760px] overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
                 <AiConciergeNextStepPanel
                   contactDetails={{
                     email: SAMPLE_CONTACT_DETAILS.email,
@@ -237,262 +257,454 @@ export function AiConciergeComponentGallery() {
                   onBackToChat={() => {}}
                   onConfirmBooking={() => {}}
                 />
-              </Stage>
-            </GalleryItem>
+              </PreviewSurface>
+            </ComponentRow>
           </GallerySection>
 
           <GallerySection
             id="conversation-system"
             description="The pieces that make the core chat feel coherent, responsive, and readable."
-            title="Conversation system"
+            title="Conversation System"
           >
-            <GalleryItem
-              description="The main chat shell as it is typically reviewed together."
-              details="Shows the empty composer state plus inline suggested replies. Thinking, streaming, and voice-active states still live inside these same exports."
-              name="AiConciergeHeader / AiConciergeBody / AiConciergeComposer"
+            <ComponentRow
+              description="Header chrome for close, expand, and phone entry points."
+              details="Preview shown: default chat header."
+              title="AiConciergeHeader"
             >
-              <div className="grid gap-6">
-                <SubcomponentBlock name="AiConciergeHeader">
-                  <Stage className="overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base">
-                    <AiConciergeHeader
-                      isExpanded={false}
-                      liveAgentName="David S."
-                      onClose={() => {}}
-                      onOpenPhoneCall={() => {}}
-                      onToggleExpand={() => {}}
-                    />
-                  </Stage>
-                </SubcomponentBlock>
+              <PreviewSurface
+                className="overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
+                <AiConciergeHeader
+                  isExpanded={false}
+                  liveAgentName="David S."
+                  onClose={() => {}}
+                  onOpenPhoneCall={() => {}}
+                  onToggleExpand={() => {}}
+                />
+              </PreviewSurface>
+            </ComponentRow>
 
-                <SubcomponentBlock name="AiConciergeBody">
-                  <Stage className="h-[520px] overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base">
-                    <AiConciergeBody
-                      messages={SAMPLE_BODY_MESSAGES}
-                      onBookMeeting={() => {}}
-                      onSelectSuggestedReply={() => {}}
-                    />
-                  </Stage>
-                </SubcomponentBlock>
-
-                <SubcomponentBlock name="AiConciergeComposer">
-                  <Stage className="overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base">
-                    <AiConciergeComposer
-                      draft={composerDraft}
-                      onDraftChange={setComposerDraft}
-                      onSend={setComposerDraft}
-                      onStartVoiceMode={() => {}}
-                      onStopResponse={() => {}}
-                      onToggleDictation={() => {}}
-                    />
-                  </Stage>
-                </SubcomponentBlock>
-              </div>
-            </GalleryItem>
-
-            <GalleryItem
-              description="Phone and voice entry points that sit alongside the main chat flow."
-              details="Representative states shown: available and requested phone prompt, open phone dialog, and speaking voice dock. Error and unsupported voice states still exist but are not duplicated here."
-              name="AiConciergePhoneCallPrompt / AiConciergePhoneCallDialog / AiConciergeVoiceDock"
+            <ComponentRow
+              description="Main thread surface for assistant, user, system, and rep messages."
+              details="Preview shown: an in-progress chat with inline reply suggestions."
+              title="AiConciergeBody"
             >
-              <div className="grid gap-6">
-                <SubcomponentBlock name="AiConciergePhoneCallPrompt">
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <Stage className="overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base py-4">
-                      <AiConciergePhoneCallPrompt
-                        onDismiss={() => {}}
-                        onOpenDialog={() => {}}
-                        phoneNumber={SAMPLE_CONTACT_DETAILS.phoneNumber}
-                        state="available"
-                      />
-                    </Stage>
-                    <Stage className="overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base py-4">
-                      <AiConciergePhoneCallPrompt
-                        onDismiss={() => {}}
-                        onOpenDialog={() => {}}
-                        phoneNumber={SAMPLE_CONTACT_DETAILS.phoneNumber}
-                        state="requested"
-                      />
-                    </Stage>
-                  </div>
-                </SubcomponentBlock>
+              <PreviewSurface
+                className="h-[560px] overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
+                <AiConciergeBody
+                  messages={SAMPLE_BODY_MESSAGES}
+                  onBookAgain={() => {}}
+                  onBookMeeting={() => {}}
+                  onManageBooking={() => {}}
+                  onRecommendationPrimaryAction={() => {}}
+                  onSelectSuggestedReply={() => {}}
+                />
+              </PreviewSurface>
+            </ComponentRow>
 
-                <SubcomponentBlock name="AiConciergePhoneCallDialog">
-                  <Stage className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-ai-divider bg-[linear-gradient(180deg,#eff5ff_0%,#ffffff_100%)]">
-                    <AiConciergePhoneCallDialog
-                      isOpen
-                      onClose={() => {}}
-                      onConfirm={() => {}}
-                      onPhoneNumberChange={setPhoneNumberDraft}
-                      phoneNumber={phoneNumberDraft}
-                    />
-                  </Stage>
-                </SubcomponentBlock>
-
-                <SubcomponentBlock name="AiConciergeVoiceDock">
-                  <Stage className="overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base pt-6">
-                    <AiConciergeVoiceDock
-                      assistantCaption="I can compare the fastest path for hiring support and set up a rep conversation when you are ready."
-                      isMuted={false}
-                      onClose={() => {}}
-                      onRetry={() => {}}
-                      onToggleMute={() => {}}
-                      status="speaking"
-                      userCaption="We need to hire quickly across two functions."
-                    />
-                  </Stage>
-                </SubcomponentBlock>
-              </div>
-            </GalleryItem>
-
-            <GalleryItem
-              description="The message-level building blocks used inside the chat thread."
-              details="Representative states shown: complete assistant, user, and live agent. The assistant export also supports thinking and streaming states."
-              name="ChatAssistantMessage / ChatUserMessage / ChatLiveAgentMessage"
+            <ComponentRow
+              description="Composer for typed input, suggested replies, voice mode, and sending messages."
+              details="Preview shown: default empty composer."
+              title="AiConciergeComposer"
             >
-              <div className="grid gap-6">
-                <SubcomponentBlock name="ChatAssistantMessage">
-                  <ChatAssistantMessage body="I can help you compare the right hiring path for your team." />
-                </SubcomponentBlock>
-                <SubcomponentBlock name="ChatUserMessage">
-                  <ChatUserMessage>
-                    We want something that helps us move this quarter, not next
-                    quarter.
-                  </ChatUserMessage>
-                </SubcomponentBlock>
-                <SubcomponentBlock name="ChatLiveAgentMessage">
-                  <ChatLiveAgentMessage
-                    body="I can show you how similar teams usually structure this rollout."
-                    name="David S."
-                    timestampLabel="1:08 PM"
-                  />
-                </SubcomponentBlock>
+              <PreviewSurface
+                className="overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
+                <AiConciergeComposer
+                  draft={composerDraft}
+                  onDraftChange={setComposerDraft}
+                  onSend={() => setComposerDraft("")}
+                  onStartVoiceMode={() => {}}
+                  onStopResponse={() => {}}
+                  onToggleDictation={() => {}}
+                />
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Inline prompt that offers a phone callback as an alternate entry point."
+              details="Preview shown: available and requested states."
+              title="AiConciergePhoneCallPrompt"
+            >
+              <div className="flex flex-col gap-6">
+                <StatePreview label="Available">
+                  <PreviewSurface className="py-4" padded={false}>
+                    <AiConciergePhoneCallPrompt
+                      onDismiss={() => {}}
+                      onOpenDialog={() => {}}
+                      phoneNumber={SAMPLE_CONTACT_DETAILS.phoneNumber}
+                      state="available"
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Requested">
+                  <PreviewSurface className="py-4" padded={false}>
+                    <AiConciergePhoneCallPrompt
+                      onDismiss={() => {}}
+                      onOpenDialog={() => {}}
+                      phoneNumber={SAMPLE_CONTACT_DETAILS.phoneNumber}
+                      state="requested"
+                    />
+                  </PreviewSurface>
+                </StatePreview>
               </div>
-            </GalleryItem>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Dialog used to confirm the number for a callback request."
+              details="Preview shown: open state."
+              title="AiConciergePhoneCallDialog"
+            >
+              <PreviewSurface
+                className="relative min-h-[320px] overflow-hidden bg-[linear-gradient(180deg,#eff5ff_0%,#ffffff_100%)]"
+                label="Preview"
+                padded={false}
+              >
+                <AiConciergePhoneCallDialog
+                  autoFocusInput={false}
+                  isOpen
+                  onClose={() => {}}
+                  onConfirm={() => {}}
+                  onPhoneNumberChange={setPhoneNumberDraft}
+                  phoneNumber={phoneNumberDraft}
+                />
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="The voice mode dock that keeps the live listening and speaking state visible."
+              details="Preview shown: speaking."
+              title="AiConciergeVoiceDock"
+            >
+              <PreviewSurface className="pt-6" label="Preview" padded={false}>
+                <AiConciergeVoiceDock
+                  assistantCaption="I can compare the fastest path for hiring support and set up a sales rep conversation when you are ready."
+                  isMuted={false}
+                  onClose={() => {}}
+                  onRetry={() => {}}
+                  onToggleMute={() => {}}
+                  status="speaking"
+                  userCaption="We need to hire quickly across two functions."
+                />
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Primary assistant message treatment used inside the conversation."
+              details="Preview shown: complete state."
+              title="ChatAssistantMessage"
+            >
+              <PreviewSurface label="Preview">
+                <ChatAssistantMessage body="Based on what you shared, talking to a sales rep looks like the right next step." />
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="User message styling inside the conversation thread."
+              details="Preview shown: standard text message."
+              title="ChatUserMessage"
+            >
+              <PreviewSurface label="Preview">
+                <ChatUserMessage>
+                  We want something that helps us move this quarter, not next
+                  quarter.
+                </ChatUserMessage>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Live sales rep message treatment once a human joins the chat."
+              details="Preview shown: active rep reply."
+              title="ChatLiveAgentMessage"
+            >
+              <PreviewSurface label="Preview">
+                <ChatLiveAgentMessage
+                  body="I can show you how similar teams usually structure this rollout."
+                  name="David S."
+                  timestampLabel="1:08 PM"
+                />
+              </PreviewSurface>
+            </ComponentRow>
           </GallerySection>
 
           <GallerySection
             id="handoff"
-            description="The booking and representative moments that make the transition from AI to human support feel explicit."
+            description="The recommendation, matching, and booking-adjacent moments that bridge from AI guidance to human support."
             title="Handoff"
           >
-            <GalleryItem
-              description="Matching and ready states used during the sales representative transition."
-              details="Representative states shown: matching, ready, booked, plus the banner version that can sit above the thread."
-              name="AiConciergeRepresentativeMatchCard / AiConciergeRepresentativeReadyBanner"
+            <ComponentRow
+              description="The simplified recommendation artifact that turns a smart suggestion into a clear next action."
+              details="Preview shown: current copy and CTA for the matched sales rep flow."
+              title="AiConciergeRecommendationCard"
             >
-              <div className="grid gap-6">
-                <SubcomponentBlock name="AiConciergeRepresentativeMatchCard">
-                  <div className="grid gap-4 xl:grid-cols-3">
+              <PreviewSurface label="Preview">
+                <ChatCardPreview>
+                  <AiConciergeRecommendationCard
+                    artifact={SAMPLE_RECOMMENDATION_ARTIFACT}
+                    onPrimaryAction={() => {}}
+                  />
+                </ChatCardPreview>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="The durable thread-level status card for matching, ready, booked, and canceled states."
+              details="Preview shown: matching, connecting, ready, booked, and canceled states."
+              title="AiConciergeRepresentativeMatchCard"
+            >
+              <div className="flex flex-col gap-6">
+                <StatePreview label="Matching">
+                  <ChatCardPreview>
                     <AiConciergeRepresentativeMatchCard
+                      onBookAgain={() => {}}
                       onBookMeeting={() => {}}
+                      onManageBooking={() => {}}
                       status="matching"
                     />
+                  </ChatCardPreview>
+                </StatePreview>
+                <StatePreview label="Connecting">
+                  <ChatCardPreview>
                     <AiConciergeRepresentativeMatchCard
+                      onBookAgain={() => {}}
                       onBookMeeting={() => {}}
+                      onManageBooking={() => {}}
+                      status="matching"
+                      titleText="Connecting you now..."
+                    />
+                  </ChatCardPreview>
+                </StatePreview>
+                <StatePreview label="Ready">
+                  <ChatCardPreview>
+                    <AiConciergeRepresentativeMatchCard
+                      onBookAgain={() => {}}
+                      onBookMeeting={() => {}}
+                      onManageBooking={() => {}}
                       status="ready"
                     />
+                  </ChatCardPreview>
+                </StatePreview>
+                <StatePreview label="Booked">
+                  <ChatCardPreview>
                     <AiConciergeRepresentativeMatchCard
                       meetingDetails={MATCHED_MEETING_DETAILS}
+                      onBookAgain={() => {}}
                       onBookMeeting={() => {}}
+                      onManageBooking={() => {}}
                       status="booked"
                     />
-                  </div>
-                </SubcomponentBlock>
-
-                <SubcomponentBlock name="AiConciergeRepresentativeReadyBanner">
-                  <Stage className="overflow-hidden rounded-[28px] border border-ai-divider bg-ai-surface-base">
-                    <AiConciergeRepresentativeReadyBanner
+                  </ChatCardPreview>
+                </StatePreview>
+                <StatePreview label="Canceled">
+                  <ChatCardPreview>
+                    <AiConciergeRepresentativeMatchCard
+                      meetingDetails={{
+                        ...MATCHED_MEETING_DETAILS,
+                        contactHelperText:
+                          "You can book another time if you'd like.",
+                      }}
+                      onBookAgain={() => {}}
                       onBookMeeting={() => {}}
-                      onDismiss={() => {}}
+                      onManageBooking={() => {}}
+                      status="canceled"
                     />
-                  </Stage>
-                </SubcomponentBlock>
+                  </ChatCardPreview>
+                </StatePreview>
               </div>
-            </GalleryItem>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Foreground banner that pulls the user back when matching is complete."
+              details="Preview shown: ready state."
+              title="AiConciergeRepresentativeReadyBanner"
+            >
+              <PreviewSurface
+                className="overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
+                <AiConciergeRepresentativeReadyBanner
+                  onBookMeeting={() => {}}
+                  onDismiss={() => {}}
+                />
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Canvas overlay that celebrates a successful booking without interrupting the scheduling flow."
+              details="Preview shown: denser, slower, single-burst celebration. Use Replay to trigger it again."
+              title="AiConciergeConfettiOverlay"
+            >
+              <PreviewSurface
+                className="overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
+                <div className="relative min-h-[240px] bg-[radial-gradient(circle_at_top,#e6f2ff_0%,#f7fbff_40%,#ffffff_100%)] px-6 py-6">
+                  <AiConciergeConfettiOverlay trigger={confettiPreviewTrigger} />
+                  <div className="relative z-10 flex min-h-[192px] flex-col justify-end gap-6 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="max-w-[34ch]">
+                      <p className="ai-type-heading-sm text-ai-text-primary">
+                        Booking celebration
+                      </p>
+                      <p className="ai-type-body-sm-open mt-2 text-ai-text-secondary">
+                        Tuned to a single, fuller burst so the success moment
+                        feels more intentional and less distracting.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() =>
+                        setConfettiPreviewTrigger(
+                          (currentTrigger) => currentTrigger + 1,
+                        )
+                      }
+                    >
+                      Replay celebration
+                    </Button>
+                  </div>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
           </GallerySection>
 
           <GallerySection
             id="shared-primitives"
-            description="Lightweight building blocks reused across onboarding, chat, handoff, and landing page moments."
-            title="Shared primitives"
+            description="The reusable building blocks shared across onboarding, chat, handoff, and landing page moments."
+            title="Shared Primitives"
           >
-            <GalleryItem
-              description="Reusable actions, prompts, and identity cues used throughout the system."
-              details="Utility exports used inside these previews also include Avatar, Tooltip, and PhoneCallIcon."
-              name="Button / IconButton / ChoicePill / Tag / SuggestedActionPrompt / LinkedInIdentityChip / ContactSalesButton"
+            <ComponentRow
+              description="Primary, secondary, tertiary, and compact button treatments."
+              details="Preview shown: common variants."
+              title="Button"
             >
-              <div className="grid gap-6">
-                <SubcomponentBlock name="Button">
-                  <div className="flex flex-wrap gap-3">
-                    <Button>Book meeting</Button>
-                    <Button variant="secondary" emphasis={false}>
-                      Keep exploring
-                    </Button>
-                    <Button variant="tertiary">Learn more</Button>
-                    <Button
-                      size="compact"
-                      leadingVisual={<PhoneCallIcon className="h-4 w-4" />}
-                    >
-                      Continue by phone
-                    </Button>
-                  </div>
-                </SubcomponentBlock>
+              <PreviewSurface label="Preview">
+                <div className="flex flex-wrap gap-3">
+                  <Button>Schedule a call</Button>
+                  <Button variant="secondary" emphasis={false}>
+                    Keep exploring
+                  </Button>
+                  <Button variant="tertiary">Learn more</Button>
+                  <Button
+                    size="compact"
+                    leadingVisual={<PhoneCallIcon className="h-4 w-4" />}
+                  >
+                    Continue by phone
+                  </Button>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
 
-                <SubcomponentBlock name="IconButton">
-                  <div className="flex flex-wrap gap-3">
-                    <IconButton ariaLabel="Phone primary" variant="primary">
-                      <PhoneCallIcon className="h-4 w-4" />
-                    </IconButton>
-                    <IconButton
-                      ariaLabel="Phone secondary"
-                      emphasis={false}
-                      variant="secondary"
-                    >
-                      <PhoneCallIcon className="h-4 w-4" />
-                    </IconButton>
-                    <IconButton
-                      ariaLabel="Phone tertiary"
-                      emphasis={false}
-                      variant="tertiary"
-                    >
-                      <PhoneCallIcon className="h-4 w-4" />
-                    </IconButton>
-                  </div>
-                </SubcomponentBlock>
+            <ComponentRow
+              description="Compact icon-only button treatments used for utility actions."
+              details="Preview shown: primary, secondary, and tertiary."
+              title="IconButton"
+            >
+              <PreviewSurface label="Preview">
+                <div className="flex flex-wrap gap-3">
+                  <IconButton ariaLabel="Phone primary" variant="primary">
+                    <PhoneCallIcon className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton
+                    ariaLabel="Phone secondary"
+                    emphasis={false}
+                    variant="secondary"
+                  >
+                    <PhoneCallIcon className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton
+                    ariaLabel="Phone tertiary"
+                    emphasis={false}
+                    variant="tertiary"
+                  >
+                    <PhoneCallIcon className="h-4 w-4" />
+                  </IconButton>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
 
-                <SubcomponentBlock name="ChoicePill / Tag / SuggestedActionPrompt">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <ChoicePill selected>Tue, Apr 7</ChoicePill>
-                      <ChoicePill>Wed, Apr 8</ChoicePill>
-                      <Tag tone="default">20-minute conversation</Tag>
-                      <Tag tone="supportive1">Representative ready</Tag>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <SuggestedActionPrompt>
-                        We&apos;re not sure which hiring solution fits
-                      </SuggestedActionPrompt>
-                      <SuggestedActionPrompt>
-                        Talk to a sales representative
-                      </SuggestedActionPrompt>
-                    </div>
-                  </div>
-                </SubcomponentBlock>
+            <ComponentRow
+              description="Selection pills used for quick choices like dates, formats, and focus areas."
+              details="Preview shown: selected and unselected."
+              title="ChoicePill"
+            >
+              <PreviewSurface label="Preview">
+                <div className="flex flex-wrap gap-3">
+                  <ChoicePill selected>Tue, Apr 7</ChoicePill>
+                  <ChoicePill>Wed, Apr 8</ChoicePill>
+                  <ChoicePill>Phone call</ChoicePill>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
 
-                <SubcomponentBlock name="LinkedInIdentityChip / ContactSalesButton">
-                  <div className="grid gap-4 lg:grid-cols-[minmax(0,360px)_auto] lg:items-center">
-                    <LinkedInIdentityChip
-                      linkedInIdentity={SAMPLE_LINKEDIN_IDENTITY}
-                      onUseAnotherAccount={() => {}}
-                    />
-                    <div className="flex flex-wrap gap-4">
-                      <ContactSalesButton label="Contact sales" variant="outline" />
-                      <ContactSalesButton label="Ask AI Concierge" />
-                    </div>
-                  </div>
-                </SubcomponentBlock>
-              </div>
-            </GalleryItem>
+            <ComponentRow
+              description="Small metadata tags used for status and compact supporting information."
+              details="Preview shown: default and supportive."
+              title="Tag"
+            >
+              <PreviewSurface label="Preview">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Tag tone="default">30-minute conversation</Tag>
+                  <Tag tone="supportive1">Representative ready</Tag>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Reply chips used to help users start or continue the conversation quickly."
+              details="Preview shown: common prompts."
+              title="SuggestedActionPrompt"
+            >
+              <PreviewSurface label="Preview">
+                <div className="flex flex-wrap gap-2">
+                  <SuggestedActionPrompt>
+                    We&apos;re not sure which hiring solution fits
+                  </SuggestedActionPrompt>
+                  <SuggestedActionPrompt>
+                    Talk to a sales rep
+                  </SuggestedActionPrompt>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Identity chip used during LinkedIn prefill and account confirmation."
+              details="Preview shown: connected identity with subtle gray border and light gray background."
+              title="LinkedInIdentityChip"
+            >
+              <PreviewSurface label="Preview">
+                <LinkedInIdentityChip
+                  linkedInIdentity={SAMPLE_LINKEDIN_IDENTITY}
+                  onUseAnotherAccount={() => {}}
+                />
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Landing-page CTA button used to enter the AI Concierge experience."
+              details="Preview shown: outline and solid variants."
+              title="ContactSalesButton"
+            >
+              <PreviewSurface label="Preview">
+                <div className="flex flex-wrap gap-4">
+                  <ContactSalesButton
+                    label="Contact sales"
+                    onClick={() => {}}
+                    variant="outline"
+                  />
+                  <ContactSalesButton
+                    label="Ask AI Concierge"
+                    onClick={() => {}}
+                  />
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
           </GallerySection>
         </div>
       </main>
@@ -512,84 +724,48 @@ function GallerySection({
   title: string;
 }) {
   return (
-    <section id={id} className="border-t border-ai-divider pt-10">
-      <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <div className="max-w-[240px]">
-          <h2 className="ai-type-heading-xl text-ai-text-primary">{title}</h2>
-          <p className="ai-type-body-sm-open mt-2 text-ai-text-meta">
-            {description}
-          </p>
-        </div>
-        <div className="grid gap-10">{children}</div>
+    <section id={id} className="scroll-mt-28 border-t border-ai-divider pt-14">
+      <div className="max-w-[720px]">
+        <p className="ai-type-body-xs text-ai-text-meta">Section</p>
+        <h2 className="ai-type-heading-xl mt-2 text-ai-text-primary">
+          {title}
+        </h2>
+        <p className="ai-type-body-sm-open mt-3 text-ai-text-meta">
+          {description}
+        </p>
       </div>
+      <div className="mt-8 flex flex-col gap-6">{children}</div>
     </section>
   );
 }
 
-function GalleryItem({
+function ComponentRow({
   children,
   description,
   details,
-  name,
+  title,
 }: {
   children: ReactNode;
   description: string;
   details: string;
-  name: string;
+  title: string;
 }) {
   return (
-    <div className="grid gap-6 border-t border-ai-divider pt-8 first:border-t-0 first:pt-0 xl:grid-cols-[280px_minmax(0,1fr)]">
-      <div className="max-w-[260px]">
-        <ExportName>{name}</ExportName>
-        <p className="ai-type-body-sm-open mt-3 text-ai-text-primary">
-          {description}
-        </p>
-        <p className="ai-type-body-xs mt-3 text-ai-text-meta">{details}</p>
+    <article className="border-t border-ai-divider pt-10 first:border-t-0 first:pt-0">
+      <div className="flex flex-col gap-6">
+        <div className="max-w-[720px]">
+          <p className="ai-type-body-xs text-ai-text-meta">Component</p>
+          <h3 className="ai-type-heading-lg mt-2 text-ai-text-primary">
+            {title}
+          </h3>
+          <p className="ai-type-body-sm-open mt-3 text-ai-text-primary">
+            {description}
+          </p>
+          <p className="ai-type-body-xs mt-3 text-ai-text-meta">{details}</p>
+        </div>
+        <div className="min-w-0">{children}</div>
       </div>
-      <div>{children}</div>
-    </div>
-  );
-}
-
-function SubcomponentBlock({
-  children,
-  name,
-}: {
-  children: ReactNode;
-  name: string;
-}) {
-  return (
-    <div className="grid gap-3">
-      <ExportName className="text-ai-text-secondary">{name}</ExportName>
-      {children}
-    </div>
-  );
-}
-
-function ExportName({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <p
-      className={joinClassNames(
-        "font-mono text-[13px] leading-5 font-semibold tracking-[-0.01em] text-ai-text-primary",
-        className,
-      )}
-    >
-      {children}
-    </p>
-  );
-}
-
-function ComponentNamePill({ children }: { children: ReactNode }) {
-  return (
-    <span className="font-mono text-[12px] leading-none font-semibold text-ai-text-secondary">
-      {children}
-    </span>
+    </article>
   );
 }
 
@@ -603,19 +779,57 @@ function SectionLink({
   return (
     <a
       href={href}
-      className="ai-type-heading-sm text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+      className="ai-type-body-sm-open text-ai-blue-primary underline-offset-4 transition-colors hover:text-ai-blue-hover hover:underline"
     >
       {children}
     </a>
   );
 }
 
-function Stage({
+function PreviewSurface({
   children,
   className,
+  label,
+  padded = true,
 }: {
   children: ReactNode;
   className?: string;
+  label?: string;
+  padded?: boolean;
 }) {
-  return <div className={joinClassNames("w-full", className)}>{children}</div>;
+  return (
+    <div className="flex flex-col gap-3">
+      {label ? (
+        <p className="ai-type-body-xs text-ai-text-meta">{label}</p>
+      ) : null}
+      <div
+        className={joinClassNames(
+          "w-full rounded-[20px] border border-ai-divider bg-ai-surface-base",
+          padded ? "p-6" : "",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function StatePreview({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="ai-type-body-xs text-ai-text-meta">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+function ChatCardPreview({ children }: { children: ReactNode }) {
+  return <div className="max-w-[344px]">{children}</div>;
 }

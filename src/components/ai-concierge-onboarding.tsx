@@ -27,6 +27,7 @@ type ConciergeContactDetails = {
 };
 
 type AiConciergeOnboardingProps = {
+  copyVariant?: "default" | "direct-entry";
   details: ConciergeContactDetails;
   isPanelExpanded?: boolean;
   isValid: boolean;
@@ -61,6 +62,7 @@ function getMissingLinkedInDetails(
 }
 
 function OnboardingDetailsForm({
+  copyVariant = "default",
   details,
   isPanelExpanded = false,
   isValid,
@@ -89,7 +91,12 @@ function OnboardingDetailsForm({
     mode === "manual" ||
     (isPrefill && isEditingPrefillDetails) ||
     (isPrefill && linkedInIdentity === null);
-  const title = isPrefill ? "Confirm details" : "Enter your details";
+  const title = isPrefill ? "Confirm details" : "Confirm details";
+  const shouldShowBackButton = copyVariant !== "direct-entry";
+  const directEntryDescription =
+    copyVariant === "direct-entry" && !isPrefill
+      ? "Before we start, share a few details so I can tailor the conversation and connect you with the right account rep."
+      : null;
 
   return (
     <div className="flex h-full flex-col">
@@ -100,21 +107,23 @@ function OnboardingDetailsForm({
             isPanelExpanded ? "sm:max-w-[448px]" : "",
           ].join(" ")}
         >
-          <button
-            type="button"
-            onClick={onBack}
-            className="ai-type-heading-sm mb-5 inline-flex items-center gap-2 text-ai-text-meta transition-colors hover:text-ai-text-primary"
-          >
-            <Image
-              src="/figma/chat/arrow-left.svg"
-              alt=""
-              width={24}
-              height={24}
-              aria-hidden="true"
-              className="h-6 w-6"
-            />
-            Back
-          </button>
+          {shouldShowBackButton ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="ai-type-heading-sm mb-5 inline-flex items-center gap-2 text-ai-text-meta transition-colors hover:text-ai-text-primary"
+            >
+              <Image
+                src="/figma/chat/arrow-left.svg"
+                alt=""
+                width={24}
+                height={24}
+                aria-hidden="true"
+                className="h-6 w-6"
+              />
+              Back
+            </button>
+          ) : null}
 
           <div
             className={[
@@ -123,6 +132,11 @@ function OnboardingDetailsForm({
             ].join(" ")}
           >
             <h3 className="ai-type-heading-xl text-ai-text-primary">{title}</h3>
+            {directEntryDescription ? (
+              <p className="ai-type-body-md-open mt-3 text-ai-text-primary">
+                {directEntryDescription}
+              </p>
+            ) : null}
           </div>
 
           {mode === "manual" ? (
@@ -443,6 +457,7 @@ function LinkedInLogoIcon() {
 }
 
 export function AiConciergeOnboarding({
+  copyVariant = "default",
   details,
   isPanelExpanded = false,
   isValid,
@@ -461,15 +476,15 @@ export function AiConciergeOnboarding({
         <div className="relative mx-auto flex h-full w-full max-w-[360px] flex-col">
           <div>
             <h3 className="ai-type-display-md text-ai-text-primary">
-              Hire smarter
+              Got hiring questions? Just ask.
             </h3>
             <p className="ai-type-body-md-open mt-4 text-ai-text-primary">
-              Tell us about your hiring needs so we can answer your questions and
-              connect you with the right representative.
+              Chat with our AI to find the right hiring solution for your team,
+              and connect with a sales rep when you&apos;re ready.
             </p>
           </div>
 
-          <div className="mt-auto flex flex-col gap-3 pt-8">
+          <div className="mt-8 flex flex-col gap-3 sm:mt-10">
             <Button fullWidth onClick={onGetStarted}>
               Get started
             </Button>
@@ -480,11 +495,12 @@ export function AiConciergeOnboarding({
   }
 
   return (
-    <OnboardingDetailsForm
-      key={mode}
-      details={details}
-      isPanelExpanded={isPanelExpanded}
-      isValid={isValid}
+      <OnboardingDetailsForm
+        key={mode}
+        copyVariant={copyVariant}
+        details={details}
+        isPanelExpanded={isPanelExpanded}
+        isValid={isValid}
       linkedInIdentity={linkedInIdentity}
       mode={mode}
       onBack={onBack}

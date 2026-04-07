@@ -5,9 +5,9 @@ import { Button } from "@/components/button";
 
 export type RepresentativeMatchStatus =
   | "matching"
-  | "delayed"
   | "ready"
-  | "booked";
+  | "booked"
+  | "canceled";
 
 export type RepresentativeMeetingDetails = {
   contactHelperText?: string;
@@ -28,7 +28,9 @@ export type AiConciergeRepresentativeMatchArtifact = {
 type AiConciergeRepresentativeMatchCardProps = {
   bodyText?: string;
   isPanelExpanded?: boolean;
+  onBookAgain: () => void;
   onBookMeeting: () => void;
+  onManageBooking: () => void;
   meetingDetails?: RepresentativeMeetingDetails;
   status: RepresentativeMatchStatus;
   titleText?: string;
@@ -45,8 +47,11 @@ const MATCHING_AVATAR_SOURCES = [
   AVATAR_FALLBACK_SOURCES[1],
   AVATAR_FALLBACK_SOURCES[2],
 ] as const;
-const MATCH_CARD_BORDER_CLASS = "border-[#BED1FE]";
+const MATCH_CARD_BORDER_CLASS = "border-ai-blue-border-soft";
 const MATCHED_REPRESENTATIVE_NAME = "David S.";
+const DEFAULT_MATCHING_BODY_TEXT =
+  "This may take up to 3 minutes. You can keep chatting in the meantime.";
+const DEFAULT_MATCHING_TITLE_TEXT = "Matching you now...";
 const DEFAULT_BOOKED_MEETING_DETAILS: RepresentativeMeetingDetails = {
   contactHelperText: "We'll send the meeting link shortly.",
   dateLabel: "Tuesday, April 9",
@@ -58,13 +63,16 @@ const DEFAULT_BOOKED_MEETING_DETAILS: RepresentativeMeetingDetails = {
 export function AiConciergeRepresentativeMatchCard({
   bodyText,
   isPanelExpanded = false,
+  onBookAgain,
   onBookMeeting,
+  onManageBooking,
   meetingDetails,
   status,
   titleText,
 }: AiConciergeRepresentativeMatchCardProps) {
   const widthClassName = isPanelExpanded ? "max-w-[344px]" : "max-w-full";
-  const bodyMaxWidthClassName = isPanelExpanded ? "max-w-[312px]" : "max-w-none";
+  const resolvedBodyText =
+    bodyText ?? (titleText ? undefined : DEFAULT_MATCHING_BODY_TEXT);
 
   if (status === "booked") {
     const bookedMeetingDetails = meetingDetails ?? DEFAULT_BOOKED_MEETING_DETAILS;
@@ -79,16 +87,58 @@ export function AiConciergeRepresentativeMatchCard({
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex flex-col items-center gap-3">
             <MatchedRepresentativeAvatar showSuccessBadge size={40} />
-            <h3 className="ai-type-body-md-bold w-full whitespace-nowrap text-ai-text-primary">
-              Meeting booked with {bookedMeetingDetails.representativeName}
-            </h3>
+            <div className="flex flex-col items-center gap-1">
+              <h3 className="ai-type-body-md-bold w-full whitespace-nowrap text-ai-text-primary">
+                Meeting booked with {bookedMeetingDetails.representativeName}
+              </h3>
+              <p className="ai-type-body-sm text-ai-text-primary">
+                {bookedMeetingDetails.dateLabel} at {bookedMeetingDetails.timeLabel}
+              </p>
+            </div>
           </div>
-          <p className="ai-type-body-sm text-ai-text-primary">
-            {bookedMeetingDetails.dateLabel} at {bookedMeetingDetails.timeLabel}
-          </p>
           <p className="ai-type-body-xs text-ai-text-meta">
             {bookedMeetingDetails.contactHelperText}
           </p>
+          <Button
+            onClick={onManageBooking}
+            size="compact"
+            variant="secondary"
+          >
+            Manage booking
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "canceled") {
+    const canceledMeetingDetails = meetingDetails ?? DEFAULT_BOOKED_MEETING_DETAILS;
+
+    return (
+      <div
+        className={[
+          "w-full rounded-[16px] bg-ai-surface-tint px-5 py-4",
+          widthClassName,
+        ].join(" ")}
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <MatchedRepresentativeAvatar size={40} />
+            <h3 className="ai-type-body-md-bold w-full whitespace-nowrap text-ai-text-primary">
+              Meeting canceled with {canceledMeetingDetails.representativeName}
+            </h3>
+          </div>
+          <p className="ai-type-body-xs text-ai-text-meta">
+            {canceledMeetingDetails.contactHelperText ??
+              "You can book another time if you'd like."}
+          </p>
+          <Button
+            onClick={onBookAgain}
+            size="compact"
+            className="w-fit !rounded-[24px]"
+          >
+            Book again
+          </Button>
         </div>
       </div>
     );
@@ -98,15 +148,15 @@ export function AiConciergeRepresentativeMatchCard({
     return (
       <div
         className={[
-          "h-[108px] w-full rounded-[16px] bg-ai-surface-tint pb-5 pl-5 pr-3 pt-4",
+          "w-full rounded-[16px] bg-ai-surface-tint pl-5 pr-3 py-5",
           widthClassName,
         ].join(" ")}
       >
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <MatchedRepresentativeAvatar />
-            <h3 className="ai-type-heading-sm text-ai-text-primary">
-              {MATCHED_REPRESENTATIVE_NAME} has time available
+            <MatchedRepresentativeAvatar size={32} />
+            <h3 className="ai-type-heading-md text-ai-text-primary">
+              {MATCHED_REPRESENTATIVE_NAME} is your sales rep
             </h3>
           </div>
           <Button
@@ -114,7 +164,7 @@ export function AiConciergeRepresentativeMatchCard({
             size="compact"
             className="w-fit !rounded-[24px]"
           >
-            Book meeting
+            Schedule a call
           </Button>
         </div>
       </div>
@@ -124,7 +174,7 @@ export function AiConciergeRepresentativeMatchCard({
   return (
     <div
       className={[
-        "w-full rounded-[16px] border bg-ai-surface-base pl-5 pr-3 py-4",
+        "w-full rounded-[16px] border bg-ai-surface-base pl-5 pr-3 py-5",
         widthClassName,
         MATCH_CARD_BORDER_CLASS,
       ].join(" ")}
@@ -132,18 +182,13 @@ export function AiConciergeRepresentativeMatchCard({
       <div className="flex flex-col gap-1">
         <div className="flex flex-col gap-3">
           <MatchingRepresentativeAvatarStack />
-          <h3 className="ai-type-heading-sm text-ai-text-primary">
-            {titleText ?? "Finding the right sales rep for you..."}
+          <h3 className="ai-type-heading-md text-ai-text-primary">
+            {titleText ?? DEFAULT_MATCHING_TITLE_TEXT}
           </h3>
         </div>
-        {bodyText ? (
-          <p
-            className={[
-              "ai-type-body-xs text-ai-text-meta",
-              bodyMaxWidthClassName,
-            ].join(" ")}
-          >
-            {bodyText}
+        {resolvedBodyText ? (
+          <p className="ai-type-body-sm text-ai-text-meta">
+            {resolvedBodyText}
           </p>
         ) : null}
       </div>
@@ -162,7 +207,7 @@ export function AiConciergeRepresentativeReadyBanner({
       className="w-full animate-[ai-concierge-phone-call-prompt-in_220ms_ease-out_both] motion-reduce:animate-none"
       role="status"
     >
-      <div className="w-full border-b border-ai-divider bg-ai-surface-tint px-4 py-4 sm:px-5">
+      <div className="w-full border-b border-ai-divider bg-ai-surface-tint pl-5 pr-3 py-5">
         <div
           className={[
             "flex w-full gap-3",
@@ -172,15 +217,15 @@ export function AiConciergeRepresentativeReadyBanner({
           ].join(" ")}
         >
           <div className="flex min-w-0 items-center gap-2">
-            <MatchedRepresentativeAvatar />
-            <h3 className="ai-type-heading-sm truncate text-ai-text-primary">
-              {MATCHED_REPRESENTATIVE_NAME} has time available
+            <MatchedRepresentativeAvatar size={28} />
+            <h3 className="ai-type-heading-md truncate text-ai-text-primary">
+              {MATCHED_REPRESENTATIVE_NAME} is your sales rep
             </h3>
           </div>
           <div
             className={[
-              "flex items-center gap-2",
-              isPanelExpanded ? "shrink-0" : "justify-end",
+              "flex w-full items-center gap-2",
+              isPanelExpanded ? "w-auto shrink-0 justify-end" : "justify-end",
             ].join(" ")}
           >
             <Button
@@ -193,7 +238,7 @@ export function AiConciergeRepresentativeReadyBanner({
               Dismiss
             </Button>
             <Button onClick={onBookMeeting} size="compact">
-              Book meeting
+              Schedule a call
             </Button>
           </div>
         </div>
@@ -210,7 +255,7 @@ function MatchingRepresentativeAvatarStack() {
   ] as const;
 
   return (
-    <div className="relative h-5 w-[44px]" aria-hidden="true">
+    <div className="relative h-6 w-14" aria-hidden="true">
       {MATCHING_AVATAR_SOURCES.map((fallbackSrc, index) => (
         <span
           key={fallbackSrc}
@@ -225,7 +270,7 @@ function MatchingRepresentativeAvatarStack() {
           <Avatar
             decorative
             fallbackSrc={fallbackSrc}
-            size={20}
+            size={24}
           />
         </span>
       ))}

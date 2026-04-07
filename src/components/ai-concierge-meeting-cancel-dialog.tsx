@@ -2,30 +2,24 @@
 
 import { useId } from "react";
 import { Button } from "@/components/button";
-import { FormTextField } from "@/components/form-fields";
 
-type AiConciergePhoneCallDialogProps = {
-  autoFocusInput?: boolean;
+type AiConciergeMeetingCancelDialogProps = {
   isOpen: boolean;
   isSubmitting?: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  onPhoneNumberChange: (value: string) => void;
-  phoneNumber: string;
+  representativeName: string;
 };
 
-export function AiConciergePhoneCallDialog({
-  autoFocusInput = true,
+export function AiConciergeMeetingCancelDialog({
   isOpen,
   isSubmitting = false,
   onClose,
   onConfirm,
-  onPhoneNumberChange,
-  phoneNumber,
-}: AiConciergePhoneCallDialogProps) {
+  representativeName,
+}: AiConciergeMeetingCancelDialogProps) {
   const headingId = useId();
   const descriptionId = useId();
-  const isPrimaryDisabled = isSubmitting || phoneNumber.trim().length === 0;
 
   if (!isOpen) {
     return null;
@@ -51,31 +45,23 @@ export function AiConciergePhoneCallDialog({
       >
         <div className="flex items-start justify-between gap-4 px-6 py-6">
           <h3 id={headingId} className="ai-type-heading-lg text-ai-text-primary">
-            Confirm phone number
+            Cancel your meeting with {representativeName}?
           </h3>
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            aria-label="Close phone confirmation"
+            aria-label="Close meeting cancellation"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[16px] text-ai-text-secondary transition-colors hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary disabled:cursor-default disabled:text-ai-text-disabled"
           >
             <CloseIcon />
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 px-6 pb-6">
+        <div className="px-6 pb-6">
           <p id={descriptionId} className="ai-type-body-sm text-ai-text-primary">
-            Our AI will call you at the number below.
+            You can always book another time later.
           </p>
-          <FormTextField
-            autoComplete="tel"
-            autoFocus={autoFocusInput}
-            label="Phone number"
-            type="tel"
-            value={phoneNumber}
-            onValueChange={onPhoneNumberChange}
-          />
         </div>
 
         <div className="border-t border-ai-border-faint px-6 py-4">
@@ -87,14 +73,14 @@ export function AiConciergePhoneCallDialog({
               disabled={isSubmitting}
               onClick={onClose}
             >
-              Cancel
+              Keep meeting
             </Button>
             <Button
               fullWidth
-              disabled={isPrimaryDisabled}
+              disabled={isSubmitting}
               onClick={onConfirm}
             >
-              {isSubmitting ? "Starting call..." : "Call me"}
+              {isSubmitting ? "Canceling..." : "Cancel meeting"}
             </Button>
           </div>
         </div>

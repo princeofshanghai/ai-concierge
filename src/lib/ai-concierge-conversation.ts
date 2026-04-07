@@ -1,5 +1,11 @@
 import type { AiConciergeSuggestedReply } from "@/components/ai-concierge-body";
 import type { ConciergeContactDetails } from "@/components/ai-concierge-onboarding";
+import {
+  OPENING_HELPER_EXAMPLES,
+  OPENING_PROMPT_TOPICS,
+  type AiConciergeOpeningSupport,
+} from "@/lib/ai-concierge-opening-presentation";
+import type { PrototypeScenarioOpeningPromptVariant } from "@/lib/prototype-scenario";
 
 type ConversationStage =
   | "opening"
@@ -64,6 +70,7 @@ export type EntryMode = "manual" | "prefill";
 type AssistantTurn = {
   body: string;
   nextState: AiConciergeConversationState;
+  openingSupport?: AiConciergeOpeningSupport;
   suggestedReplies?: AiConciergeSuggestedReply[];
   suggestedReplyDisplay?: "composer" | "inline";
 };
@@ -79,7 +86,7 @@ const OPENING_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   },
   {
     id: "pricing-guidance",
-    label: "We'd like pricing guidance",
+    label: "We have questions about pricing",
   },
 ];
 
@@ -140,14 +147,14 @@ const RECRUITER_NEXT_STEP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "pricing-details", label: "How is pricing structured?" },
   {
     id: "talk-recruiter-representative",
-    label: "Talk to a sales representative",
+    label: "Talk to a sales rep",
   },
 ];
 
 const GENERAL_NEXT_STEP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "keep-exploring", label: "Keep exploring" },
   { id: "pricing-details", label: "How is pricing structured?" },
-  { id: "talk-hiring-representative", label: "Talk to a sales representative" },
+  { id: "talk-hiring-representative", label: "Talk to a sales rep" },
 ];
 
 const RECRUITER_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
@@ -155,23 +162,23 @@ const RECRUITER_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "worth-it", label: "When is Recruiter worth it?" },
   {
     id: "talk-recruiter-representative",
-    label: "Talk to a sales representative",
+    label: "Talk to a sales rep",
   },
 ];
 
 const GENERAL_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "compare-options", label: "Which option seems closest?" },
   { id: "pricing-details", label: "How is pricing structured?" },
-  { id: "talk-hiring-representative", label: "Talk to a sales representative" },
+  { id: "talk-hiring-representative", label: "Talk to a sales rep" },
 ];
 
 const HANDOFF_BRIDGE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  { id: "book-meeting", label: "Book meeting" },
+  { id: "book-meeting", label: "Schedule a call" },
 ];
 
 const LIVE_HANDOFF_BRIDGE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "chat-live-now", label: "Chat live now" },
-  { id: "book-meeting", label: "Book meeting" },
+  { id: "book-meeting", label: "Schedule a call" },
 ];
 
 const DEFAULT_STATE: AiConciergeConversationState = {
@@ -189,11 +196,39 @@ const DEFAULT_STATE: AiConciergeConversationState = {
 
 export function createOpeningTurn({
   contactDetails,
+  openingPromptVariant,
 }: {
   contactDetails: ConciergeContactDetails;
+  openingPromptVariant: PrototypeScenarioOpeningPromptVariant;
 }): AssistantTurn {
+  const openingBody = `Hi ${contactDetails.firstName}, I can help you explore hiring solutions for ${contactDetails.company}, answer your questions, and point you in the right direction from there.`;
+
+  if (openingPromptVariant === "helper-examples") {
+    return {
+      body: openingBody,
+      nextState: DEFAULT_STATE,
+      openingSupport: {
+        type: "helper-examples",
+        helperText: "Others ask things like:",
+        examples: [...OPENING_HELPER_EXAMPLES],
+      },
+    };
+  }
+
+  if (openingPromptVariant === "topic-picker") {
+    return {
+      body: openingBody,
+      nextState: DEFAULT_STATE,
+      openingSupport: {
+        type: "topic-picker",
+        helperText: "",
+        topics: OPENING_PROMPT_TOPICS,
+      },
+    };
+  }
+
   return {
-    body: `Hi ${contactDetails.firstName}, I can help you explore which hiring solutions fit ${contactDetails.company}, answer your questions, and connect you with a representative if helpful.\n\nHere are a few ways to get started:`,
+    body: `${openingBody}\n\nHere are a few ways to get started:`,
     nextState: DEFAULT_STATE,
     suggestedReplies: OPENING_SUGGESTIONS,
     suggestedReplyDisplay: "inline",
@@ -216,7 +251,7 @@ export function createReturnToChatTurn({
 
   if (state.likelySolution === "lighter_touch") {
     return {
-      body: `No problem. I can keep helping you compare which hiring option could fit ${contactDetails.company} best, and we can revisit the representative option anytime.`,
+      body: `No problem. I can keep helping you compare which hiring option could fit ${contactDetails.company} best, and we can revisit the account rep option anytime.`,
       nextState,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
@@ -224,7 +259,7 @@ export function createReturnToChatTurn({
   }
 
   return {
-    body: `No problem. I can keep helping you understand where Recruiter could fit for ${contactDetails.company}, and we can revisit the representative option anytime.`,
+    body: `No problem. I can keep helping you understand where Recruiter could fit for ${contactDetails.company}, and we can revisit the account rep option anytime.`,
     nextState,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -467,6 +502,19 @@ function createUrgencyResponse(
     urgency,
   });
 
+  if (state.likelySolution === "recruiter") {
+    return {
+      body: `${recommendation}\n\nBased on what you shared, talking to a sales rep looks like the right next step.`,
+      nextState: {
+        ...state,
+        stage: "awaiting_handoff_choice",
+        nextStepMode: null,
+        readiness: "representative",
+        urgency,
+      },
+    };
+  }
+
   return {
     body: `${recommendation}\n\n${createNextStepQuestion(contactDetails.company, state.likelySolution)}`,
     nextState: {
@@ -486,20 +534,22 @@ function createNextStepResponse(
 ): AssistantTurn {
   const normalized = normalizeInput(input);
   const roleClause = createRoleClause(state.hiringSummary);
-  const representativeLabel = "sales representative";
+  const representativeLabel = "sales rep";
 
   if (
     normalized.includes("talk to a") ||
     normalized.includes("specialist") ||
     normalized.includes("representative")
   ) {
+    const shouldUseRecommendationCard = state.likelySolution === "recruiter";
+
     return {
       body:
         state.likelySolution === "lighter_touch"
-          ? `That makes sense. If you'd like, I can connect you with a sales rep here in chat now, or help you book time.`
+          ? `That makes sense. If you'd like, I can connect you with an account rep here in chat now, or help you book time.`
           : state.likelySolution === "recruiter"
-          ? `That makes sense. Based on what you shared, a short conversation with a sales representative could be a useful next step for ${contactDetails.company}.\n\nI can help you book a meeting.`
-          : `That makes sense. A short conversation with a sales representative could help narrow the right option for ${contactDetails.company}.\n\nI can help you book a meeting.`,
+          ? "Based on what you shared, talking to a sales rep looks like the right next step."
+          : `That makes sense. A short conversation with an account rep could help narrow the right option for ${contactDetails.company}.\n\nI can help you book a meeting.`,
       nextState: {
         ...state,
         stage: "awaiting_handoff_choice",
@@ -509,8 +559,15 @@ function createNextStepResponse(
       suggestedReplies:
         state.likelySolution === "lighter_touch"
           ? LIVE_HANDOFF_BRIDGE_SUGGESTIONS
-          : HANDOFF_BRIDGE_SUGGESTIONS,
-      suggestedReplyDisplay: "inline",
+          : shouldUseRecommendationCard
+            ? undefined
+            : HANDOFF_BRIDGE_SUGGESTIONS,
+      suggestedReplyDisplay:
+        state.likelySolution === "lighter_touch"
+          ? "inline"
+          : shouldUseRecommendationCard
+            ? undefined
+            : "inline",
     };
   }
 
@@ -518,7 +575,7 @@ function createNextStepResponse(
     return {
       body:
         state.likelySolution === "recruiter"
-          ? "Pricing usually depends on hiring volume, role complexity, and the level of support your team needs. For teams with broader ongoing or harder-to-fill hiring needs, that is usually where Recruiter becomes easier to justify. If helpful, I can keep helping you gauge fit or connect you with a sales representative for specifics."
+          ? "Pricing usually depends on hiring volume, role complexity, and the level of support your team needs. For teams with broader ongoing or harder-to-fill hiring needs, that is usually where Recruiter becomes easier to justify. If helpful, I can keep helping you gauge fit or connect you with an account rep for specifics."
           : "Pricing usually depends on hiring volume, role complexity, and how much ongoing support the team needs. If your hiring is more occasional, it may make sense to compare a lighter-touch option before jumping into a full proactive sourcing workflow.",
       nextState: {
         ...state,
@@ -601,6 +658,8 @@ function createHandoffChoiceResponse(
   }
 
   if (
+    normalized.includes("schedule a call") ||
+    normalized.includes("schedule call") ||
     normalized.includes("book meeting") ||
     normalized.includes("book a meeting") ||
     (normalized.includes("book") && normalized.includes("meeting")) ||
@@ -609,8 +668,8 @@ function createHandoffChoiceResponse(
     return {
       body:
         state.likelySolution === "lighter_touch"
-          ? `Here are a few times to talk with a sales representative about which option could fit ${contactDetails.company} best.`
-          : `Here are a few times to talk with a sales representative about ${contactDetails.company}.`,
+          ? `Here are a few times to talk with an account rep about which option could fit ${contactDetails.company} best.`
+          : `Here are a few times to talk with an account rep about ${contactDetails.company}.`,
       nextState: {
         ...state,
         stage: "booking_pending",
@@ -621,17 +680,22 @@ function createHandoffChoiceResponse(
 
   if (normalized.includes("phone") || normalized.includes("call")) {
     return {
-      body: "I can help you book a meeting here in chat.",
+      body: "I can help you schedule a call here in chat.",
       nextState: state,
       suggestedReplies: HANDOFF_BRIDGE_SUGGESTIONS,
       suggestedReplyDisplay: "inline",
     };
   }
 
-  return createReturnToChatTurn({
+  return createNextStepResponse(
+    input,
+    {
+      ...state,
+      nextStepMode: null,
+      stage: "explore",
+    },
     contactDetails,
-    state,
-  });
+  );
 }
 
 function determineLikelySolution({

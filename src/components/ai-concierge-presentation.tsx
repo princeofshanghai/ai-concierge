@@ -77,9 +77,9 @@ export function AiConciergePresentation() {
               <h2 className={styles.sectionTitle}>JTBD</h2>
               <div className={styles.jtbd}>
                 <p className={styles.jtbdText}>
-                  As a talent acquisition leader, I need help figuring out
-                  which hiring solution fits my team and whether I should talk
-                  to sales, so I can take the right next step with confidence.
+                  As a hiring leader, I&apos;m struggling with hard to fill
+                  roles and want to understand what LinkedIn solutions are
+                  right for my team.
                 </p>
               </div>
               <p className={styles.note}>then walk through the happy path</p>

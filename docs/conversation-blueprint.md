@@ -86,7 +86,7 @@ They should not:
 Recommended opening suggestions:
 - `We're not sure which hiring solution fits`
 - `We need help with harder-to-fill roles`
-- `We'd like pricing guidance`
+- `We have questions about pricing`
 
 Why these work:
 - they sound like real things a buyer might say
@@ -322,7 +322,7 @@ Why:
 - the user has already supplied a clear pain point that strongly suggests proactive sourcing
 
 ### Path: Pricing guidance
-If the user starts with `We'd like pricing guidance`, the assistant should:
+If the user starts with `We have questions about pricing`, the assistant should:
 - answer pricing at a high level
 - explain that pricing depends on context
 - use the follow-up question to understand fit

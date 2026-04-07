@@ -1,7 +1,12 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
+import { AiConciergeOpeningSupportView } from "@/components/ai-concierge-opening-support";
 import { ChatAssistantMessage } from "@/components/chat-assistant-message";
+import {
+  AiConciergeRecommendationCard,
+  type AiConciergeRecommendationArtifact,
+} from "@/components/ai-concierge-recommendation-card";
 import {
   AiConciergeRepresentativeMatchCard,
   type AiConciergeRepresentativeMatchArtifact,
@@ -9,17 +14,23 @@ import {
 import { ChatLiveAgentMessage } from "@/components/chat-live-agent-message";
 import { ChatUserMessage } from "@/components/chat-user-message";
 import { SuggestedActionPrompt } from "@/components/suggested-action-prompt";
+import type { AiConciergeOpeningSupport } from "@/lib/ai-concierge-opening-presentation";
 
 export type AiConciergeSuggestedReply = {
   id: string;
   label: string;
 };
 
+export type AiConciergeMessageArtifact =
+  | AiConciergeRecommendationArtifact
+  | AiConciergeRepresentativeMatchArtifact;
+
 export type AiConciergeMessage = {
   agentName?: string;
-  artifact?: AiConciergeRepresentativeMatchArtifact;
+  artifact?: AiConciergeMessageArtifact;
   body: string;
   id: string;
+  openingSupport?: AiConciergeOpeningSupport;
   role: "agent" | "assistant" | "system" | "user";
   status?: "complete" | "streaming" | "thinking";
   suggestedReplies?: AiConciergeSuggestedReply[];
@@ -30,7 +41,12 @@ export type AiConciergeMessage = {
 type AiConciergeBodyProps = {
   isPanelExpanded?: boolean;
   messages: AiConciergeMessage[];
+  onBookAgain: () => void;
   onBookMeeting: () => void;
+  onInsertOpeningPrompt?: (prompt: string) => void;
+  onManageBooking: () => void;
+  onRecommendationPrimaryAction: (messageId: string) => void;
+  pendingRecommendationMessageId?: string | null;
   onRepresentativeReadyCardVisibilityChange?: (
     isVisible: boolean | null,
   ) => void;
@@ -41,7 +57,12 @@ type AiConciergeBodyProps = {
 export function AiConciergeBody({
   isPanelExpanded = false,
   messages,
+  onBookAgain,
   onBookMeeting,
+  onInsertOpeningPrompt = () => {},
+  onManageBooking,
+  onRecommendationPrimaryAction,
+  pendingRecommendationMessageId = null,
   onRepresentativeReadyCardVisibilityChange,
   onSelectSuggestedReply,
   scrollToLatestSignal = 0,
@@ -203,6 +224,12 @@ export function AiConciergeBody({
                       status={message.status}
                     />
                   ) : null}
+                  {message.status === "complete" && message.openingSupport ? (
+                    <AiConciergeOpeningSupportView
+                      onInsertPrompt={onInsertOpeningPrompt}
+                      support={message.openingSupport}
+                    />
+                  ) : null}
                   {message.status === "complete" &&
                   message.artifact?.type === "representative-match" ? (
                     <div
@@ -216,11 +243,26 @@ export function AiConciergeBody({
                         bodyText={message.artifact.bodyText}
                         isPanelExpanded={isPanelExpanded}
                         meetingDetails={message.artifact.meetingDetails}
+                        onBookAgain={onBookAgain}
                         onBookMeeting={onBookMeeting}
+                        onManageBooking={onManageBooking}
                         status={message.artifact.status}
                         titleText={message.artifact.titleText}
                       />
                     </div>
+                  ) : null}
+                  {message.status === "complete" &&
+                  message.artifact?.type === "recommendation" ? (
+                    <AiConciergeRecommendationCard
+                      artifact={message.artifact}
+                      isPanelExpanded={isPanelExpanded}
+                      isPrimaryActionPending={
+                        message.id === pendingRecommendationMessageId
+                      }
+                      onPrimaryAction={() =>
+                        onRecommendationPrimaryAction(message.id)
+                      }
+                    />
                   ) : null}
                   {message.status === "complete" &&
                   message.suggestedReplies?.length &&

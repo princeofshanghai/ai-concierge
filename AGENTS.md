@@ -34,6 +34,10 @@ Prefer incremental changes over sweeping rewrites.
 
 Reuse existing components and patterns before creating new ones.
 
+Whenever a component is added or updated, update the AI Concierge component gallery route (`/internal/ai-concierge-components`) in the same work so documented examples stay current. The canonical files are `src/app/internal/ai-concierge-components/page.tsx` and `src/components/ai-concierge-component-gallery.tsx`.
+
+If a component change is shipped without a gallery update, explicitly call out that gap, which gallery files were intentionally left unchanged, and why.
+
 ## UX Expectations
 
 Call out impact on:

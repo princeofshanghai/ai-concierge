@@ -16,11 +16,14 @@ It is not part of the intended customer-facing experience.
 - shell UI should look clearly different from the actual product UI
 - shell UI should help the viewer, not compete with the main experience
 - shell UI should be collapsible or hideable
+- shell UI should stay above product layers when needed, without blocking core interactions
 - shell UI should use consistent patterns across the prototype
 - shell UI should scale beyond one-off controls
 
 ## Approved Patterns
 
+- a unified utility bar for internal context, navigation, and scenario controls
+- a floating launcher that opens a side drawer for internal context, navigation, and scenario controls
 - view switchers
 - logged-in and logged-out state toggles
 - notes and annotations
@@ -34,6 +37,11 @@ It is not part of the intended customer-facing experience.
 - prefer reusable shell components over one-off controls
 - prefer URL-driven state when practical so specific prototype states can be shared and revisited
 - keep shell concerns separate from the actual product experience
+- model scenario setup as separate axes when they represent different concerns
+- current shell scenario model for AI Concierge:
+  - `authState`: `signed-out` or `linkedin-connected`
+  - `entryVariant`: `welcome-first` or `confirm-details-first`
+- changing scenario controls should reset into the selected setup rather than live-mutate an in-progress chat
 
 ## Starter Library
 
@@ -47,10 +55,18 @@ Start with these reusable primitives:
 
 - shell card
 - shell micro label
+- shell helper text
+- shell stack / toolbar / group layout primitives
 - shell chip row
 - shell chip / link chip
 - shell action button
 - composed switcher
+
+Recommended structure:
+
+- shell launcher: fixed trigger that stays visible above the prototype shell layer
+- shell utility drawer: internal-only context, navigation, scenario selectors, reset action
+- page or panel surface: actual prototype experience
 
 When adding shell features later:
 
@@ -72,5 +88,6 @@ When adding shell features later:
 
 - shell UI that looks like shipped product UI
 - shell UI that is always visible by default when it does not need to be
+- shell UI that sits underneath overlays or gets blocked by the prototype itself
 - shell UI that is implemented differently on every page
 - shell UI that adds clutter without helping tell the story
