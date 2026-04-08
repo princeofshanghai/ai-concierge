@@ -14,6 +14,7 @@ import {
   getPrototypeScenarioOpeningPromptLabel,
   type PrototypeScenario,
 } from "@/lib/prototype-scenario";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 type InternalPrototypeNavProps = {
   hidden?: boolean;
@@ -58,19 +59,12 @@ export function InternalPrototypeNav({
     prototypeScenario !== undefined &&
     onPrototypeScenarioChange !== undefined &&
     onRestartPrototypeScenario !== undefined;
+  useBodyScrollLock(isDrawerOpen);
 
   useEffect(() => {
-    if (!isDrawerOpen) {
-      return;
+    if (isDrawerOpen) {
+      closeButtonRef.current?.focus();
     }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
   }, [isDrawerOpen]);
 
   useEffect(() => {

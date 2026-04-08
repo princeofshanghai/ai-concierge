@@ -1,12 +1,5 @@
 import { Button } from "@/components/button";
-
-export type AiConciergeRecommendationArtifact = {
-  bodyText: string;
-  ctaLabel: string;
-  metaText?: string;
-  titleText: string;
-  type: "recommendation";
-};
+import type { AiConciergeRecommendationArtifact } from "@/lib/ai-concierge-types";
 
 type AiConciergeRecommendationCardProps = {
   artifact: AiConciergeRecommendationArtifact;
@@ -54,3 +47,5 @@ export function AiConciergeRecommendationCard({
     </div>
   );
 }
+
+export type { AiConciergeRecommendationArtifact } from "@/lib/ai-concierge-types";

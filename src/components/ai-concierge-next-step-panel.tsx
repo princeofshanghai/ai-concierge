@@ -7,19 +7,12 @@ import { Button } from "@/components/button";
 import { ChoicePill } from "@/components/choice-pill";
 import { FormTextField } from "@/components/form-fields";
 import { Tag } from "@/components/tag";
-
-export type BookingFormat = "video" | "phone" | "whatsapp";
-
-export type BookingSelection = {
-  contactEmail?: string;
-  contactPhoneNumber?: string;
-  dateLabel: string;
-  formatId: BookingFormat;
-  note?: string;
-  timeLabel: string;
-};
-
-export type BookingPanelInitialSelection = Partial<BookingSelection>;
+import { DEFAULT_REPRESENTATIVE_NAME } from "@/lib/ai-concierge-fixtures";
+import type {
+  BookingFormat,
+  BookingPanelInitialSelection,
+  BookingSelection,
+} from "@/lib/ai-concierge-types";
 
 type BookingContactDetails = {
   email: string;
@@ -77,8 +70,6 @@ const BOOKING_FORMAT_OPTIONS: Array<{
   { id: "phone", label: "Phone call" },
   { id: "whatsapp", label: "WhatsApp call" },
 ];
-
-const REPRESENTATIVE_NAME = "David S.";
 
 export function AiConciergeNextStepPanel({
   bookingMode = "book",
@@ -188,7 +179,7 @@ export function AiConciergeNextStepPanel({
                 <RepresentativeAvatar />
                 <div className="min-w-0">
                   <p className="ai-type-body-md-bold text-ai-text-primary">
-                    {REPRESENTATIVE_NAME}
+                    {DEFAULT_REPRESENTATIVE_NAME}
                   </p>
                   <p className="ai-type-body-sm-open mt-1 text-ai-text-meta">
                     Sales rep
@@ -307,7 +298,7 @@ export function AiConciergeNextStepPanel({
 
             <label className="flex flex-col gap-2">
               <span className="ai-type-heading-sm text-ai-text-secondary">
-                Anything you&apos;d like {REPRESENTATIVE_NAME} to know?
+                Anything you&apos;d like {DEFAULT_REPRESENTATIVE_NAME} to know?
               </span>
               <textarea
                 value={noteDraft}
@@ -359,12 +350,18 @@ function RepresentativeAvatar() {
     <Avatar
       decorative
       fallbackSrc={AVATAR_FALLBACK_SOURCES[0]}
-      name={REPRESENTATIVE_NAME}
+      name={DEFAULT_REPRESENTATIVE_NAME}
       seed="matched-representative"
       size={40}
     />
   );
 }
+
+export type {
+  BookingFormat,
+  BookingPanelInitialSelection,
+  BookingSelection,
+} from "@/lib/ai-concierge-types";
 
 function BookingSection({
   children,

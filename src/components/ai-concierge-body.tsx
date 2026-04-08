@@ -3,42 +3,19 @@
 import { useLayoutEffect, useRef } from "react";
 import { AiConciergeOpeningSupportView } from "@/components/ai-concierge-opening-support";
 import { ChatAssistantMessage } from "@/components/chat-assistant-message";
-import {
-  AiConciergeRecommendationCard,
-  type AiConciergeRecommendationArtifact,
-} from "@/components/ai-concierge-recommendation-card";
-import {
-  AiConciergeRepresentativeMatchCard,
-  type AiConciergeRepresentativeMatchArtifact,
-} from "@/components/ai-concierge-representative-booking";
+import { AiConciergeRecommendationCard } from "@/components/ai-concierge-recommendation-card";
+import { AiConciergeRepresentativeMatchCard } from "@/components/ai-concierge-representative-booking";
 import { ChatLiveAgentMessage } from "@/components/chat-live-agent-message";
 import { ChatUserMessage } from "@/components/chat-user-message";
 import { SuggestedActionPrompt } from "@/components/suggested-action-prompt";
-import type { AiConciergeOpeningSupport } from "@/lib/ai-concierge-opening-presentation";
-
-export type AiConciergeSuggestedReply = {
-  id: string;
-  label: string;
-};
-
-export type AiConciergeMessageArtifact =
-  | AiConciergeRecommendationArtifact
-  | AiConciergeRepresentativeMatchArtifact;
-
-export type AiConciergeMessage = {
-  agentName?: string;
-  artifact?: AiConciergeMessageArtifact;
-  body: string;
-  id: string;
-  openingSupport?: AiConciergeOpeningSupport;
-  role: "agent" | "assistant" | "system" | "user";
-  status?: "complete" | "streaming" | "thinking";
-  suggestedReplies?: AiConciergeSuggestedReply[];
-  suggestedReplyDisplay?: "composer" | "inline";
-  timestampLabel?: string;
-};
+import type {
+  AiConciergeMessage,
+  AiConciergeSuggestedReply,
+} from "@/lib/ai-concierge-types";
 
 type AiConciergeBodyProps = {
+  activeVoiceAssistantMessageId?: string | null;
+  isVoiceModeActive?: boolean;
   isPanelExpanded?: boolean;
   messages: AiConciergeMessage[];
   onBookAgain: () => void;
@@ -55,6 +32,8 @@ type AiConciergeBodyProps = {
 };
 
 export function AiConciergeBody({
+  activeVoiceAssistantMessageId = null,
+  isVoiceModeActive = false,
   isPanelExpanded = false,
   messages,
   onBookAgain,
@@ -72,6 +51,7 @@ export function AiConciergeBody({
   const readyRepresentativeCardRef = useRef<HTMLDivElement | null>(null);
   const previousMessageCountRef = useRef(0);
   let latestReadyRepresentativeMessageId: string | null = null;
+  const visibleMessages = messages;
 
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     const scrollContainer = scrollContainerRef.current;
@@ -86,8 +66,8 @@ export function AiConciergeBody({
     });
   };
 
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
+  for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
+    const message = visibleMessages[index];
 
     if (
       message.role === "assistant" &&
@@ -103,11 +83,11 @@ export function AiConciergeBody({
   useLayoutEffect(() => {
     const shouldSmoothScroll =
       previousMessageCountRef.current > 0 &&
-      messages.length > previousMessageCountRef.current;
+      visibleMessages.length > previousMessageCountRef.current;
 
     scrollToBottom(shouldSmoothScroll ? "smooth" : "auto");
-    previousMessageCountRef.current = messages.length;
-  }, [messages]);
+    previousMessageCountRef.current = visibleMessages.length;
+  }, [visibleMessages]);
 
   useLayoutEffect(() => {
     if (scrollToLatestSignal === 0) {
@@ -202,11 +182,13 @@ export function AiConciergeBody({
             isPanelExpanded ? "max-w-[720px]" : "max-w-full",
           ].join(" ")}
         >
-          <p className="ai-type-body-xs text-center text-ai-text-meta">
-            Today 1:00 PM
-          </p>
-          <div className="mt-5 flex flex-col gap-4">
-            {messages.map((message) =>
+          {visibleMessages.length > 0 ? (
+            <p className="ai-type-body-xs text-center text-ai-text-meta">
+              Today 1:00 PM
+            </p>
+          ) : null}
+          <div className={[visibleMessages.length > 0 ? "mt-5" : "", "flex flex-col gap-4"].join(" ")}>
+            {visibleMessages.map((message) =>
               message.role === "assistant" ? (
                 <div
                   key={message.id}
@@ -216,6 +198,10 @@ export function AiConciergeBody({
                     <ChatAssistantMessage
                       body={message.body}
                       className={isPanelExpanded ? "max-w-[680px]" : ""}
+                      isActiveVoiceTurn={
+                        message.status === "complete" &&
+                        message.id === activeVoiceAssistantMessageId
+                      }
                       showArrivalAnimation={
                         messages.length === 1 &&
                         message.id === "assistant-message-1" &&
@@ -224,7 +210,9 @@ export function AiConciergeBody({
                       status={message.status}
                     />
                   ) : null}
-                  {message.status === "complete" && message.openingSupport ? (
+                  {message.status === "complete" &&
+                  message.openingSupport &&
+                  !isVoiceModeActive ? (
                     <AiConciergeOpeningSupportView
                       onInsertPrompt={onInsertOpeningPrompt}
                       support={message.openingSupport}
@@ -266,7 +254,8 @@ export function AiConciergeBody({
                   ) : null}
                   {message.status === "complete" &&
                   message.suggestedReplies?.length &&
-                  message.suggestedReplyDisplay === "inline" ? (
+                  message.suggestedReplyDisplay === "inline" &&
+                  !isVoiceModeActive ? (
                     <div className="flex flex-wrap gap-2 animate-[ai-concierge-suggested-replies-in_220ms_ease-out_both] motion-reduce:animate-none">
                       {message.suggestedReplies.map((suggestedReply) => (
                         <SuggestedActionPrompt
@@ -314,3 +303,5 @@ export function AiConciergeBody({
     </div>
   );
 }
+
+export type { AiConciergeMessage, AiConciergeSuggestedReply };

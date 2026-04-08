@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import recruiterHero from "../../public/figma/recruiter-hero.png";
 import { AiConciergePanel } from "@/components/ai-concierge-panel";
@@ -10,6 +10,7 @@ import {
   DEFAULT_PROTOTYPE_SCENARIO,
   type PrototypeScenario,
 } from "@/lib/prototype-scenario";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 const navItems = ["Products", "Compare Products", "Resources & Support"];
 
@@ -21,18 +22,7 @@ export function RecruiterLandingPage() {
   const [prototypeScenario, setPrototypeScenario] = useState<PrototypeScenario>(
     DEFAULT_PROTOTYPE_SCENARIO,
   );
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-
-    if (isChatMounted) {
-      document.body.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isChatMounted]);
+  useBodyScrollLock(isChatMounted);
 
   const openChat = () => {
     setIsChatMounted(true);

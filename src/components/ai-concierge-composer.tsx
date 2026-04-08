@@ -9,7 +9,6 @@ type AiConciergeComposerProps = {
   disabledPlaceholder?: string;
   disabled?: boolean;
   draft: string;
-  dictateStatusMessage?: string | null;
   focusComposerSignal?: number;
   isDictating?: boolean;
   isPanelExpanded?: boolean;
@@ -60,10 +59,64 @@ function StopIcon() {
         y="1"
         width="10"
         height="10"
-        rx="2"
+        rx="1.5"
         fill="currentColor"
       />
     </svg>
+  );
+}
+
+function StopSpinnerIcon() {
+  return (
+    <span className="relative inline-flex h-7 w-7 items-center justify-center">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        className="ai-concierge-stop-answering-spinner absolute inset-0 h-full w-full"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="9.5"
+          className="ai-concierge-stop-answering-spinner__arc"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="14 46"
+          opacity="0.95"
+        />
+      </svg>
+      <span className="relative z-10 inline-flex h-3 w-3 items-center justify-center">
+        <StopIcon />
+      </span>
+    </span>
+  );
+}
+
+function ComposerRespondingState({
+  onStopResponse,
+}: {
+  onStopResponse: () => void;
+}) {
+  return (
+    <div className="flex w-full items-center justify-end">
+      <div className="flex min-w-0 items-center justify-end gap-2">
+        <span className="ai-type-body-md-open min-w-0 truncate text-right text-ai-text-primary">
+          Stop answering
+        </span>
+        <IconButton
+          ariaLabel="Stop response"
+          onClick={onStopResponse}
+          size="small"
+          variant="tertiary"
+          className="h-8 w-8 rounded-full border-transparent bg-transparent p-0 text-ai-text-primary hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary active:bg-ai-surface-overlay-active active:text-ai-text-primary"
+          iconClassName="h-7 w-7"
+        >
+          <StopSpinnerIcon />
+        </IconButton>
+      </div>
+    </div>
   );
 }
 
@@ -153,35 +206,16 @@ function ComposerIconButton({
 function ComposerPrimaryActionButton({
   disabled,
   hasText,
-  isResponding,
   onSend,
-  onStopResponse,
   onStartVoiceMode,
   showVoiceModeAction,
 }: {
   disabled: boolean;
   hasText: boolean;
-  isResponding: boolean;
   onSend: () => void;
-  onStopResponse: () => void;
   onStartVoiceMode: () => void;
   showVoiceModeAction: boolean;
 }) {
-  if (isResponding) {
-    return (
-      <IconButton
-        ariaLabel="Stop response"
-        onClick={onStopResponse}
-        size="small"
-        variant="tertiary"
-        className="h-8 w-8 rounded-full border-transparent bg-ai-surface-overlay-soft text-ai-text-secondary hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary active:bg-ai-surface-overlay-active active:text-ai-text-primary"
-        iconClassName="h-3 w-3"
-      >
-        <StopIcon />
-      </IconButton>
-    );
-  }
-
   if (hasText) {
     return <ComposerSendButton disabled={disabled} onClick={onSend} />;
   }
@@ -210,7 +244,6 @@ export function AiConciergeComposer({
   disabledPlaceholder = "Responding...",
   disabled = false,
   draft,
-  dictateStatusMessage = null,
   focusComposerSignal = 0,
   isDictating = false,
   isPanelExpanded = false,
@@ -228,6 +261,9 @@ export function AiConciergeComposer({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const previousFocusComposerSignalRef = useRef(focusComposerSignal);
   const hasText = draft.trim().length > 0;
+  const isShowingRespondingState = isResponding;
+  const isComposerExpanded = isShowingRespondingState ? false : isExpanded;
+  const isComposerFocused = isShowingRespondingState ? false : isFocused;
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
@@ -243,7 +279,7 @@ export function AiConciergeComposer({
       return;
     }
 
-    if (!isExpanded) {
+    if (!isComposerExpanded) {
       textarea.style.height = `${TEXTAREA_LINE_HEIGHT}px`;
       textarea.style.overflowY = "hidden";
       return;
@@ -254,7 +290,7 @@ export function AiConciergeComposer({
     textarea.style.height = `${Math.max(nextHeight, TEXTAREA_LINE_HEIGHT)}px`;
     textarea.style.overflowY =
       textarea.scrollHeight > maxHeight ? "auto" : "hidden";
-  }, [draft, hasText, isExpanded]);
+  }, [draft, hasText, isComposerExpanded]);
 
   useLayoutEffect(() => {
     if (focusComposerSignal === previousFocusComposerSignalRef.current) {
@@ -293,7 +329,7 @@ export function AiConciergeComposer({
 
     onSend(trimmedDraft);
     onDraftChange("");
-    setIsFocused(true);
+    setIsFocused(false);
     setIsExpanded(false);
     requestAnimationFrame(() => textareaRef.current?.focus());
   };
@@ -336,61 +372,63 @@ export function AiConciergeComposer({
           <div
             className={[
               "border bg-ai-surface-base px-3 py-3 transition-[border-radius,border-color,box-shadow] duration-150",
-              isExpanded
-                ? "rounded-[24px] border-ai-border-strong"
-                : isFocused
+              isShowingRespondingState
+                ? "rounded-full border-ai-border-faint"
+                : isComposerExpanded
+                  ? "rounded-[24px] border-ai-border-strong"
+                  : isComposerFocused
                   ? "rounded-full border-ai-border-focus"
                   : "rounded-full border-ai-border-faint",
             ].join(" ")}
           >
-            <div
-              className={[
-                "flex",
-                isExpanded ? "flex-col gap-2" : "items-center gap-4",
-              ].join(" ")}
-            >
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                disabled={disabled}
-                value={draft}
-                onChange={(event) =>
-                  handleDraftChange(event.target.value, event.currentTarget)
-                }
-                onFocus={() => {
-                  setIsFocused(true);
-                }}
-                onBlur={() => {
-                  setIsFocused(false);
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  disabled
-                    ? disabledPlaceholder
-                    : dictateStatusMessage && !draft.trim().length
-                      ? dictateStatusMessage
-                      : isDictating
-                        ? "Listening..."
-                        : isFocused
-                          ? ""
-                          : idlePlaceholder
-                }
-                aria-label="Message"
-                className={[
-                  "ai-type-body-md-open w-full resize-none bg-transparent text-ai-text-primary outline-none",
-                  disabled
-                    ? "cursor-not-allowed placeholder:text-ai-text-placeholder"
-                    : "placeholder:text-ai-text-disabled",
-                  isExpanded ? "min-h-[24px]" : "h-6 overflow-hidden",
-                ].join(" ")}
-              />
+            {isShowingRespondingState ? (
+              <ComposerRespondingState onStopResponse={onStopResponse} />
+            ) : (
               <div
                 className={[
-                  "flex items-center gap-1",
-                  isExpanded ? "justify-end" : "",
+                  "flex",
+                  isComposerExpanded ? "flex-col gap-2" : "items-center gap-4",
                 ].join(" ")}
               >
-                {!isResponding ? (
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  disabled={disabled}
+                  value={draft}
+                  onChange={(event) =>
+                    handleDraftChange(event.target.value, event.currentTarget)
+                  }
+                  onFocus={() => {
+                    setIsFocused(true);
+                  }}
+                  onBlur={() => {
+                    setIsFocused(false);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    disabled
+                      ? disabledPlaceholder
+                      : isDictating
+                          ? "Listening..."
+                          : isFocused
+                            ? ""
+                            : idlePlaceholder
+                  }
+                  aria-label="Message"
+                  className={[
+                    "ai-type-body-md-open w-full resize-none bg-transparent text-ai-text-primary outline-none",
+                    disabled
+                      ? "cursor-not-allowed placeholder:text-ai-text-placeholder"
+                      : "placeholder:text-ai-text-disabled",
+                    isComposerExpanded ? "min-h-[24px]" : "h-6 overflow-hidden",
+                  ].join(" ")}
+                />
+                <div
+                  className={[
+                    "flex items-center gap-1",
+                    isComposerExpanded ? "justify-end" : "",
+                  ].join(" ")}
+                >
                   <ComposerIconButton
                     active={isDictating}
                     ariaLabel={isDictating ? "Stop dictation" : "Start dictation"}
@@ -399,18 +437,16 @@ export function AiConciergeComposer({
                   >
                     <MicIcon />
                   </ComposerIconButton>
-                ) : null}
-                <ComposerPrimaryActionButton
-                  disabled={disabled}
-                  hasText={hasText}
-                  isResponding={isResponding}
-                  onSend={handleSend}
-                  onStopResponse={onStopResponse}
-                  onStartVoiceMode={onStartVoiceMode}
-                  showVoiceModeAction={showVoiceModeAction}
-                />
+                  <ComposerPrimaryActionButton
+                    disabled={disabled}
+                    hasText={hasText}
+                    onSend={handleSend}
+                    onStartVoiceMode={onStartVoiceMode}
+                    showVoiceModeAction={showVoiceModeAction}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

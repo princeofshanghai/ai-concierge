@@ -2,28 +2,14 @@
 
 import { AVATAR_FALLBACK_SOURCES, Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
-
-export type RepresentativeMatchStatus =
-  | "matching"
-  | "ready"
-  | "booked"
-  | "canceled";
-
-export type RepresentativeMeetingDetails = {
-  contactHelperText?: string;
-  dateLabel: string;
-  formatLabel: string;
-  representativeName: string;
-  timeLabel: string;
-};
-
-export type AiConciergeRepresentativeMatchArtifact = {
-  bodyText?: string;
-  meetingDetails?: RepresentativeMeetingDetails;
-  titleText?: string;
-  type: "representative-match";
-  status: RepresentativeMatchStatus;
-};
+import {
+  DEFAULT_BOOKED_MEETING_DETAILS,
+  DEFAULT_REPRESENTATIVE_NAME,
+} from "@/lib/ai-concierge-fixtures";
+import type {
+  RepresentativeMeetingDetails,
+  RepresentativeMatchStatus,
+} from "@/lib/ai-concierge-types";
 
 type AiConciergeRepresentativeMatchCardProps = {
   bodyText?: string;
@@ -48,17 +34,9 @@ const MATCHING_AVATAR_SOURCES = [
   AVATAR_FALLBACK_SOURCES[2],
 ] as const;
 const MATCH_CARD_BORDER_CLASS = "border-ai-blue-border-soft";
-const MATCHED_REPRESENTATIVE_NAME = "David S.";
 const DEFAULT_MATCHING_BODY_TEXT =
   "This may take up to 3 minutes. You can keep chatting in the meantime.";
 const DEFAULT_MATCHING_TITLE_TEXT = "Matching you now...";
-const DEFAULT_BOOKED_MEETING_DETAILS: RepresentativeMeetingDetails = {
-  contactHelperText: "We'll send the meeting link shortly.",
-  dateLabel: "Tuesday, April 9",
-  formatLabel: "Video call",
-  representativeName: MATCHED_REPRESENTATIVE_NAME,
-  timeLabel: "2:00 PM-2:30 PM PT",
-};
 
 export function AiConciergeRepresentativeMatchCard({
   bodyText,
@@ -156,7 +134,7 @@ export function AiConciergeRepresentativeMatchCard({
           <div className="flex items-center gap-2">
             <MatchedRepresentativeAvatar size={32} />
             <h3 className="ai-type-heading-md text-ai-text-primary">
-              {MATCHED_REPRESENTATIVE_NAME} is your sales rep
+              {DEFAULT_REPRESENTATIVE_NAME} is your sales rep
             </h3>
           </div>
           <Button
@@ -219,7 +197,7 @@ export function AiConciergeRepresentativeReadyBanner({
           <div className="flex min-w-0 items-center gap-2">
             <MatchedRepresentativeAvatar size={28} />
             <h3 className="ai-type-heading-md truncate text-ai-text-primary">
-              {MATCHED_REPRESENTATIVE_NAME} is your sales rep
+              {DEFAULT_REPRESENTATIVE_NAME} is your sales rep
             </h3>
           </div>
           <div
@@ -290,7 +268,7 @@ function MatchedRepresentativeAvatar({
       <Avatar
         decorative
         fallbackSrc={AVATAR_FALLBACK_SOURCES[0]}
-        name={MATCHED_REPRESENTATIVE_NAME}
+        name={DEFAULT_REPRESENTATIVE_NAME}
         seed="matched-representative"
         size={size}
       />
@@ -302,6 +280,12 @@ function MatchedRepresentativeAvatar({
     </span>
   );
 }
+
+export type {
+  AiConciergeRepresentativeMatchArtifact,
+  RepresentativeMeetingDetails,
+  RepresentativeMatchStatus,
+} from "@/lib/ai-concierge-types";
 
 function SuccessSignalIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (

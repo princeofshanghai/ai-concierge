@@ -30,9 +30,9 @@ export function AiConciergePhoneCallPrompt({
           isPanelExpanded ? "max-w-[720px]" : "max-w-full",
         ].join(" ")}
       >
-        <div className="rounded-[20px] border border-ai-blue-border-subtle bg-ai-surface-tint px-3.5 py-3">
+        <div className="rounded-[20px] border border-[#D6D9DE] bg-[#F3F4F6] px-3.5 py-3">
           <div className="flex items-start gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ai-surface-base text-ai-blue-primary shadow-[inset_0_0_0_1px_var(--ai-blue-border-subtle)]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#D6D9DE] bg-white text-ai-blue-primary">
               <PhoneCallIcon className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">

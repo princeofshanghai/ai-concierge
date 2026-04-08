@@ -1,10 +1,13 @@
-import type { AiConciergeSuggestedReply } from "@/components/ai-concierge-body";
-import type { ConciergeContactDetails } from "@/components/ai-concierge-onboarding";
 import {
   OPENING_HELPER_EXAMPLES,
   OPENING_PROMPT_TOPICS,
   type AiConciergeOpeningSupport,
 } from "@/lib/ai-concierge-opening-presentation";
+import type {
+  AiConciergeMessageArtifact,
+  AiConciergeSuggestedReply,
+  ConciergeContactDetails,
+} from "@/lib/ai-concierge-types";
 import type { PrototypeScenarioOpeningPromptVariant } from "@/lib/prototype-scenario";
 
 type ConversationStage =
@@ -67,10 +70,12 @@ export type AiConciergeConversationState = {
 
 export type EntryMode = "manual" | "prefill";
 
-type AssistantTurn = {
+export type AiConciergeAssistantTurn = {
+  artifact?: AiConciergeMessageArtifact;
   body: string;
   nextState: AiConciergeConversationState;
   openingSupport?: AiConciergeOpeningSupport;
+  postCompleteEffect?: "live-sales-handoff" | "representative-match";
   suggestedReplies?: AiConciergeSuggestedReply[];
   suggestedReplyDisplay?: "composer" | "inline";
 };
@@ -200,7 +205,7 @@ export function createOpeningTurn({
 }: {
   contactDetails: ConciergeContactDetails;
   openingPromptVariant: PrototypeScenarioOpeningPromptVariant;
-}): AssistantTurn {
+}): AiConciergeAssistantTurn {
   const openingBody = `Hi ${contactDetails.firstName}, I can help you explore hiring solutions for ${contactDetails.company}, answer your questions, and point you in the right direction from there.`;
 
   if (openingPromptVariant === "helper-examples") {
@@ -235,13 +240,21 @@ export function createOpeningTurn({
   };
 }
 
+export function createVoiceModeIntro({
+  contactDetails,
+}: {
+  contactDetails: ConciergeContactDetails;
+}) {
+  return `I can help you explore hiring solutions for ${contactDetails.company} and answer questions as we go. When you're ready, just start talking.`;
+}
+
 export function createReturnToChatTurn({
   contactDetails,
   state,
 }: {
   contactDetails: ConciergeContactDetails;
   state: AiConciergeConversationState;
-}): AssistantTurn {
+}): AiConciergeAssistantTurn {
   const nextState: AiConciergeConversationState = {
     ...state,
     stage: "explore",
@@ -274,30 +287,48 @@ export function getAssistantTurn({
   contactDetails: ConciergeContactDetails;
   input: string;
   state: AiConciergeConversationState;
-}): AssistantTurn {
+}): AiConciergeAssistantTurn {
+  let assistantTurn: AiConciergeAssistantTurn;
+
   switch (state.stage) {
     case "opening":
-      return createOpeningResponse(input);
+      assistantTurn = createOpeningResponse(input);
+      break;
     case "awaiting_hiring_motion":
-      return createHiringMotionResponse(input, state);
+      assistantTurn = createHiringMotionResponse(input, state);
+      break;
     case "awaiting_fit_context":
-      return createFitContextResponse(input, state);
+      assistantTurn = createFitContextResponse(input, state);
+      break;
     case "awaiting_urgency":
-      return createUrgencyResponse(state, input, contactDetails);
+      assistantTurn = createUrgencyResponse(state, input, contactDetails);
+      break;
     case "awaiting_next_step":
     case "explore":
-      return createNextStepResponse(input, state, contactDetails);
+      assistantTurn = createNextStepResponse(input, state, contactDetails);
+      break;
     case "awaiting_handoff_choice":
-      return createHandoffChoiceResponse(input, state, contactDetails);
+      assistantTurn = createHandoffChoiceResponse(input, state, contactDetails);
+      break;
     case "booking_pending":
-      return {
+      assistantTurn = {
         body: "I can also answer any other questions you have while we get that set up.",
         nextState: state,
       };
+      break;
   }
+
+  if (shouldShowRepresentativeRecommendationCard({ assistantTurn, state })) {
+    return {
+      ...assistantTurn,
+      artifact: createRepresentativeRecommendationArtifact(),
+    };
+  }
+
+  return assistantTurn;
 }
 
-function createOpeningResponse(input: string): AssistantTurn {
+function createOpeningResponse(input: string): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
 
   if (isPricingIntent(normalized)) {
@@ -395,7 +426,7 @@ function createOpeningResponse(input: string): AssistantTurn {
 function createHiringMotionResponse(
   input: string,
   state: AiConciergeConversationState,
-): AssistantTurn {
+): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
   const hiringMotion =
     state.startingSituation === "pricing_guidance"
@@ -466,7 +497,7 @@ function createHiringMotionResponse(
 function createFitContextResponse(
   input: string,
   state: AiConciergeConversationState,
-): AssistantTurn {
+): AiConciergeAssistantTurn {
   const roleContext = summarizeHiringContext(input);
   const likelySolution = determineLikelySolution({
     hiringComplexity: roleContext.hiringComplexity,
@@ -493,7 +524,7 @@ function createUrgencyResponse(
   state: AiConciergeConversationState,
   input: string,
   contactDetails: ConciergeContactDetails,
-): AssistantTurn {
+): AiConciergeAssistantTurn {
   const urgency = classifyUrgency(input);
   const recommendation = createRecommendationMessage({
     company: contactDetails.company,
@@ -531,7 +562,7 @@ function createNextStepResponse(
   input: string,
   state: AiConciergeConversationState,
   contactDetails: ConciergeContactDetails,
-): AssistantTurn {
+): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
   const roleClause = createRoleClause(state.hiringSummary);
   const representativeLabel = "sales rep";
@@ -647,7 +678,7 @@ function createHandoffChoiceResponse(
   input: string,
   state: AiConciergeConversationState,
   contactDetails: ConciergeContactDetails,
-): AssistantTurn {
+): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
 
   if (normalized.includes("keep exploring")) {
@@ -657,25 +688,12 @@ function createHandoffChoiceResponse(
     });
   }
 
-  if (
-    normalized.includes("schedule a call") ||
-    normalized.includes("schedule call") ||
-    normalized.includes("book meeting") ||
-    normalized.includes("book a meeting") ||
-    (normalized.includes("book") && normalized.includes("meeting")) ||
-    normalized.includes("available times")
-  ) {
-    return {
-      body:
-        state.likelySolution === "lighter_touch"
-          ? `Here are a few times to talk with an account rep about which option could fit ${contactDetails.company} best.`
-          : `Here are a few times to talk with an account rep about ${contactDetails.company}.`,
-      nextState: {
-        ...state,
-        stage: "booking_pending",
-        nextStepMode: "meeting",
-      },
-    };
+  if (isBookMeetingIntent(normalized)) {
+    return createRepresentativeMatchingTurn(state);
+  }
+
+  if (shouldUseLiveSalesHandoff(normalized, state)) {
+    return createLiveSalesHandoffTurn(state);
   }
 
   if (normalized.includes("phone") || normalized.includes("call")) {
@@ -696,6 +714,22 @@ function createHandoffChoiceResponse(
     },
     contactDetails,
   );
+}
+
+export function createRepresentativeMatchingTurn(
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  return {
+    body: "I'm working on that now.",
+    nextState: {
+      ...state,
+      nextStepMode: null,
+      readiness: "exploring",
+      stage: "explore",
+    },
+    artifact: createRepresentativeMatchingArtifact(),
+    postCompleteEffect: "representative-match",
+  };
 }
 
 function determineLikelySolution({
@@ -774,6 +808,60 @@ function createExploreSuggestions(likelySolution: LikelySolution) {
   return likelySolution === "lighter_touch"
     ? GENERAL_EXPLORE_SUGGESTIONS
     : RECRUITER_EXPLORE_SUGGESTIONS;
+}
+
+function shouldShowRepresentativeRecommendationCard({
+  assistantTurn,
+  state,
+}: {
+  assistantTurn: AiConciergeAssistantTurn;
+  state: AiConciergeConversationState;
+}) {
+  return (
+    !assistantTurn.artifact &&
+    assistantTurn.nextState.stage === "awaiting_handoff_choice" &&
+    assistantTurn.nextState.likelySolution === "recruiter" &&
+    state.likelySolution === "recruiter"
+  );
+}
+
+function createRepresentativeRecommendationArtifact(): AiConciergeMessageArtifact {
+  return {
+    bodyText: "First I'll match you with the right one",
+    ctaLabel: "Find my rep",
+    titleText: "Talk to a sales rep",
+    type: "recommendation",
+  };
+}
+
+function createRepresentativeMatchingArtifact(): AiConciergeMessageArtifact {
+  return {
+    bodyText:
+      "This may take up to 3 minutes. You can keep chatting in the meantime.",
+    titleText: "Matching you now...",
+    type: "representative-match",
+    status: "matching",
+  };
+}
+
+function createLiveSalesHandoffTurn(
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  return {
+    body: "",
+    artifact: {
+      titleText: "Connecting you now...",
+      type: "representative-match",
+      status: "matching",
+    },
+    nextState: {
+      ...state,
+      nextStepMode: null,
+      readiness: "representative",
+      stage: "explore",
+    },
+    postCompleteEffect: "live-sales-handoff",
+  };
 }
 
 function summarizeHiringContext(input: string): {
@@ -1049,6 +1137,35 @@ function isRecruiterQuestion(normalized: string) {
     normalized.includes("what's recruiter") ||
     normalized.includes("what is linkedin recruiter") ||
     normalized.includes("recruiter")
+  );
+}
+
+function isBookMeetingIntent(normalized: string) {
+  return (
+    normalized.includes("schedule a call") ||
+    normalized.includes("schedule call") ||
+    normalized.includes("book meeting") ||
+    normalized.includes("book a meeting") ||
+    (normalized.includes("book") && normalized.includes("meeting")) ||
+    normalized.includes("available times")
+  );
+}
+
+function shouldUseLiveSalesHandoff(
+  normalized: string,
+  state: AiConciergeConversationState,
+) {
+  if (
+    state.stage !== "awaiting_handoff_choice" ||
+    state.likelySolution !== "lighter_touch"
+  ) {
+    return false;
+  }
+
+  return (
+    normalized.includes("chat live") ||
+    normalized.includes("live now") ||
+    normalized.includes("live chat")
   );
 }
 

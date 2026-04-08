@@ -493,6 +493,46 @@ button {
   }
 }
 
+@keyframes ai-concierge-stop-answering-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ai-concierge-stop-answering-arc {
+  0% {
+    stroke-dasharray: 12 48;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 28 32;
+    stroke-dashoffset: -14;
+  }
+  100% {
+    stroke-dasharray: 12 48;
+    stroke-dashoffset: -60;
+  }
+}
+
+.ai-concierge-stop-answering-spinner {
+  animation: ai-concierge-stop-answering-spin 1.45s linear infinite;
+  transform-origin: center;
+}
+
+.ai-concierge-stop-answering-spinner__arc {
+  animation: ai-concierge-stop-answering-arc 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-concierge-stop-answering-spinner,
+  .ai-concierge-stop-answering-spinner__arc {
+    animation: none;
+  }
+}
+
 @keyframes ai-concierge-avatar-stack-a {
   0%,
   28% {

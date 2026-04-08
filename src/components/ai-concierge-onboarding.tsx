@@ -2,29 +2,20 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import {
-  LinkedInIdentityChip,
-  type LinkedInIdentity,
-} from "@/components/linkedin-identity-chip";
+import { LinkedInIdentityChip } from "@/components/linkedin-identity-chip";
 import { Button } from "@/components/button";
 import {
   FormSelectField,
   FormTextField,
 } from "@/components/form-fields";
+import type {
+  ConciergeContactDetails,
+  LinkedInIdentity,
+} from "@/lib/ai-concierge-types";
 import {
   COUNTRY_REGION_OPTIONS,
   ROLE_OPTIONS,
 } from "@/lib/onboarding-options";
-
-type ConciergeContactDetails = {
-  company: string;
-  countryRegion: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  role: string;
-};
 
 type AiConciergeOnboardingProps = {
   copyVariant?: "default" | "direct-entry";
@@ -512,4 +503,4 @@ export function AiConciergeOnboarding({
   );
 }
 
-export type { ConciergeContactDetails, LinkedInIdentity };
+export type { ConciergeContactDetails, LinkedInIdentity } from "@/lib/ai-concierge-types";

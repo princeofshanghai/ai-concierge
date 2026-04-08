@@ -3,6 +3,7 @@ import Image from "next/image";
 type ChatAssistantMessageProps = {
   body: string;
   className?: string;
+  isActiveVoiceTurn?: boolean;
   showArrivalAnimation?: boolean;
   status?: "complete" | "streaming" | "thinking";
 };
@@ -59,6 +60,7 @@ function ThinkingIndicator({
 export function ChatAssistantMessage({
   body,
   className = "",
+  isActiveVoiceTurn = false,
   showArrivalAnimation = false,
   status = "complete",
 }: ChatAssistantMessageProps) {
@@ -71,7 +73,10 @@ export function ChatAssistantMessage({
   }
 
   return (
-    <div className={["w-full", className].join(" ")}>
+    <div
+      className={["w-full", className].join(" ")}
+      data-voice-speaking={isActiveVoiceTurn || undefined}
+    >
       <p className="ai-type-body-sm-open whitespace-pre-wrap break-words text-ai-text-primary">
         {body}
       </p>

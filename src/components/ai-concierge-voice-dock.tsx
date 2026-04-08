@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Button } from "@/components/button";
+import { Avatar } from "@/components/avatar";
 
 export type VoiceModeStatus =
   | "requesting-permission"
@@ -12,46 +12,55 @@ export type VoiceModeStatus =
   | "unsupported";
 
 type AiConciergeVoiceDockProps = {
-  assistantCaption: string;
   errorMessage?: string | null;
   isMuted: boolean;
   isPanelExpanded?: boolean;
   onClose: () => void;
+  onDoneListening: () => void;
   onRetry: () => void;
+  onStopSpeaking: () => void;
   onToggleMute: () => void;
   status: VoiceModeStatus;
+  userName?: string;
   userCaption: string;
 };
 
+const MAX_VISIBLE_TEXT_HEIGHT = 96;
+
 const STATUS_LABELS: Record<VoiceModeStatus, string> = {
-  "requesting-permission": "Connecting microphone",
-  listening: "Listening",
-  thinking: "Thinking",
-  speaking: "Speaking",
+  "requesting-permission": "Preparing your turn",
+  listening: "Your turn",
+  thinking: "Assistant is thinking",
+  speaking: "Assistant is speaking",
   error: "Voice paused",
   unsupported: "Voice unavailable",
 };
 
 export function AiConciergeVoiceDock({
-  assistantCaption,
   errorMessage,
   isMuted,
   isPanelExpanded = false,
   onClose,
+  onDoneListening,
   onRetry,
+  onStopSpeaking,
   onToggleMute,
   status,
+  userName,
   userCaption,
 }: AiConciergeVoiceDockProps) {
-  const isRecoverableState = status === "error";
   const primaryText = getPrimaryText({
-    assistantCaption,
     errorMessage,
     status,
     userCaption,
   });
-  const isListeningPlaceholder = status === "listening" && !userCaption;
-  const secondaryText = getSecondaryText({
+  const isListeningPlaceholder =
+    status === "listening" && !userCaption && primaryText !== null;
+  const isSpeakerMutedControlVisible = status === "speaking";
+  const primaryAction = getPrimaryAction({
+    onDoneListening,
+    onRetry,
+    onStopSpeaking,
     status,
   });
 
@@ -65,85 +74,70 @@ export function AiConciergeVoiceDock({
       >
         <div
           className={[
-            "rounded-full border bg-ai-surface-base px-3 py-3 shadow-[0_8px_24px_rgba(10,102,194,0.08)] transition-[border-color,box-shadow] duration-150",
+            "rounded-[24px] border bg-ai-surface-base px-3 py-3 shadow-[0_8px_24px_rgba(10,102,194,0.08)] transition-[border-color,box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]",
             status === "listening" || status === "speaking"
-              ? "border-ai-blue-border-soft shadow-[0_0_0_4px_var(--ai-blue-focus-ring)]"
-              : "border-ai-border-faint",
+              ? "border-ai-blue-border-soft shadow-[0_0_0_3px_var(--ai-blue-focus-ring)]"
+              : status === "thinking"
+                ? "border-ai-border-strong shadow-[0_8px_20px_rgba(0,0,0,0.06)]"
+                : "border-ai-border-faint",
           ].join(" ")}
         >
-          <div className="flex items-center gap-2.5">
-            <div
-              className={[
-                "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ai-surface-tint",
-                status === "listening" || status === "speaking"
-                  ? "after:absolute after:inset-0 after:rounded-full after:border after:border-ai-blue-border-soft after:animate-[ai-concierge-voice-pulse_1.8s_ease-out_infinite]"
-                  : "",
-              ].join(" ")}
-              aria-label={STATUS_LABELS[status]}
-            >
-              <span className="sr-only">{STATUS_LABELS[status]}</span>
-              <Image
-                src="/figma/chat/voice-wave.svg"
-                alt=""
-                width={20}
-                height={22}
-                className="relative z-10 opacity-85"
-              />
-            </div>
-
-            <div
-              className="min-w-0 flex flex-1 items-center gap-2"
-              aria-live="polite"
-            >
-              <p
-                className={[
-                  "ai-type-body-md-open min-w-0 flex-1 truncate",
-                  isListeningPlaceholder
-                    ? "text-ai-text-disabled"
-                    : "text-ai-text-primary",
-                ].join(" ")}
-              >
-                {primaryText}
-              </p>
-              {secondaryText ? (
-                <p className="ai-type-body-xs shrink-0 truncate text-ai-text-meta">
-                  {secondaryText}
+          <div className="flex items-center gap-3">
+            <VoiceStageBadge status={status} userName={userName} />
+            {primaryText ? (
+              <div className="min-w-0 flex flex-1 items-center" aria-live="polite">
+                <p
+                  className={[
+                    "ai-type-body-md-open min-w-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words pr-1",
+                    isListeningPlaceholder
+                      ? "text-ai-text-disabled"
+                      : "text-ai-text-primary",
+                  ].join(" ")}
+                  style={{ maxHeight: `${MAX_VISIBLE_TEXT_HEIGHT}px` }}
+                >
+                  {primaryText}
                 </p>
-              ) : null}
-              {isRecoverableState ? (
+              </div>
+            ) : (
+              <div className="flex-1" />
+            )}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {isSpeakerMutedControlVisible ? (
                 <button
                   type="button"
-                  onClick={onRetry}
-                  className="ai-type-heading-md shrink-0 text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+                  onClick={onToggleMute}
+                  aria-label={isMuted ? "Unmute voice playback" : "Mute voice playback"}
+                  className={[
+                    "flex h-8 w-8 items-center justify-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary",
+                    isMuted
+                      ? "bg-ai-surface-overlay-active text-ai-text-primary"
+                      : "bg-ai-surface-overlay-soft text-ai-text-secondary hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary",
+                  ].join(" ")}
                 >
-                  Retry
+                  <span aria-hidden="true" className="block">
+                    {isMuted ? <SpeakerMutedIcon /> : <SpeakerIcon />}
+                  </span>
                 </button>
               ) : null}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
+              {primaryAction ? (
+                <button
+                  type="button"
+                  onClick={primaryAction.onClick}
+                  className="ai-type-heading-md inline-flex h-8 items-center rounded-full bg-ai-surface-overlay-soft px-3 text-ai-text-primary transition-colors hover:bg-ai-surface-overlay-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
+                >
+                  {primaryAction.label}
+                </button>
+              ) : null}
               <button
                 type="button"
-                onClick={onToggleMute}
-                aria-label={isMuted ? "Unmute voice playback" : "Mute voice playback"}
-                className={[
-                  "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
-                  isMuted
-                    ? "bg-ai-surface-overlay-active text-ai-text-primary"
-                    : "bg-ai-surface-overlay-soft text-ai-text-secondary hover:bg-ai-surface-overlay-hover",
-                ].join(" ")}
+                onClick={onClose}
+                aria-label="End voice mode"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-ai-surface-overlay-soft text-ai-text-secondary transition-colors hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
               >
                 <span aria-hidden="true" className="block">
-                  {isMuted ? <MicOffIcon /> : <MicIcon />}
+                  <CloseIcon />
                 </span>
               </button>
-              <Button
-                size="compact"
-                onClick={onClose}
-                className="shrink-0"
-              >
-                End
-              </Button>
             </div>
           </div>
         </div>
@@ -152,75 +146,164 @@ export function AiConciergeVoiceDock({
   );
 }
 
+function VoiceStageBadge({
+  status,
+  userName,
+}: {
+  status: VoiceModeStatus;
+  userName?: string;
+}) {
+  const isUserTurn =
+    status === "listening" ||
+    status === "requesting-permission" ||
+    status === "error";
+  const isSpeakerPulseVisible =
+    status === "listening" || status === "speaking";
+  const isAssistantSpeaking = status === "speaking";
+  const isAssistantThinking = status === "thinking";
+
+  return (
+    <div
+      className="relative flex h-10 w-10 shrink-0 items-center justify-center"
+      aria-label={STATUS_LABELS[status]}
+      role="img"
+    >
+      <span className="sr-only">{STATUS_LABELS[status]}</span>
+      {isSpeakerPulseVisible ? (
+        <span className="absolute inset-0 rounded-full border border-ai-blue-border-soft opacity-80 animate-[ai-concierge-voice-pulse_1.9s_ease-out_infinite]" />
+      ) : null}
+      {isUserTurn ? (
+        <Avatar
+          decorative
+          name={userName || "You"}
+          size={36}
+          className="relative z-10 border border-white/80 shadow-[0_4px_10px_rgba(10,102,194,0.12)]"
+        />
+      ) : (
+        <span
+          className={[
+            "relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-ai-surface-tint text-ai-blue-primary shadow-[inset_0_0_0_1px_var(--ai-blue-border-subtle)]",
+            isAssistantSpeaking
+              ? "shadow-[0_4px_12px_rgba(10,102,194,0.16),inset_0_0_0_1px_var(--ai-blue-border-subtle)]"
+              : "",
+            isAssistantThinking
+              ? "animate-[ai-concierge-voice-think_1.6s_ease-in-out_infinite] motion-reduce:animate-none"
+              : "",
+          ].join(" ")}
+        >
+          <Image
+            src="/figma/chat/ai-concierge-icon.svg"
+            alt=""
+            width={18}
+            height={18}
+            aria-hidden="true"
+            className="h-[18px] w-[18px]"
+          />
+        </span>
+      )}
+    </div>
+  );
+}
+
 function getPrimaryText({
-  assistantCaption,
   errorMessage,
   status,
   userCaption,
 }: {
-  assistantCaption: string;
   errorMessage?: string | null;
   status: VoiceModeStatus;
   userCaption: string;
-}) {
+}): string | null {
   if (status === "listening") {
     return userCaption || "Speak naturally";
   }
 
   if (status === "thinking") {
-    return userCaption || "Turning what you said into the next reply.";
+    return userCaption || "Thinking...";
   }
 
   if (status === "speaking") {
-    return assistantCaption || "Reading the reply out loud.";
+    return null;
   }
 
   if (status === "requesting-permission") {
-    return "Allow microphone access to start a spoken conversation.";
+    return "Turn on your mic to reply.";
   }
 
   if (status === "unsupported") {
-    return "This browser does not support live voice conversation in this prototype.";
+    return "Voice isn't available in this browser.";
   }
 
   return errorMessage ?? "I didn't catch that. Try again.";
 }
 
-function getSecondaryText({
+function getPrimaryAction({
+  onDoneListening,
+  onRetry,
+  onStopSpeaking,
   status,
 }: {
+  onDoneListening: () => void;
+  onRetry: () => void;
+  onStopSpeaking: () => void;
   status: VoiceModeStatus;
 }) {
-  if (status === "speaking") {
-    return "Speaking";
+  if (status === "listening") {
+    return {
+      label: "Done",
+      onClick: onDoneListening,
+    };
   }
 
-  if (status === "thinking") {
-    return "Thinking";
+  if (status === "speaking") {
+    return {
+      label: "Stop",
+      onClick: onStopSpeaking,
+    };
+  }
+
+  if (status === "error") {
+    return {
+      label: "Retry",
+      onClick: onRetry,
+    };
   }
 
   return null;
 }
 
-function MicIcon() {
+function SpeakerIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
       <path
-        d="M8 12V6C8 3.8 9.8 2 12 2C14.2 2 16 3.8 16 6V12C16 14.2 14.2 16 12 16C9.8 16 8 14.2 8 12ZM17 10V12C17 14.8 14.8 17 12 17C9.2 17 7 14.8 7 12V10H6V12C6 15 8.2 17.4 11 17.9V20H8V22H16V20H13V17.9C15.8 17.4 18 15 18 12V10H17Z"
+        d="M14 5.23C14 4.34 12.92 3.89 12.29 4.52L8.82 8H6C4.9 8 4 8.9 4 10V14C4 15.1 4.9 16 6 16H8.82L12.29 19.48C12.92 20.11 14 19.66 14 18.77V5.23ZM16.5 9.5C17.38 10.38 17.88 11.57 17.88 12.81C17.88 14.05 17.38 15.24 16.5 16.12M18.62 7.38C20.06 8.82 20.88 10.77 20.88 12.81C20.88 14.85 20.06 16.8 18.62 18.24"
         fill="currentColor"
-        fillOpacity="0.75"
+        fillOpacity="0.78"
       />
     </svg>
   );
 }
 
-function MicOffIcon() {
+function SpeakerMutedIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
       <path
-        d="M17.17 15.05L16.42 14.3C16.795 13.5909 16.994 12.802 17 12V9.99996H18V12C18.0009 13.0725 17.7143 14.1258 17.17 15.05ZM16 12V5.99996C16.0146 4.93909 15.6071 3.91588 14.8673 3.15542C14.1275 2.39496 13.1159 1.95955 12.055 1.94496C10.9941 1.93037 9.97092 2.33781 9.21046 3.07764C8.45 3.81747 8.01459 4.82909 8 5.88996L15.67 13.56C15.8865 13.0683 15.9989 12.5372 16 12ZM15.87 16.58L21.29 22L22 21.29L8 7.28996L2.71 1.99996L2 2.70996L8 8.70996V12C8 13.0608 8.42143 14.0782 9.17157 14.8284C9.92172 15.5785 10.9391 16 12 16C12.8859 15.9997 13.7457 15.7002 14.44 15.15L15.15 15.85C14.2666 16.5896 13.1521 16.9965 12 17C10.6739 17 9.40215 16.4732 8.46447 15.5355C7.52678 14.5978 7 13.326 7 12V9.99996H6V12C6.00144 13.4168 6.50425 14.7875 7.41939 15.8692C8.33452 16.9509 9.60294 17.6738 11 17.91V20H8V22H16V20H13V17.91C14.0573 17.7276 15.0474 17.2687 15.87 16.58Z"
+        d="M14 5.23C14 4.34 12.92 3.89 12.29 4.52L8.82 8H6C4.9 8 4 8.9 4 10V14C4 15.1 4.9 16 6 16H8.82L12.29 19.48C12.92 20.11 14 19.66 14 18.77V5.23ZM18.59 8L17.17 9.41L19.05 11.29L17.17 13.17L18.59 14.59L20.46 12.71L22.34 14.59L23.76 13.17L21.88 11.29L23.76 9.41L22.34 8L20.46 9.88L18.59 8Z"
         fill="currentColor"
-        fillOpacity="0.75"
+        fillOpacity="0.78"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M3 3L11 11M11 3L3 11"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
       />
     </svg>
   );

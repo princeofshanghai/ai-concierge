@@ -1,5 +1,6 @@
 import { InternalPrototypeNav } from "@/components/internal-prototype-nav";
 import styles from "@/components/ai-concierge-presentation.module.css";
+import { PREFILLED_CONTACT_DETAILS } from "@/lib/ai-concierge-fixtures";
 
 const PRINCIPLES = [
   {
@@ -10,7 +11,7 @@ const PRINCIPLES = [
 ];
 
 const PERSONA_POINTS = [
-  "Director of Talent Acquisition at Northstar Health",
+  `Director of Talent Acquisition at ${PREFILLED_CONTACT_DETAILS.company}`,
   "leading hiring across a 1,200-person healthcare software company",
   "needs help figuring out which hiring solution fits a team hiring across multiple functions, including harder-to-fill roles",
   "high intent, but not fully decided",
@@ -60,7 +61,9 @@ export function AiConciergePresentation() {
           <section id="persona" className={styles.section}>
             <div className={styles.slide}>
               <p className={styles.eyebrow}>3 / persona</p>
-              <h2 className={styles.sectionTitle}>Jamie Chen</h2>
+              <h2 className={styles.sectionTitle}>
+                {`${PREFILLED_CONTACT_DETAILS.firstName} ${PREFILLED_CONTACT_DETAILS.lastName}`}
+              </h2>
               <div className={styles.persona}>
                 {PERSONA_POINTS.map((point) => (
                   <p key={point} className={styles.personaBody}>

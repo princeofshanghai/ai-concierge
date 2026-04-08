@@ -1,13 +1,7 @@
 "use client";
 
 import { Avatar } from "@/components/avatar";
-
-type LinkedInIdentity = {
-  avatarSrc?: string | null;
-  email: string;
-  firstName: string;
-  lastName: string;
-};
+import type { LinkedInIdentity } from "@/lib/ai-concierge-types";
 
 type LinkedInIdentityChipProps = {
   linkedInIdentity: LinkedInIdentity | null;
@@ -54,4 +48,4 @@ function LinkedInIdentityChip({
 }
 
 export { LinkedInIdentityChip };
-export type { LinkedInIdentity };
+export type { LinkedInIdentity } from "@/lib/ai-concierge-types";

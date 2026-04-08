@@ -2,19 +2,13 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import {
-  AiConciergeBody,
-  type AiConciergeMessage,
-} from "@/components/ai-concierge-body";
+import { AiConciergeBody } from "@/components/ai-concierge-body";
 import { AiConciergeComposer } from "@/components/ai-concierge-composer";
 import { AiConciergeConfettiOverlay } from "@/components/ai-concierge-confetti-overlay";
 import { AiConciergeHeader } from "@/components/ai-concierge-header";
+import { AiConciergeMicrophoneNotice } from "@/components/ai-concierge-microphone-notice";
 import { AiConciergeNextStepPanel } from "@/components/ai-concierge-next-step-panel";
-import {
-  AiConciergeOnboarding,
-  type ConciergeContactDetails,
-  type LinkedInIdentity,
-} from "@/components/ai-concierge-onboarding";
+import { AiConciergeOnboarding } from "@/components/ai-concierge-onboarding";
 import { AiConciergePhoneCallDialog } from "@/components/ai-concierge-phone-call-dialog";
 import { AiConciergePhoneCallPrompt } from "@/components/ai-concierge-phone-call-prompt";
 import { AiConciergeRecommendationCard } from "@/components/ai-concierge-recommendation-card";
@@ -35,22 +29,16 @@ import { LinkedInIdentityChip } from "@/components/linkedin-identity-chip";
 import { PhoneCallIcon } from "@/components/phone-call-icon";
 import { SuggestedActionPrompt } from "@/components/suggested-action-prompt";
 import { Tag } from "@/components/tag";
-
-const SAMPLE_CONTACT_DETAILS: ConciergeContactDetails = {
-  firstName: "Jamie",
-  lastName: "Chen",
-  company: "Northstar Health",
-  email: "jamie.chen@northstarhealth.com",
-  phoneNumber: "(415) 555-0139",
-  countryRegion: "United States",
-  role: "Director - HR/Talent",
-};
-
-const SAMPLE_LINKEDIN_IDENTITY: LinkedInIdentity = {
-  firstName: SAMPLE_CONTACT_DETAILS.firstName,
-  lastName: SAMPLE_CONTACT_DETAILS.lastName,
-  email: SAMPLE_CONTACT_DETAILS.email,
-};
+import {
+  DEFAULT_BOOKED_MEETING_DETAILS,
+  DEFAULT_REPRESENTATIVE_NAME,
+  LINKEDIN_IDENTITY,
+  PREFILLED_CONTACT_DETAILS,
+} from "@/lib/ai-concierge-fixtures";
+import type {
+  AiConciergeMessage,
+  ConciergeContactDetails,
+} from "@/lib/ai-concierge-types";
 
 const SAMPLE_RECOMMENDATION_ARTIFACT = {
   bodyText: "First I'll match you with the right one",
@@ -91,19 +79,16 @@ const SAMPLE_BODY_MESSAGES: AiConciergeMessage[] = [
   {
     id: "agent-message-1",
     role: "agent",
-    agentName: "David S.",
+    agentName: DEFAULT_REPRESENTATIVE_NAME,
     body: "I can walk you through what would get your team live fastest.",
     timestampLabel: "1:08 PM",
   },
 ];
 
 const MATCHED_MEETING_DETAILS = {
+  ...DEFAULT_BOOKED_MEETING_DETAILS,
   contactHelperText:
     "We'll send the meeting link to jamie.chen@northstarhealth.com.",
-  dateLabel: "Tuesday, April 9",
-  formatLabel: "Video call",
-  representativeName: "David S.",
-  timeLabel: "2:00 PM-2:30 PM PT",
 };
 
 function joinClassNames(
@@ -114,12 +99,13 @@ function joinClassNames(
 
 export function AiConciergeComponentGallery() {
   const [composerDraft, setComposerDraft] = useState("");
+  const [respondingComposerDraft, setRespondingComposerDraft] = useState("");
   const [confettiPreviewTrigger, setConfettiPreviewTrigger] = useState(0);
   const [phoneNumberDraft, setPhoneNumberDraft] = useState(
-    SAMPLE_CONTACT_DETAILS.phoneNumber,
+    PREFILLED_CONTACT_DETAILS.phoneNumber,
   );
   const [onboardingDetails, setOnboardingDetails] =
-    useState<ConciergeContactDetails>(SAMPLE_CONTACT_DETAILS);
+    useState<ConciergeContactDetails>(PREFILLED_CONTACT_DETAILS);
 
   return (
     <>
@@ -141,6 +127,11 @@ export function AiConciergeComponentGallery() {
             <p className="ai-type-body-sm-open mt-3 text-ai-text-meta">
               Each component now sits in its own row so it is easier to scan,
               discuss, and compare states one piece at a time.
+            </p>
+            <p className="ai-type-body-xs mt-3 text-ai-text-meta">
+              The gallery now pulls its default identity and representative data
+              from the same shared fixtures as the main prototype so examples
+              stay aligned.
             </p>
             <nav
               aria-label="Component gallery sections"
@@ -164,7 +155,7 @@ export function AiConciergeComponentGallery() {
           >
             <ComponentRow
               description="The orchestration layer that owns onboarding, chat, matching, booking, voice, and celebration transitions."
-              details="Best reviewed in the main prototype because it coordinates full-screen state changes."
+              details="Best reviewed in the main prototype because it coordinates full-screen state changes. Internal refactor note: representative matching, booking, live-sales handoff, phone callback, and voice state now flow through dedicated hooks, and handoff routing now lives in the shared conversation engine, with no intended UI change."
               title="AiConciergePanel"
             >
               <PreviewSurface label="How to review">
@@ -215,7 +206,7 @@ export function AiConciergeComponentGallery() {
                 <AiConciergeOnboarding
                   details={onboardingDetails}
                   isValid
-                  linkedInIdentity={SAMPLE_LINKEDIN_IDENTITY}
+                  linkedInIdentity={LINKEDIN_IDENTITY}
                   mode="prefill"
                   onBack={() => {}}
                   onChange={(field, value) =>
@@ -234,7 +225,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Scheduling surface for format selection, slot picking, contact destination, and notes."
-              details="Preview shown: active scheduling."
+              details="Preview shown: active scheduling. In the main prototype this can stay paired with the voice rail for guidance-first voice mode."
               title="AiConciergeNextStepPanel"
             >
               <PreviewSurface
@@ -244,12 +235,12 @@ export function AiConciergeComponentGallery() {
               >
                 <AiConciergeNextStepPanel
                   contactDetails={{
-                    email: SAMPLE_CONTACT_DETAILS.email,
-                    phoneNumber: SAMPLE_CONTACT_DETAILS.phoneNumber,
+                    email: PREFILLED_CONTACT_DETAILS.email,
+                    phoneNumber: PREFILLED_CONTACT_DETAILS.phoneNumber,
                   }}
                   initialSelection={{
-                    contactEmail: SAMPLE_CONTACT_DETAILS.email,
-                    contactPhoneNumber: SAMPLE_CONTACT_DETAILS.phoneNumber,
+                    contactEmail: PREFILLED_CONTACT_DETAILS.email,
+                    contactPhoneNumber: PREFILLED_CONTACT_DETAILS.phoneNumber,
                     dateLabel: "Tue, Apr 7",
                     formatId: "video",
                     timeLabel: "10:00 AM",
@@ -278,7 +269,7 @@ export function AiConciergeComponentGallery() {
               >
                 <AiConciergeHeader
                   isExpanded={false}
-                  liveAgentName="David S."
+                  liveAgentName={DEFAULT_REPRESENTATIVE_NAME}
                   onClose={() => {}}
                   onOpenPhoneCall={() => {}}
                   onToggleExpand={() => {}}
@@ -309,28 +300,47 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Composer for typed input, suggested replies, voice mode, and sending messages."
-              details="Preview shown: default empty composer."
+              details="Preview shown: default and responding states."
               title="AiConciergeComposer"
             >
-              <PreviewSurface
-                className="overflow-hidden"
-                label="Preview"
-                padded={false}
-              >
-                <AiConciergeComposer
-                  draft={composerDraft}
-                  onDraftChange={setComposerDraft}
-                  onSend={() => setComposerDraft("")}
-                  onStartVoiceMode={() => {}}
-                  onStopResponse={() => {}}
-                  onToggleDictation={() => {}}
-                />
-              </PreviewSurface>
+              <div className="grid gap-6 md:grid-cols-2">
+                <StatePreview label="Default">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    padded={false}
+                  >
+                    <AiConciergeComposer
+                      draft={composerDraft}
+                      onDraftChange={setComposerDraft}
+                      onSend={() => setComposerDraft("")}
+                      onStartVoiceMode={() => {}}
+                      onStopResponse={() => {}}
+                      onToggleDictation={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Responding">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    padded={false}
+                  >
+                    <AiConciergeComposer
+                      draft={respondingComposerDraft}
+                      isResponding
+                      onDraftChange={setRespondingComposerDraft}
+                      onSend={() => setRespondingComposerDraft("")}
+                      onStartVoiceMode={() => {}}
+                      onStopResponse={() => {}}
+                      onToggleDictation={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
             </ComponentRow>
 
             <ComponentRow
               description="Inline prompt that offers a phone callback as an alternate entry point."
-              details="Preview shown: available and requested states."
+              details="Preview shown: available and requested states with the neutral gray container styling."
               title="AiConciergePhoneCallPrompt"
             >
               <div className="flex flex-col gap-6">
@@ -339,7 +349,7 @@ export function AiConciergeComponentGallery() {
                     <AiConciergePhoneCallPrompt
                       onDismiss={() => {}}
                       onOpenDialog={() => {}}
-                      phoneNumber={SAMPLE_CONTACT_DETAILS.phoneNumber}
+                      phoneNumber={PREFILLED_CONTACT_DETAILS.phoneNumber}
                       state="available"
                     />
                   </PreviewSurface>
@@ -349,7 +359,7 @@ export function AiConciergeComponentGallery() {
                     <AiConciergePhoneCallPrompt
                       onDismiss={() => {}}
                       onOpenDialog={() => {}}
-                      phoneNumber={SAMPLE_CONTACT_DETAILS.phoneNumber}
+                      phoneNumber={PREFILLED_CONTACT_DETAILS.phoneNumber}
                       state="requested"
                     />
                   </PreviewSurface>
@@ -379,31 +389,89 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="The voice mode dock that keeps the live listening and speaking state visible."
-              details="Preview shown: speaking."
+              description="The compact live voice stage that keeps turn-taking visible inside the composer area."
+              details="Preview shown: controls-only assistant-speaking state and live user-speaking state with the same pulse halo around the active speaker."
               title="AiConciergeVoiceDock"
             >
-              <PreviewSurface className="pt-6" label="Preview" padded={false}>
-                <AiConciergeVoiceDock
-                  assistantCaption="I can compare the fastest path for hiring support and set up a sales rep conversation when you are ready."
-                  isMuted={false}
-                  onClose={() => {}}
-                  onRetry={() => {}}
-                  onToggleMute={() => {}}
-                  status="speaking"
-                  userCaption="We need to hire quickly across two functions."
-                />
-              </PreviewSurface>
+              <div className="flex flex-col gap-6">
+                <StatePreview label="Assistant speaking">
+                  <PreviewSurface className="pt-6" padded={false}>
+                    <AiConciergeVoiceDock
+                      isMuted={false}
+                      onClose={() => {}}
+                      onDoneListening={() => {}}
+                      onRetry={() => {}}
+                      onStopSpeaking={() => {}}
+                      onToggleMute={() => {}}
+                      status="speaking"
+                      userCaption=""
+                      userName={`${PREFILLED_CONTACT_DETAILS.firstName} ${PREFILLED_CONTACT_DETAILS.lastName}`}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="User speaking">
+                  <PreviewSurface className="pt-6" padded={false}>
+                    <AiConciergeVoiceDock
+                      isMuted={false}
+                      onClose={() => {}}
+                      onDoneListening={() => {}}
+                      onRetry={() => {}}
+                      onStopSpeaking={() => {}}
+                      onToggleMute={() => {}}
+                      status="listening"
+                      userCaption="We need to hire quickly across product and engineering this quarter."
+                      userName={`${PREFILLED_CONTACT_DETAILS.firstName} ${PREFILLED_CONTACT_DETAILS.lastName}`}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Shared system notice for blocked microphone access and browser-level voice or dictation failures, kept separate from live conversation text."
+              details="Preview shown: blocked-mic and generic browser-error states on the neutral gray banner."
+              title="AiConciergeMicrophoneNotice"
+            >
+              <div className="flex flex-col gap-6">
+                <StatePreview label="Microphone blocked">
+                  <PreviewSurface className="pt-6" padded={false}>
+                    <AiConciergeMicrophoneNotice
+                      message="Turn on microphone access and try again"
+                      onDismiss={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Browser issue">
+                  <PreviewSurface className="pt-6" padded={false}>
+                    <AiConciergeMicrophoneNotice
+                      message="Voice capture hit a browser issue. Try again."
+                      onDismiss={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
             </ComponentRow>
 
             <ComponentRow
               description="Primary assistant message treatment used inside the conversation."
-              details="Preview shown: complete state."
+              details="Preview shown: default and voice-speaking states with matching text styling, including conversational voice fallbacks that stay in the thread."
               title="ChatAssistantMessage"
             >
-              <PreviewSurface label="Preview">
-                <ChatAssistantMessage body="Based on what you shared, talking to a sales rep looks like the right next step." />
-              </PreviewSurface>
+              <div className="grid gap-6 md:grid-cols-2">
+                <StatePreview label="Default">
+                  <PreviewSurface label="Preview">
+                    <ChatAssistantMessage body="Based on what you shared, talking to a sales rep looks like the right next step." />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Voice speaking">
+                  <PreviewSurface label="Preview">
+                    <ChatAssistantMessage
+                      body="I can help you explore hiring solutions for Northstar Health and answer questions as we go. When you're ready, just start talking."
+                      isActiveVoiceTurn
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
             </ComponentRow>
 
             <ComponentRow
@@ -427,7 +495,7 @@ export function AiConciergeComponentGallery() {
               <PreviewSurface label="Preview">
                 <ChatLiveAgentMessage
                   body="I can show you how similar teams usually structure this rollout."
-                  name="David S."
+                  name={DEFAULT_REPRESENTATIVE_NAME}
                   timestampLabel="1:08 PM"
                 />
               </PreviewSurface>
@@ -522,7 +590,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Foreground banner that pulls the user back when matching is complete."
-              details="Preview shown: ready state."
+              details="Preview shown: ready state. In the main prototype this banner can remain visible while voice mode stays active."
               title="AiConciergeRepresentativeReadyBanner"
             >
               <PreviewSurface
@@ -680,7 +748,7 @@ export function AiConciergeComponentGallery() {
             >
               <PreviewSurface label="Preview">
                 <LinkedInIdentityChip
-                  linkedInIdentity={SAMPLE_LINKEDIN_IDENTITY}
+                  linkedInIdentity={LINKEDIN_IDENTITY}
                   onUseAnotherAccount={() => {}}
                 />
               </PreviewSurface>
