@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { Button } from "@/components/button";
+import { CloseIcon } from "@/components/close-icon";
 import { FormTextField } from "@/components/form-fields";
 
 type AiConciergePhoneCallDialogProps = {
@@ -58,9 +59,9 @@ export function AiConciergePhoneCallDialog({
             onClick={onClose}
             disabled={isSubmitting}
             aria-label="Close phone confirmation"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[16px] text-ai-text-secondary transition-colors hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary disabled:cursor-default disabled:text-ai-text-disabled"
+            className="-mt-1 flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full text-ai-text-primary transition-colors hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary disabled:cursor-default disabled:text-ai-text-disabled"
           >
-            <CloseIcon />
+            <CloseIcon className="h-[18px] w-[18px]" />
           </button>
         </div>
 
@@ -100,18 +101,5 @@ export function AiConciergePhoneCallDialog({
         </div>
       </div>
     </div>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path
-        d="M2.5 2.5L9.5 9.5M9.5 2.5L2.5 9.5"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

@@ -1,6 +1,11 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type IconButtonVariant = "primary" | "secondary" | "tertiary" | "overlay";
+type IconButtonVariant =
+  | "premium"
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "overlay";
 type IconButtonSize = "small" | "medium";
 
 type IconButtonProps = {
@@ -34,6 +39,8 @@ export function IconButton({
 
   const stateClassName = disabled
     ? "border-transparent bg-ai-surface-disabled text-ai-text-disabled"
+    : variant === "premium"
+      ? "ai-premium-gradient-button border-0 text-ai-text-inverse"
     : variant === "secondary" && emphasis
       ? "border border-ai-blue-primary bg-transparent text-ai-blue-primary hover:border-2 hover:border-ai-blue-hover hover:bg-ai-blue-fill-hover hover:text-ai-blue-hover active:border-ai-blue-hover active:bg-ai-blue-fill-active active:text-ai-blue-hover"
       : variant === "secondary"

@@ -1,5 +1,7 @@
 "use client";
 
+import { CloseIcon } from "@/components/close-icon";
+
 type AiConciergeMicrophoneNoticeProps = {
   isPanelExpanded?: boolean;
   message: string;
@@ -37,11 +39,9 @@ export function AiConciergeMicrophoneNotice({
             type="button"
             onClick={onDismiss}
             aria-label="Dismiss notice"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ai-text-secondary transition-colors hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ai-text-primary transition-colors hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
           >
-            <span aria-hidden="true" className="block">
-              <CloseIcon />
-            </span>
+            <CloseIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -55,19 +55,6 @@ function MicrophoneBlockedIcon() {
       <path
         d="M8 2L2 8V16L8 22H16L22 16V8L16 2H8ZM18 13H6V11H18V13Z"
         fill="#CB112D"
-      />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path
-        d="M3 3L11 11M11 3L3 11"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
       />
     </svg>
   );

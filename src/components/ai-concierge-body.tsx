@@ -29,6 +29,7 @@ type AiConciergeBodyProps = {
   ) => void;
   onSelectSuggestedReply: (suggestedReply: AiConciergeSuggestedReply) => void;
   scrollToLatestSignal?: number;
+  voiceDraftText?: string;
 };
 
 export function AiConciergeBody({
@@ -45,6 +46,7 @@ export function AiConciergeBody({
   onRepresentativeReadyCardVisibilityChange,
   onSelectSuggestedReply,
   scrollToLatestSignal = 0,
+  voiceDraftText = "",
 }: AiConciergeBodyProps) {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const endOfThreadRef = useRef<HTMLDivElement | null>(null);
@@ -52,6 +54,7 @@ export function AiConciergeBody({
   const previousMessageCountRef = useRef(0);
   let latestReadyRepresentativeMessageId: string | null = null;
   const visibleMessages = messages;
+  const normalizedVoiceDraftText = voiceDraftText.trim();
 
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     const scrollContainer = scrollContainerRef.current;
@@ -116,6 +119,14 @@ export function AiConciergeBody({
       window.clearTimeout(settleTimerId);
     };
   }, [scrollToLatestSignal]);
+
+  useLayoutEffect(() => {
+    if (!normalizedVoiceDraftText) {
+      return;
+    }
+
+    scrollToBottom("auto");
+  }, [normalizedVoiceDraftText]);
 
   useLayoutEffect(() => {
     if (!onRepresentativeReadyCardVisibilityChange) {
@@ -296,6 +307,11 @@ export function AiConciergeBody({
                 </ChatUserMessage>
               ),
             )}
+            {normalizedVoiceDraftText ? (
+              <ChatUserMessage isDraft isPanelExpanded={isPanelExpanded}>
+                {normalizedVoiceDraftText}
+              </ChatUserMessage>
+            ) : null}
             <div ref={endOfThreadRef} />
           </div>
         </div>

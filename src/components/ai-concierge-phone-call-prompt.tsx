@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/button";
+import { CloseIcon } from "@/components/close-icon";
 import { PhoneCallIcon } from "@/components/phone-call-icon";
 
 type PhoneCallPromptState = "available" | "requested";
@@ -46,9 +47,9 @@ export function AiConciergePhoneCallPrompt({
                       type="button"
                       onClick={onDismiss}
                       aria-label="Dismiss phone call status"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ai-text-secondary transition-colors hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ai-text-primary transition-colors hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
                     >
-                      <CloseIcon />
+                      <CloseIcon className="h-4 w-4" />
                     </button>
                   </div>
                   {hasPhoneNumber ? (
@@ -82,18 +83,5 @@ export function AiConciergePhoneCallPrompt({
         </div>
       </div>
     </div>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path
-        d="M2.5 2.5L9.5 9.5M9.5 2.5L2.5 9.5"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

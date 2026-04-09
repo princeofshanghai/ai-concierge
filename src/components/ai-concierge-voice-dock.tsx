@@ -2,6 +2,9 @@
 
 import Image from "next/image";
 import { Avatar } from "@/components/avatar";
+import { CloseIcon } from "@/components/close-icon";
+import { IconButton } from "@/components/icon-button";
+import { Tooltip } from "@/components/tooltip";
 
 export type VoiceModeStatus =
   | "requesting-permission"
@@ -13,19 +16,14 @@ export type VoiceModeStatus =
 
 type AiConciergeVoiceDockProps = {
   errorMessage?: string | null;
-  isMuted: boolean;
   isPanelExpanded?: boolean;
   onClose: () => void;
   onDoneListening: () => void;
   onRetry: () => void;
   onStopSpeaking: () => void;
-  onToggleMute: () => void;
   status: VoiceModeStatus;
   userName?: string;
-  userCaption: string;
 };
-
-const MAX_VISIBLE_TEXT_HEIGHT = 96;
 
 const STATUS_LABELS: Record<VoiceModeStatus, string> = {
   "requesting-permission": "Preparing your turn",
@@ -38,25 +36,18 @@ const STATUS_LABELS: Record<VoiceModeStatus, string> = {
 
 export function AiConciergeVoiceDock({
   errorMessage,
-  isMuted,
   isPanelExpanded = false,
   onClose,
   onDoneListening,
   onRetry,
   onStopSpeaking,
-  onToggleMute,
   status,
   userName,
-  userCaption,
 }: AiConciergeVoiceDockProps) {
-  const primaryText = getPrimaryText({
+  const statusAnnouncement = getStatusAnnouncement({
     errorMessage,
     status,
-    userCaption,
   });
-  const isListeningPlaceholder =
-    status === "listening" && !userCaption && primaryText !== null;
-  const isSpeakerMutedControlVisible = status === "speaking";
   const primaryAction = getPrimaryAction({
     onDoneListening,
     onRetry,
@@ -68,76 +59,68 @@ export function AiConciergeVoiceDock({
     <div className="px-5 pb-5 pt-0">
       <div
         className={[
-          "mx-auto w-full",
-          isPanelExpanded ? "max-w-[720px]" : "max-w-full",
+          "mx-auto w-fit max-w-full",
         ].join(" ")}
       >
         <div
           className={[
-            "rounded-[24px] border bg-ai-surface-base px-3 py-3 shadow-[0_8px_24px_rgba(10,102,194,0.08)] transition-[border-color,box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "ai-premium-gradient-frame rounded-full p-px transition-[box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]",
             status === "listening" || status === "speaking"
-              ? "border-ai-blue-border-soft shadow-[0_0_0_3px_var(--ai-blue-focus-ring)]"
+              ? "shadow-[0_0_0_3px_var(--ai-blue-focus-ring),0_14px_34px_rgba(15,23,42,0.12),0_3px_10px_rgba(15,23,42,0.05)]"
               : status === "thinking"
-                ? "border-ai-border-strong shadow-[0_8px_20px_rgba(0,0,0,0.06)]"
-                : "border-ai-border-faint",
+                ? "shadow-[0_12px_28px_rgba(15,23,42,0.1),0_2px_8px_rgba(15,23,42,0.04)]"
+                : "shadow-[0_10px_24px_rgba(15,23,42,0.08),0_2px_6px_rgba(15,23,42,0.04)]",
           ].join(" ")}
         >
-          <div className="flex items-center gap-3">
-            <VoiceStageBadge status={status} userName={userName} />
-            {primaryText ? (
-              <div className="min-w-0 flex flex-1 items-center" aria-live="polite">
-                <p
-                  className={[
-                    "ai-type-body-md-open min-w-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words pr-1",
-                    isListeningPlaceholder
-                      ? "text-ai-text-disabled"
-                      : "text-ai-text-primary",
-                  ].join(" ")}
-                  style={{ maxHeight: `${MAX_VISIBLE_TEXT_HEIGHT}px` }}
-                >
-                  {primaryText}
-                </p>
+          <div className="rounded-full bg-ai-surface-base px-[3px] py-[3px]">
+            <p className="sr-only" aria-live="polite">
+              {statusAnnouncement}
+            </p>
+            <div
+              className={[
+                "grid min-h-12 items-center gap-0",
+                isPanelExpanded
+                  ? "grid-cols-[48px_60px_48px]"
+                  : "grid-cols-[48px_56px_48px]",
+              ].join(" ")}
+            >
+              <div className="flex min-w-0 justify-start">
+                <Tooltip content="Exit voice mode">
+                  <IconButton
+                    onClick={onClose}
+                    ariaLabel="Exit voice mode"
+                    emphasis={false}
+                    variant="tertiary"
+                    className="rounded-full"
+                    iconClassName="h-5 w-5"
+                    size="medium"
+                  >
+                    <CloseIcon className="h-full w-full" />
+                  </IconButton>
+                </Tooltip>
               </div>
-            ) : (
-              <div className="flex-1" />
-            )}
-            <div className="flex shrink-0 items-center gap-1.5">
-              {isSpeakerMutedControlVisible ? (
-                <button
-                  type="button"
-                  onClick={onToggleMute}
-                  aria-label={isMuted ? "Unmute voice playback" : "Mute voice playback"}
-                  className={[
-                    "flex h-8 w-8 items-center justify-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary",
-                    isMuted
-                      ? "bg-ai-surface-overlay-active text-ai-text-primary"
-                      : "bg-ai-surface-overlay-soft text-ai-text-secondary hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary",
-                  ].join(" ")}
-                >
-                  <span aria-hidden="true" className="block">
-                    {isMuted ? <SpeakerMutedIcon /> : <SpeakerIcon />}
-                  </span>
-                </button>
-              ) : null}
-              {primaryAction ? (
-                <button
-                  type="button"
-                  onClick={primaryAction.onClick}
-                  className="ai-type-heading-md inline-flex h-8 items-center rounded-full bg-ai-surface-overlay-soft px-3 text-ai-text-primary transition-colors hover:bg-ai-surface-overlay-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
-                >
-                  {primaryAction.label}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="End voice mode"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-ai-surface-overlay-soft text-ai-text-secondary transition-colors hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
-              >
-                <span aria-hidden="true" className="block">
-                  <CloseIcon />
-                </span>
-              </button>
+              <div className="flex items-center justify-center">
+                <VoiceStageBadge status={status} userName={userName} />
+              </div>
+              <div className="flex min-w-0 justify-end">
+                {primaryAction ? (
+                  <Tooltip content={primaryAction.tooltip}>
+                    <IconButton
+                      onClick={primaryAction.onClick}
+                    ariaLabel={primaryAction.tooltip}
+                    emphasis={false}
+                    variant="tertiary"
+                    className="rounded-full"
+                    iconClassName="h-[22px] w-[22px]"
+                    size="medium"
+                  >
+                    {primaryAction.icon}
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                  <span aria-hidden="true" className="block h-12 w-12" />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -153,10 +136,8 @@ function VoiceStageBadge({
   status: VoiceModeStatus;
   userName?: string;
 }) {
-  const isUserTurn =
-    status === "listening" ||
-    status === "requesting-permission" ||
-    status === "error";
+  const isPreparingTurn = status === "requesting-permission";
+  const isUserTurn = status === "listening" || status === "error";
   const isSpeakerPulseVisible =
     status === "listening" || status === "speaking";
   const isAssistantSpeaking = status === "speaking";
@@ -172,7 +153,11 @@ function VoiceStageBadge({
       {isSpeakerPulseVisible ? (
         <span className="absolute inset-0 rounded-full border border-ai-blue-border-soft opacity-80 animate-[ai-concierge-voice-pulse_1.9s_ease-out_infinite]" />
       ) : null}
-      {isUserTurn ? (
+      {isPreparingTurn ? (
+        <span className="ai-premium-gradient-frame relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full text-ai-text-inverse shadow-[0_8px_18px_rgba(10,102,194,0.18)]">
+          <VoicePrepIcon />
+        </span>
+      ) : isUserTurn ? (
         <Avatar
           decorative
           name={userName || "You"}
@@ -205,25 +190,64 @@ function VoiceStageBadge({
   );
 }
 
-function getPrimaryText({
+function VoicePrepIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]" aria-hidden="true">
+      <path
+        d="M2 10V13"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 6V17"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 3V21"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 8V15"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18 5V18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M22 10V13"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function getStatusAnnouncement({
   errorMessage,
   status,
-  userCaption,
 }: {
   errorMessage?: string | null;
   status: VoiceModeStatus;
-  userCaption: string;
-}): string | null {
-  if (status === "listening") {
-    return userCaption || "Speak naturally";
-  }
-
-  if (status === "thinking") {
-    return userCaption || "Thinking...";
-  }
-
-  if (status === "speaking") {
-    return null;
+}) {
+  if (status === "listening" || status === "thinking" || status === "speaking") {
+    return STATUS_LABELS[status];
   }
 
   if (status === "requesting-permission") {
@@ -250,60 +274,56 @@ function getPrimaryAction({
 }) {
   if (status === "listening") {
     return {
-      label: "Done",
+      icon: <DoneIcon />,
       onClick: onDoneListening,
+      tooltip: "Done speaking",
     };
   }
 
   if (status === "speaking") {
     return {
-      label: "Stop",
+      icon: <StopPlaybackIcon />,
       onClick: onStopSpeaking,
+      tooltip: "Stop reply",
     };
   }
 
   if (status === "error") {
     return {
-      label: "Retry",
+      icon: <RetryIcon />,
       onClick: onRetry,
+      tooltip: "Try again",
     };
   }
 
   return null;
 }
 
-function SpeakerIcon() {
+function DoneIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <svg viewBox="0 0 24 24" fill="none" className="h-full w-full" aria-hidden="true">
       <path
-        d="M14 5.23C14 4.34 12.92 3.89 12.29 4.52L8.82 8H6C4.9 8 4 8.9 4 10V14C4 15.1 4.9 16 6 16H8.82L12.29 19.48C12.92 20.11 14 19.66 14 18.77V5.23ZM16.5 9.5C17.38 10.38 17.88 11.57 17.88 12.81C17.88 14.05 17.38 15.24 16.5 16.12M18.62 7.38C20.06 8.82 20.88 10.77 20.88 12.81C20.88 14.85 20.06 16.8 18.62 18.24"
+        d="M18.6 4L9.7 16.9L5.4 12.6L4 14L10 20L21 4H18.6Z"
         fill="currentColor"
-        fillOpacity="0.78"
       />
     </svg>
   );
 }
 
-function SpeakerMutedIcon() {
+function StopPlaybackIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M14 5.23C14 4.34 12.92 3.89 12.29 4.52L8.82 8H6C4.9 8 4 8.9 4 10V14C4 15.1 4.9 16 6 16H8.82L12.29 19.48C12.92 20.11 14 19.66 14 18.77V5.23ZM18.59 8L17.17 9.41L19.05 11.29L17.17 13.17L18.59 14.59L20.46 12.71L22.34 14.59L23.76 13.17L21.88 11.29L23.76 9.41L22.34 8L20.46 9.88L18.59 8Z"
-        fill="currentColor"
-        fillOpacity="0.78"
-      />
+    <svg viewBox="0 0 24 24" fill="none" className="h-full w-full" aria-hidden="true">
+      <path d="M20 4H4V20H20V4Z" fill="currentColor" />
     </svg>
   );
 }
 
-function CloseIcon() {
+function RetryIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <svg viewBox="0 0 24 24" fill="none" className="h-full w-full" aria-hidden="true">
       <path
-        d="M3 3L11 11M11 3L3 11"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
+        d="M12 3L10 0H12.4L15 4L12.4 8H10L12 5C8.2 5 5 8.2 5 12C5 15.9 8.1 19 12 19C15.9 19 19 15.9 19 12C19 10.5 18.5 9.1 17.7 8H20.1C20.7 9.2 21 10.6 21 12C21 17 17 21 12 21C7 21 3 17 3 12C3 7 7 3 12 3Z"
+        fill="currentColor"
       />
     </svg>
   );

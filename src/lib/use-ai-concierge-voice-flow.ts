@@ -457,6 +457,7 @@ export function useVoiceFlow({
       return;
     }
 
+    setVoiceUserCaption("");
     awaitedVoiceAssistantMessageIdRef.current = assistantMessageId;
   }, [appendVoiceAssistantMessage, playAssistantCaption, scheduleVoiceListening]);
 

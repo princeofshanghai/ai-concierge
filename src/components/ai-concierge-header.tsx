@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { Avatar, AVATAR_FALLBACK_SOURCES } from "@/components/avatar";
+import { CloseIcon } from "@/components/close-icon";
 import { PhoneCallIcon } from "@/components/phone-call-icon";
 import { Tooltip } from "@/components/tooltip";
 
@@ -143,10 +144,12 @@ export function AiConciergeHeader({
             ariaLabel={isExpanded ? "Collapse panel" : "Maximize panel"}
             className="hidden sm:flex"
             height={14}
-            iconSrc={
-              isExpanded
-                ? "/figma/chat/minimize.svg"
-                : "/figma/chat/maximize.svg"
+            icon={
+              isExpanded ? (
+                <MinimizePanelIcon className="h-4 w-4" />
+              ) : (
+                <MaximizePanelIcon className="h-4 w-4" />
+              )
             }
             onClick={onToggleExpand}
             pressed={isExpanded}
@@ -157,11 +160,44 @@ export function AiConciergeHeader({
         <HeaderIconButton
           ariaLabel="Close chat"
           height={12}
-          iconSrc="/figma/chat/close.svg"
+          className="text-ai-text-primary"
+          icon={<CloseIcon className="h-4 w-4" />}
           onClick={onClose}
           width={12}
         />
       </div>
     </header>
+  );
+}
+
+function MinimizePanelIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="M22 20.6L20.6 22L15 16.4V21H13V13H21V15H16.4L22 20.6ZM9 7.6L3.4 2L2 3.4L7.6 9H3V11H11V3H9V7.6Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function MaximizePanelIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="M21 13V21H13V19H17.6L12 13.4L13.4 12L19 17.6V13H21ZM6.4 5H11V3H3V11H5V6.4L10.6 12L12 10.6L6.4 5Z"
+        fill="currentColor"
+      />
+    </svg>
   );
 }

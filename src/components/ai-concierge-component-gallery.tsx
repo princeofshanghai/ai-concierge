@@ -6,6 +6,7 @@ import { AiConciergeBody } from "@/components/ai-concierge-body";
 import { AiConciergeComposer } from "@/components/ai-concierge-composer";
 import { AiConciergeConfettiOverlay } from "@/components/ai-concierge-confetti-overlay";
 import { AiConciergeHeader } from "@/components/ai-concierge-header";
+import { AiConciergeMeetingCancelDialog } from "@/components/ai-concierge-meeting-cancel-dialog";
 import { AiConciergeMicrophoneNotice } from "@/components/ai-concierge-microphone-notice";
 import { AiConciergeNextStepPanel } from "@/components/ai-concierge-next-step-panel";
 import { AiConciergeOnboarding } from "@/components/ai-concierge-onboarding";
@@ -22,6 +23,7 @@ import { ChatAssistantMessage } from "@/components/chat-assistant-message";
 import { ChatLiveAgentMessage } from "@/components/chat-live-agent-message";
 import { ChatUserMessage } from "@/components/chat-user-message";
 import { ChoicePill } from "@/components/choice-pill";
+import { CloseIcon } from "@/components/close-icon";
 import { ContactSalesButton } from "@/components/contact-sales-button";
 import { IconButton } from "@/components/icon-button";
 import { InternalPrototypeNav } from "@/components/internal-prototype-nav";
@@ -155,7 +157,7 @@ export function AiConciergeComponentGallery() {
           >
             <ComponentRow
               description="The orchestration layer that owns onboarding, chat, matching, booking, voice, and celebration transitions."
-              details="Best reviewed in the main prototype because it coordinates full-screen state changes. Internal refactor note: representative matching, booking, live-sales handoff, phone callback, and voice state now flow through dedicated hooks, and handoff routing now lives in the shared conversation engine, with no intended UI change."
+              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border while voice mode starts, and the empty text composer now morphs into the centered voice pill before the live dock takes over."
               title="AiConciergePanel"
             >
               <PreviewSurface label="How to review">
@@ -259,7 +261,7 @@ export function AiConciergeComponentGallery() {
           >
             <ComponentRow
               description="Header chrome for close, expand, and phone entry points."
-              details="Preview shown: default chat header."
+              details="Preview shown: default chat header with the updated maximize and collapse glyphs plus the stronger shared close treatment on this lighter surface."
               title="AiConciergeHeader"
             >
               <PreviewSurface
@@ -279,7 +281,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Main thread surface for assistant, user, system, and rep messages."
-              details="Preview shown: an in-progress chat with inline reply suggestions."
+              details="Preview shown: an in-progress chat with inline reply suggestions and the softer live voice draft bubble now used before a spoken turn commits."
               title="AiConciergeBody"
             >
               <PreviewSurface
@@ -294,13 +296,14 @@ export function AiConciergeComponentGallery() {
                   onManageBooking={() => {}}
                   onRecommendationPrimaryAction={() => {}}
                   onSelectSuggestedReply={() => {}}
+                  voiceDraftText="We need the quickest rollout path for this quarter."
                 />
               </PreviewSurface>
             </ComponentRow>
 
             <ComponentRow
               description="Composer for typed input, suggested replies, voice mode, and sending messages."
-              details="Preview shown: default and responding states."
+              details="Preview shown: default and responding states, including the refreshed white voice-mode waveform icon on the updated premium brand gradient CTA. In the main prototype, that CTA now morphs the empty text composer into the centered voice pill at a touch slower pace while the broader full-panel ribbon sweep and temporary gradient border begin."
               title="AiConciergeComposer"
             >
               <div className="grid gap-6 md:grid-cols-2">
@@ -340,7 +343,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Inline prompt that offers a phone callback as an alternate entry point."
-              details="Preview shown: available and requested states with the neutral gray container styling."
+              details="Preview shown: available and requested states with the neutral gray container styling and a stronger dismiss glyph treatment on the requested state."
               title="AiConciergePhoneCallPrompt"
             >
               <div className="flex flex-col gap-6">
@@ -369,7 +372,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Dialog used to confirm the number for a callback request."
-              details="Preview shown: open state."
+              details="Preview shown: open state with the close glyph scaled up and nudged upward so it aligns better with the title on the light modal surface."
               title="AiConciergePhoneCallDialog"
             >
               <PreviewSurface
@@ -390,21 +393,18 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="The compact live voice stage that keeps turn-taking visible inside the composer area."
-              details="Preview shown: controls-only assistant-speaking state and live user-speaking state with the same pulse halo around the active speaker."
+              details="Preview shown: the narrower floating voice pill with reduced center gap, your updated custom check, stop, and redo glyphs on the right-side stateful actions, preserved tooltips, and a softer shadow. Entry now hands off from the composer morph into a preparation badge before live turn-taking begins, and live speech appears in the thread instead of inside the pill."
               title="AiConciergeVoiceDock"
             >
               <div className="flex flex-col gap-6">
                 <StatePreview label="Assistant speaking">
                   <PreviewSurface className="pt-6" padded={false}>
                     <AiConciergeVoiceDock
-                      isMuted={false}
                       onClose={() => {}}
                       onDoneListening={() => {}}
                       onRetry={() => {}}
                       onStopSpeaking={() => {}}
-                      onToggleMute={() => {}}
                       status="speaking"
-                      userCaption=""
                       userName={`${PREFILLED_CONTACT_DETAILS.firstName} ${PREFILLED_CONTACT_DETAILS.lastName}`}
                     />
                   </PreviewSurface>
@@ -412,14 +412,11 @@ export function AiConciergeComponentGallery() {
                 <StatePreview label="User speaking">
                   <PreviewSurface className="pt-6" padded={false}>
                     <AiConciergeVoiceDock
-                      isMuted={false}
                       onClose={() => {}}
                       onDoneListening={() => {}}
                       onRetry={() => {}}
                       onStopSpeaking={() => {}}
-                      onToggleMute={() => {}}
                       status="listening"
-                      userCaption="We need to hire quickly across product and engineering this quarter."
                       userName={`${PREFILLED_CONTACT_DETAILS.firstName} ${PREFILLED_CONTACT_DETAILS.lastName}`}
                     />
                   </PreviewSurface>
@@ -429,7 +426,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Shared system notice for blocked microphone access and browser-level voice or dictation failures, kept separate from live conversation text."
-              details="Preview shown: blocked-mic and generic browser-error states on the neutral gray banner."
+              details="Preview shown: blocked-mic and generic browser-error states on the neutral gray banner, with a stronger dismiss glyph so the close affordance reads clearly."
               title="AiConciergeMicrophoneNotice"
             >
               <div className="flex flex-col gap-6">
@@ -450,6 +447,25 @@ export function AiConciergeComponentGallery() {
                   </PreviewSurface>
                 </StatePreview>
               </div>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Dialog used to confirm meeting cancellation after a booking is already on the calendar."
+              details="Preview shown: open state with the same stronger close treatment and upward alignment adjustment used across light modal surfaces."
+              title="AiConciergeMeetingCancelDialog"
+            >
+              <PreviewSurface
+                className="relative min-h-[320px] overflow-hidden bg-[linear-gradient(180deg,#eff5ff_0%,#ffffff_100%)]"
+                label="Preview"
+                padded={false}
+              >
+                <AiConciergeMeetingCancelDialog
+                  isOpen
+                  onClose={() => {}}
+                  onConfirm={() => {}}
+                  representativeName={DEFAULT_REPRESENTATIVE_NAME}
+                />
+              </PreviewSurface>
             </ComponentRow>
 
             <ComponentRow
@@ -476,15 +492,27 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="User message styling inside the conversation thread."
-              details="Preview shown: standard text message."
+              details="Preview shown: standard and live-draft states. The live-draft treatment keeps the same bubble shape, but drops the border for a cooler light gray fill and lighter gray text while voice capture is still in progress."
               title="ChatUserMessage"
             >
-              <PreviewSurface label="Preview">
-                <ChatUserMessage>
-                  We want something that helps us move this quarter, not next
-                  quarter.
-                </ChatUserMessage>
-              </PreviewSurface>
+              <div className="grid gap-6 md:grid-cols-2">
+                <StatePreview label="Standard">
+                  <PreviewSurface label="Preview">
+                    <ChatUserMessage>
+                      We want something that helps us move this quarter, not
+                      next quarter.
+                    </ChatUserMessage>
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Live draft">
+                  <PreviewSurface label="Preview">
+                    <ChatUserMessage isDraft>
+                      We want something that helps us move this quarter, not
+                      next quarter.
+                    </ChatUserMessage>
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
             </ComponentRow>
 
             <ComponentRow
@@ -671,11 +699,14 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Compact icon-only button treatments used for utility actions."
-              details="Preview shown: primary, secondary, and tertiary."
+              details="Preview shown: premium, primary, secondary, and tertiary, including the shared close glyph now used in voice mode and other dismiss controls."
               title="IconButton"
             >
               <PreviewSurface label="Preview">
                 <div className="flex flex-wrap gap-3">
+                  <IconButton ariaLabel="Phone premium" variant="premium">
+                    <PhoneCallIcon className="h-4 w-4" />
+                  </IconButton>
                   <IconButton ariaLabel="Phone primary" variant="primary">
                     <PhoneCallIcon className="h-4 w-4" />
                   </IconButton>
@@ -692,6 +723,14 @@ export function AiConciergeComponentGallery() {
                     variant="tertiary"
                   >
                     <PhoneCallIcon className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton
+                    ariaLabel="Close tertiary"
+                    emphasis={false}
+                    variant="tertiary"
+                    className="rounded-full"
+                  >
+                    <CloseIcon className="h-full w-full" />
                   </IconButton>
                 </div>
               </PreviewSurface>

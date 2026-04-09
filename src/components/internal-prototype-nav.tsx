@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { CloseIcon } from "@/components/close-icon";
 import {
   PrototypeShellActionButton,
   PrototypeShellChip,
@@ -190,7 +191,7 @@ export function InternalPrototypeNav({
                 onClick={closeDrawer}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/82 transition-[background-color,border-color,color] duration-150 hover:border-white/18 hover:bg-white/[0.12] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
               >
-                <CloseIcon />
+                <CloseIcon className="h-[14px] w-[14px]" />
               </button>
             </div>
 
@@ -335,26 +336,6 @@ function PrototypeMenuIcon() {
     >
       <path
         d="M2.5 4H13.5M2.5 8H10.5M2.5 12H13.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden="true"
-      className="shrink-0"
-    >
-      <path
-        d="M3 3L11 11M11 3L3 11"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
