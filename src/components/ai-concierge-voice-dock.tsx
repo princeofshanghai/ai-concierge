@@ -48,6 +48,7 @@ export function AiConciergeVoiceDock({
     errorMessage,
     status,
   });
+  const isLiveTurn = status === "listening" || status === "speaking";
   const primaryAction = getPrimaryAction({
     onDoneListening,
     onRetry,
@@ -59,14 +60,20 @@ export function AiConciergeVoiceDock({
     <div className="px-5 pb-5 pt-0">
       <div
         className={[
-          "mx-auto w-fit max-w-full",
+          "relative mx-auto w-fit max-w-full",
         ].join(" ")}
       >
+        {isLiveTurn ? (
+          <span
+            aria-hidden="true"
+            className="ai-premium-gradient-pill-pulse pointer-events-none absolute -inset-[6px] rounded-full animate-[ai-concierge-voice-shell-pulse_1.9s_cubic-bezier(0.33,0,0.2,1)_infinite] motion-reduce:animate-none motion-reduce:opacity-45"
+          />
+        ) : null}
         <div
           className={[
-            "ai-premium-gradient-frame rounded-full p-px transition-[box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "ai-premium-gradient-frame relative z-10 rounded-full p-px transition-[box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]",
             status === "listening" || status === "speaking"
-              ? "shadow-[0_0_0_3px_var(--ai-blue-focus-ring),0_14px_34px_rgba(15,23,42,0.12),0_3px_10px_rgba(15,23,42,0.05)]"
+              ? "shadow-[0_14px_34px_rgba(15,23,42,0.12),0_3px_10px_rgba(15,23,42,0.05)]"
               : status === "thinking"
                 ? "shadow-[0_12px_28px_rgba(15,23,42,0.1),0_2px_8px_rgba(15,23,42,0.04)]"
                 : "shadow-[0_10px_24px_rgba(15,23,42,0.08),0_2px_6px_rgba(15,23,42,0.04)]",
@@ -138,10 +145,7 @@ function VoiceStageBadge({
 }) {
   const isPreparingTurn = status === "requesting-permission";
   const isUserTurn = status === "listening" || status === "error";
-  const isSpeakerPulseVisible =
-    status === "listening" || status === "speaking";
   const isAssistantSpeaking = status === "speaking";
-  const isAssistantThinking = status === "thinking";
 
   return (
     <div
@@ -150,9 +154,6 @@ function VoiceStageBadge({
       role="img"
     >
       <span className="sr-only">{STATUS_LABELS[status]}</span>
-      {isSpeakerPulseVisible ? (
-        <span className="absolute inset-0 rounded-full border border-ai-blue-border-soft opacity-80 animate-[ai-concierge-voice-pulse_1.9s_ease-out_infinite]" />
-      ) : null}
       {isPreparingTurn ? (
         <span className="ai-premium-gradient-frame relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full text-ai-text-inverse shadow-[0_8px_18px_rgba(10,102,194,0.18)]">
           <VoicePrepIcon />
@@ -166,23 +167,15 @@ function VoiceStageBadge({
         />
       ) : (
         <span
-          className={[
-            "relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-ai-surface-tint text-ai-blue-primary shadow-[inset_0_0_0_1px_var(--ai-blue-border-subtle)]",
-            isAssistantSpeaking
-              ? "shadow-[0_4px_12px_rgba(10,102,194,0.16),inset_0_0_0_1px_var(--ai-blue-border-subtle)]"
-              : "",
-            isAssistantThinking
-              ? "animate-[ai-concierge-voice-think_1.6s_ease-in-out_infinite] motion-reduce:animate-none"
-              : "",
-          ].join(" ")}
+          className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/75 bg-[#f1f4f8] shadow-[0_4px_10px_rgba(15,23,42,0.05),inset_0_0_0_1px_var(--ai-divider)]"
         >
           <Image
             src="/figma/chat/ai-concierge-icon.svg"
             alt=""
-            width={18}
-            height={18}
+            width={isAssistantSpeaking ? 20 : 16}
+            height={isAssistantSpeaking ? 20 : 16}
             aria-hidden="true"
-            className="h-[18px] w-[18px]"
+            className={isAssistantSpeaking ? "h-5 w-5" : "h-4 w-4"}
           />
         </span>
       )}

@@ -11,6 +11,7 @@ This folder contains the project planning, product, and conversation design docu
 - [ae-matched-booking-ui-checklist.md](ae-matched-booking-ui-checklist.md): UI review checklist for the matched AE booking flow
 - [implementation-plan.md](implementation-plan.md): execution plan for building the prototype
 - [phase-1-flow-notes.md](phase-1-flow-notes.md): notes and thinking for the first phase flow
+- [opening-profile-aware-entry-notes.md](opening-profile-aware-entry-notes.md): framing, options, and open questions for a profile-aware opening flow that may replace the upfront contact form
 - [prototype-shell-ui.md](prototype-shell-ui.md): principles for internal prototype controls and scenario switching
 - [ai-concierge-typography.md](ai-concierge-typography.md): scoped typography system for the AI concierge panel
 - [stakeholder-notes-talk-track.md](stakeholder-notes-talk-track.md): supporting stakeholder communication notes

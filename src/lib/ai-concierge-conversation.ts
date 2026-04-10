@@ -199,6 +199,31 @@ const DEFAULT_STATE: AiConciergeConversationState = {
   urgency: "unknown",
 };
 
+function getCompanyReference(company: string) {
+  const trimmedCompany = company.trim();
+
+  return trimmedCompany.length > 0 ? trimmedCompany : "your team";
+}
+
+function createOpeningBody(contactDetails: ConciergeContactDetails) {
+  const trimmedFirstName = contactDetails.firstName.trim();
+  const trimmedCompany = contactDetails.company.trim();
+
+  if (trimmedFirstName.length > 0 && trimmedCompany.length > 0) {
+    return `Hi ${trimmedFirstName}, I can help you explore hiring solutions for ${trimmedCompany}, answer your questions, and point you in the right direction from there.`;
+  }
+
+  if (trimmedFirstName.length > 0) {
+    return `Hi ${trimmedFirstName}, I can help you explore hiring solutions, answer your questions, and point you in the right direction from there.`;
+  }
+
+  if (trimmedCompany.length > 0) {
+    return `I can help you explore hiring solutions for ${trimmedCompany}, answer your questions, and point you in the right direction from there.`;
+  }
+
+  return "I can help you explore hiring solutions, answer your questions, and point you in the right direction from there.";
+}
+
 export function createOpeningTurn({
   contactDetails,
   openingPromptVariant,
@@ -206,7 +231,7 @@ export function createOpeningTurn({
   contactDetails: ConciergeContactDetails;
   openingPromptVariant: PrototypeScenarioOpeningPromptVariant;
 }): AiConciergeAssistantTurn {
-  const openingBody = `Hi ${contactDetails.firstName}, I can help you explore hiring solutions for ${contactDetails.company}, answer your questions, and point you in the right direction from there.`;
+  const openingBody = createOpeningBody(contactDetails);
 
   if (openingPromptVariant === "helper-examples") {
     return {
@@ -245,7 +270,13 @@ export function createVoiceModeIntro({
 }: {
   contactDetails: ConciergeContactDetails;
 }) {
-  return `I can help you explore hiring solutions for ${contactDetails.company} and answer questions as we go. When you're ready, just start talking.`;
+  const companyReference = getCompanyReference(contactDetails.company);
+
+  if (contactDetails.company.trim().length > 0) {
+    return `I can help you explore hiring solutions for ${companyReference} and answer questions as we go. When you're ready, just start talking.`;
+  }
+
+  return "I can help you explore hiring solutions and answer questions as we go. When you're ready, just start talking.";
 }
 
 export function createReturnToChatTurn({
@@ -261,10 +292,11 @@ export function createReturnToChatTurn({
     nextStepMode: null,
     readiness: "exploring",
   };
+  const companyReference = getCompanyReference(contactDetails.company);
 
   if (state.likelySolution === "lighter_touch") {
     return {
-      body: `No problem. I can keep helping you compare which hiring option could fit ${contactDetails.company} best, and we can revisit the account rep option anytime.`,
+      body: `No problem. I can keep helping you compare which hiring option could fit ${companyReference} best, and we can revisit the account rep option anytime.`,
       nextState,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
@@ -272,7 +304,7 @@ export function createReturnToChatTurn({
   }
 
   return {
-    body: `No problem. I can keep helping you understand where Recruiter could fit for ${contactDetails.company}, and we can revisit the account rep option anytime.`,
+    body: `No problem. I can keep helping you understand where Recruiter could fit for ${companyReference}, and we can revisit the account rep option anytime.`,
     nextState,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -566,6 +598,7 @@ function createNextStepResponse(
   const normalized = normalizeInput(input);
   const roleClause = createRoleClause(state.hiringSummary);
   const representativeLabel = "sales rep";
+  const companyReference = getCompanyReference(contactDetails.company);
 
   if (
     normalized.includes("talk to a") ||
@@ -580,7 +613,7 @@ function createNextStepResponse(
           ? `That makes sense. If you'd like, I can connect you with an account rep here in chat now, or help you book time.`
           : state.likelySolution === "recruiter"
           ? "Based on what you shared, talking to a sales rep looks like the right next step."
-          : `That makes sense. A short conversation with an account rep could help narrow the right option for ${contactDetails.company}.\n\nI can help you book a meeting.`,
+          : `That makes sense. A short conversation with an account rep could help narrow the right option for ${companyReference}.\n\nI can help you book a meeting.`,
       nextState: {
         ...state,
         stage: "awaiting_handoff_choice",
@@ -667,7 +700,7 @@ function createNextStepResponse(
   }
 
   return {
-    body: `I can keep helping you understand what could fit ${contactDetails.company}, or, if helpful, connect you with a ${representativeLabel}.`,
+    body: `I can keep helping you understand what could fit ${companyReference}, or, if helpful, connect you with a ${representativeLabel}.`,
     nextState: state,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -775,27 +808,30 @@ function createRecommendationMessage({
   urgency: Urgency;
 }) {
   const urgencyPhrase = createUrgencyPhrase(urgency);
+  const companyReference = getCompanyReference(company);
 
   if (likelySolution === "lighter_touch") {
-    return `It sounds like ${company} is hiring for ${summary}, and ${urgencyPhrase}. Because the hiring need sounds more occasional or limited in scope, a lighter-touch hiring option may be worth comparing before jumping into a full proactive sourcing workflow.`;
+    return `It sounds like ${companyReference} is hiring for ${summary}, and ${urgencyPhrase}. Because the hiring need sounds more occasional or limited in scope, a lighter-touch hiring option may be worth comparing before jumping into a full proactive sourcing workflow.`;
   }
 
   if (summary === "harder-to-fill roles") {
     return `It sounds like the biggest pressure is around harder-to-fill roles, and ${urgencyPhrase}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
   }
 
-  return `It sounds like ${company} is hiring for ${summary}, and ${urgencyPhrase}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
+  return `It sounds like ${companyReference} is hiring for ${summary}, and ${urgencyPhrase}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
 }
 
 function createNextStepQuestion(
   company: string,
   likelySolution: LikelySolution,
 ) {
+  const companyReference = getCompanyReference(company);
+
   if (likelySolution === "lighter_touch") {
-    return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about which option could fit ${company} best?`;
+    return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about which option could fit ${companyReference} best?`;
   }
 
-  return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about what this could look like for ${company}?`;
+  return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about what this could look like for ${companyReference}?`;
 }
 
 function createNextStepSuggestions(likelySolution: LikelySolution) {

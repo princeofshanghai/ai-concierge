@@ -40,7 +40,7 @@ It is not part of the intended customer-facing experience.
 - model scenario setup as separate axes when they represent different concerns
 - current shell scenario model for AI Concierge:
   - `authState`: `signed-out` or `linkedin-connected`
-  - `entryVariant`: `welcome-first` or `confirm-details-first`
+  - `entryVariant`: `welcome-first`, `confirm-details-first`, or `profile-aware-opening`
 - changing scenario controls should reset into the selected setup rather than live-mutate an in-progress chat
 
 ## Starter Library

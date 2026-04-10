@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { Avatar } from "@/components/avatar";
 import { LinkedInIdentityChip } from "@/components/linkedin-identity-chip";
 import { Button } from "@/components/button";
 import {
@@ -21,6 +22,7 @@ type AiConciergeOnboardingProps = {
   copyVariant?: "default" | "direct-entry";
   details: ConciergeContactDetails;
   isPanelExpanded?: boolean;
+  isLinkedInConnected?: boolean;
   isValid: boolean;
   linkedInIdentity: LinkedInIdentity | null;
   mode: "manual" | "prefill" | "welcome";
@@ -29,10 +31,15 @@ type AiConciergeOnboardingProps = {
     field: keyof ConciergeContactDetails,
     value: string,
   ) => void;
+  onContinueWithoutLinkedIn?: () => void;
   onGetStarted: () => void;
   onContinueWithLinkedIn: () => void;
+  onReviewDetails?: () => void;
   onStartConversation: () => void;
   onUseAnotherAccount: () => void;
+  showBackButton?: boolean;
+  submitLabel?: string;
+  welcomeVariant?: "legacy" | "profile-aware";
 };
 
 const LINKEDIN_DETAILS_FIELDS: Array<keyof ConciergeContactDetails> = [
@@ -64,6 +71,8 @@ function OnboardingDetailsForm({
   onContinueWithLinkedIn,
   onStartConversation,
   onUseAnotherAccount,
+  showBackButton,
+  submitLabel = "Start conversation",
 }: Omit<
   AiConciergeOnboardingProps,
   "onGetStarted"
@@ -82,11 +91,16 @@ function OnboardingDetailsForm({
     mode === "manual" ||
     (isPrefill && isEditingPrefillDetails) ||
     (isPrefill && linkedInIdentity === null);
-  const title = isPrefill ? "Confirm details" : "Confirm details";
-  const shouldShowBackButton = copyVariant !== "direct-entry";
+  const title =
+    copyVariant === "direct-entry" && isPrefill
+      ? "Review details"
+      : "Confirm details";
+  const shouldShowBackButton = showBackButton ?? copyVariant !== "direct-entry";
   const directEntryDescription =
-    copyVariant === "direct-entry" && !isPrefill
-      ? "Before we start, share a few details so I can tailor the conversation and connect you with the right account rep."
+    copyVariant === "direct-entry"
+      ? isPrefill
+        ? "Review the details we'll use to connect you with the right account rep."
+        : "Before I connect you with the right account rep, share a few details so I can hand you off cleanly."
       : null;
 
   return (
@@ -183,7 +197,7 @@ function OnboardingDetailsForm({
 
             <div className="pt-2">
               <Button type="submit" fullWidth disabled={!isValid}>
-                Start conversation
+                {submitLabel}
               </Button>
             </div>
           </form>
@@ -447,38 +461,163 @@ function LinkedInLogoIcon() {
   );
 }
 
+function getLinkedInIdentityName(linkedInIdentity: LinkedInIdentity) {
+  return `${linkedInIdentity.firstName} ${linkedInIdentity.lastName}`.trim();
+}
+
+function maskLinkedInEmail(email: string) {
+  const [localPart = "", domain = ""] = email.trim().split("@");
+
+  if (!localPart || !domain) {
+    return email;
+  }
+
+  return `${localPart[0] ?? ""}${"*".repeat(Math.max(4, localPart.length - 1))}@${domain}`;
+}
+
+function LinkedInIdentityPrimaryButton({
+  isLinkedInConnected,
+  linkedInIdentity,
+  onClick,
+}: {
+  isLinkedInConnected: boolean;
+  linkedInIdentity: LinkedInIdentity;
+  onClick: () => void;
+}) {
+  const fullName = getLinkedInIdentityName(linkedInIdentity);
+  const firstName = linkedInIdentity.firstName.trim() || fullName;
+  const title = `Continue as ${firstName}`;
+  const subtitle = isLinkedInConnected
+    ? linkedInIdentity.email
+    : maskLinkedInEmail(linkedInIdentity.email);
+
+  return (
+    <Button
+      fullWidth
+      onClick={onClick}
+      leadingVisual={
+        <Avatar
+          decorative
+          name={fullName}
+          seed={linkedInIdentity.email}
+          size={40}
+          src={linkedInIdentity.avatarSrc}
+          className="border border-white/30 shadow-[0_2px_8px_rgba(4,33,64,0.18)]"
+        />
+      }
+      className="!min-h-[64px] !justify-start !gap-3 !rounded-full !px-3 !py-2"
+    >
+      <span className="flex min-w-0 flex-col items-start text-left">
+        <span className="ai-type-heading-md w-full truncate text-ai-text-inverse">
+          {title}
+        </span>
+        <span className="ai-type-body-xs w-full truncate text-ai-text-inverse">
+          {subtitle}
+        </span>
+      </span>
+    </Button>
+  );
+}
+
 export function AiConciergeOnboarding({
   copyVariant = "default",
   details,
   isPanelExpanded = false,
+  isLinkedInConnected = false,
   isValid,
   linkedInIdentity,
   mode,
   onBack,
   onChange,
+  onContinueWithoutLinkedIn,
   onGetStarted,
   onContinueWithLinkedIn,
+  onReviewDetails,
   onStartConversation,
   onUseAnotherAccount,
+  showBackButton,
+  submitLabel = "Start conversation",
+  welcomeVariant = "legacy",
 }: AiConciergeOnboardingProps) {
   if (mode === "welcome") {
+    const welcomeTitle = "Got hiring questions? Just ask.";
+    const signedOutDescription =
+      "Continue with the LinkedIn account we found for a faster start, or continue without signing in if you want to explore first.";
+    const signedInDescription = linkedInIdentity
+      ? `Welcome back, ${linkedInIdentity.firstName}. We can use your LinkedIn profile to get you started faster.`
+      : "We can use your LinkedIn profile to get you started faster.";
+
     return (
       <div className="relative flex h-full flex-col overflow-hidden px-5 pb-10 pt-8">
         <div className="relative mx-auto flex h-full w-full max-w-[360px] flex-col">
           <div>
             <h3 className="ai-type-display-md text-ai-text-primary">
-              Got hiring questions? Just ask.
+              {welcomeTitle}
             </h3>
             <p className="ai-type-body-md-open mt-4 text-ai-text-primary">
-              Chat with our AI to find the right hiring solution for your team,
-              and connect with a sales rep when you&apos;re ready.
+              {welcomeVariant === "profile-aware"
+                ? isLinkedInConnected
+                  ? signedInDescription
+                  : signedOutDescription
+                : "Chat with our AI to find the right hiring solution for your team, and connect with a sales rep when you're ready."}
             </p>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:mt-10">
-            <Button fullWidth onClick={onGetStarted}>
-              Get started
-            </Button>
+            {welcomeVariant === "profile-aware" && linkedInIdentity ? (
+              isLinkedInConnected ? (
+                <>
+                  <LinkedInIdentityPrimaryButton
+                    isLinkedInConnected
+                    linkedInIdentity={linkedInIdentity}
+                    onClick={onGetStarted}
+                  />
+                  <Button
+                    fullWidth
+                    variant="secondary"
+                    onClick={onReviewDetails}
+                  >
+                    Review details
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <LinkedInIdentityPrimaryButton
+                    isLinkedInConnected={false}
+                    linkedInIdentity={linkedInIdentity}
+                    onClick={onContinueWithLinkedIn}
+                  />
+                  <Button
+                    fullWidth
+                    variant="secondary"
+                    onClick={onContinueWithoutLinkedIn}
+                  >
+                    Continue without signing in
+                  </Button>
+                </>
+              )
+            ) : welcomeVariant === "profile-aware" ? (
+              <>
+                <Button
+                  fullWidth
+                  onClick={onContinueWithLinkedIn}
+                  leadingVisual={<LinkedInLogoIcon />}
+                >
+                  Sign in with LinkedIn
+                </Button>
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  onClick={onContinueWithoutLinkedIn}
+                >
+                  Continue without signing in
+                </Button>
+              </>
+            ) : (
+              <Button fullWidth onClick={onGetStarted}>
+                Get started
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -492,14 +631,16 @@ export function AiConciergeOnboarding({
         details={details}
         isPanelExpanded={isPanelExpanded}
         isValid={isValid}
-      linkedInIdentity={linkedInIdentity}
-      mode={mode}
-      onBack={onBack}
-      onChange={onChange}
-      onContinueWithLinkedIn={onContinueWithLinkedIn}
-      onStartConversation={onStartConversation}
-      onUseAnotherAccount={onUseAnotherAccount}
-    />
+        linkedInIdentity={linkedInIdentity}
+        mode={mode}
+        onBack={onBack}
+        onChange={onChange}
+        onContinueWithLinkedIn={onContinueWithLinkedIn}
+        onStartConversation={onStartConversation}
+        onUseAnotherAccount={onUseAnotherAccount}
+        showBackButton={showBackButton}
+        submitLabel={submitLabel}
+      />
   );
 }
 

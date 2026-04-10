@@ -196,33 +196,96 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Entry flow for welcome, LinkedIn prefill, and manual detail collection."
-              details="Preview shown: prefill. Welcome-state copy uses 'sales rep' language."
+              description="Entry flow for the legacy welcome, the new profile-aware welcome, and the reused details review states."
+              details="Previews shown: signed-out profile-aware welcome, signed-in profile-aware welcome, and the signed-in details review fallback."
               title="AiConciergeOnboarding"
             >
-              <PreviewSurface
-                className="overflow-hidden"
-                label="Preview"
-                padded={false}
-              >
-                <AiConciergeOnboarding
-                  details={onboardingDetails}
-                  isValid
-                  linkedInIdentity={LINKEDIN_IDENTITY}
-                  mode="prefill"
-                  onBack={() => {}}
-                  onChange={(field, value) =>
-                    setOnboardingDetails((currentDetails) => ({
-                      ...currentDetails,
-                      [field]: value,
-                    }))
-                  }
-                  onContinueWithLinkedIn={() => {}}
-                  onGetStarted={() => {}}
-                  onStartConversation={() => {}}
-                  onUseAnotherAccount={() => {}}
-                />
-              </PreviewSurface>
+              <div className="grid gap-6">
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    label="Profile-aware welcome / signed out"
+                    padded={false}
+                  >
+                    <AiConciergeOnboarding
+                      details={onboardingDetails}
+                      isLinkedInConnected={false}
+                      isValid
+                      linkedInIdentity={LINKEDIN_IDENTITY}
+                      mode="welcome"
+                      onBack={() => {}}
+                      onChange={(field, value) =>
+                        setOnboardingDetails((currentDetails) => ({
+                          ...currentDetails,
+                          [field]: value,
+                        }))
+                      }
+                      onContinueWithoutLinkedIn={() => {}}
+                      onContinueWithLinkedIn={() => {}}
+                      onGetStarted={() => {}}
+                      onReviewDetails={() => {}}
+                      onStartConversation={() => {}}
+                      onUseAnotherAccount={() => {}}
+                      welcomeVariant="profile-aware"
+                    />
+                  </PreviewSurface>
+
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    label="Profile-aware welcome / signed in"
+                    padded={false}
+                  >
+                    <AiConciergeOnboarding
+                      details={onboardingDetails}
+                      isLinkedInConnected
+                      isValid
+                      linkedInIdentity={LINKEDIN_IDENTITY}
+                      mode="welcome"
+                      onBack={() => {}}
+                      onChange={(field, value) =>
+                        setOnboardingDetails((currentDetails) => ({
+                          ...currentDetails,
+                          [field]: value,
+                        }))
+                      }
+                      onContinueWithoutLinkedIn={() => {}}
+                      onContinueWithLinkedIn={() => {}}
+                      onGetStarted={() => {}}
+                      onReviewDetails={() => {}}
+                      onStartConversation={() => {}}
+                      onUseAnotherAccount={() => {}}
+                      welcomeVariant="profile-aware"
+                    />
+                  </PreviewSurface>
+                </div>
+
+                <PreviewSurface
+                  className="overflow-hidden"
+                  label="Details review fallback"
+                  padded={false}
+                >
+                  <AiConciergeOnboarding
+                    details={onboardingDetails}
+                    isLinkedInConnected
+                    isValid
+                    linkedInIdentity={LINKEDIN_IDENTITY}
+                    mode="prefill"
+                    onBack={() => {}}
+                    onChange={(field, value) =>
+                      setOnboardingDetails((currentDetails) => ({
+                        ...currentDetails,
+                        [field]: value,
+                      }))
+                    }
+                    onContinueWithoutLinkedIn={() => {}}
+                    onContinueWithLinkedIn={() => {}}
+                    onGetStarted={() => {}}
+                    onReviewDetails={() => {}}
+                    onStartConversation={() => {}}
+                    onUseAnotherAccount={() => {}}
+                  />
+                </PreviewSurface>
+              </div>
             </ComponentRow>
 
             <ComponentRow
@@ -393,7 +456,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="The compact live voice stage that keeps turn-taking visible inside the composer area."
-              details="Preview shown: the narrower floating voice pill with reduced center gap, your updated custom check, stop, and redo glyphs on the right-side stateful actions, preserved tooltips, and a softer shadow. Entry now hands off from the composer morph into a preparation badge before live turn-taking begins, and live speech appears in the thread instead of inside the pill."
+              details="Preview shown: the narrower floating voice pill with reduced center gap, your updated custom check, stop, and redo glyphs on the right-side stateful actions, preserved tooltips, and a softer shadow. The user avatar and assistant mark now stay static in matching circular badges, with a clearer light-gray assistant badge and a larger AI mark while speaking, while live speaking also shifts to a more irregular, different-sized outer shell pulse around the pill. Entry still hands off from the composer morph into a preparation badge before live turn-taking begins, and live speech appears in the thread instead of inside the pill."
               title="AiConciergeVoiceDock"
             >
               <div className="flex flex-col gap-6">

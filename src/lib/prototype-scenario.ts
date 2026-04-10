@@ -4,7 +4,8 @@ export type PrototypeScenarioAuthState =
 
 export type PrototypeScenarioEntryVariant =
   | "welcome-first"
-  | "confirm-details-first";
+  | "confirm-details-first"
+  | "profile-aware-opening";
 
 export type PrototypeScenarioOpeningPromptVariant =
   | "inline-prompts"
@@ -28,7 +29,7 @@ export type PrototypeScenarioEntryState = "manual" | "prefill" | "welcome";
 export function getPrototypeScenarioEntryState(
   scenario: PrototypeScenario,
 ): PrototypeScenarioEntryState {
-  if (scenario.entryVariant === "welcome-first") {
+  if (scenario.entryVariant !== "confirm-details-first") {
     return "welcome";
   }
 
@@ -44,9 +45,14 @@ export function getPrototypeScenarioAuthLabel(
 export function getPrototypeScenarioEntryLabel(
   entryVariant: PrototypeScenario["entryVariant"],
 ) {
-  return entryVariant === "confirm-details-first"
-    ? "Confirm details first"
-    : "Welcome first";
+  switch (entryVariant) {
+    case "confirm-details-first":
+      return "Confirm details first";
+    case "profile-aware-opening":
+      return "Profile-aware opening";
+    case "welcome-first":
+      return "Welcome first";
+  }
 }
 
 export function getPrototypeScenarioOpeningPromptLabel(

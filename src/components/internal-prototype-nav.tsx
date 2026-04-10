@@ -38,6 +38,7 @@ const AUTH_OPTIONS: PrototypeScenario["authState"][] = [
 const ENTRY_OPTIONS: PrototypeScenario["entryVariant"][] = [
   "welcome-first",
   "confirm-details-first",
+  "profile-aware-opening",
 ];
 
 const OPENING_PROMPT_OPTIONS: PrototypeScenario["openingPromptVariant"][] = [

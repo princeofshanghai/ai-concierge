@@ -80,6 +80,22 @@ const VOICE_ENTRY_ACTIVATION_DELAY_MS = VOICE_COMPOSER_MORPH_DURATION_MS;
 
 type AiConciergePanelState = "chat" | "manual" | "prefill" | "welcome";
 
+type OnboardingFlowIntent = "entry" | "representative-gate";
+
+type PendingIdentityAction =
+  | {
+      messageId: string;
+      type: "live-sales-handoff";
+    }
+  | {
+      messageId: string;
+      type: "recommendation-card";
+    }
+  | {
+      messageId: string;
+      type: "representative-match";
+    };
+
 function getContactDetailsForScenario(
   scenario: PrototypeScenario,
 ): ConciergeContactDetails {
@@ -240,6 +256,10 @@ export function AiConciergePanel({
   const [contactDetails, setContactDetails] = useState<ConciergeContactDetails>(
     getContactDetailsForScenario(prototypeScenario),
   );
+  const [onboardingFlowIntent, setOnboardingFlowIntent] =
+    useState<OnboardingFlowIntent>("entry");
+  const [pendingIdentityAction, setPendingIdentityAction] =
+    useState<PendingIdentityAction | null>(null);
   const [messages, setMessages] = useState<AiConciergeMessage[]>([]);
   const [conversationState, setConversationState] =
     useState<AiConciergeConversationState | null>(null);
@@ -474,10 +494,15 @@ export function AiConciergePanel({
     setThreadScrollSignal,
     stopDictationRecognition,
   });
+  const isContactDetailsValid = REQUIRED_CONTACT_FIELDS.every(
+    (field) => contactDetails[field].trim().length > 0,
+  );
   const shouldShowNextStepSurface =
     panelState === "chat" && isMatchedBookingSurfaceVisible;
   const shouldShowPhoneCallHeaderAction =
-    panelState === "chat" && liveSalesChatStatus === "idle";
+    panelState === "chat" &&
+    liveSalesChatStatus === "idle" &&
+    isContactDetailsValid;
   const shouldDelayPhoneCallPromptReveal =
     isOpen &&
     panelState === "chat" &&
@@ -516,9 +541,6 @@ export function AiConciergePanel({
   const isLiveSalesChatConnecting = liveSalesChatStatus === "connecting";
   const isDockedNextStepSurface = shouldShowNextStepSurface && !isExpanded;
   const isPresentationExpanded = isExpanded || shouldShowNextStepSurface;
-  const isContactDetailsValid = REQUIRED_CONTACT_FIELDS.every(
-    (field) => contactDetails[field].trim().length > 0,
-  );
   const canRestartConversation =
     panelState === "chat" && messages.length > 1 && !shouldShowNextStepSurface;
   const composerSuggestedReplies = getComposerSuggestedReplies(
@@ -540,7 +562,8 @@ export function AiConciergePanel({
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
     liveSalesChatStatus === "idle" &&
-    hasCompletedOpeningMessage;
+    hasCompletedOpeningMessage &&
+    isContactDetailsValid;
   const shouldShowRepresentativeReadyBanner =
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
@@ -560,10 +583,18 @@ export function AiConciergePanel({
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
     Boolean(systemNoticeMessage);
+  const isProfileAwareOpening =
+    prototypeScenario.entryVariant === "profile-aware-opening";
   const onboardingCopyVariant =
+    onboardingFlowIntent === "representative-gate" ||
     prototypeScenario.entryVariant === "confirm-details-first"
       ? "direct-entry"
       : "default";
+  const onboardingSubmitLabel =
+    pendingIdentityAction !== null ? "Continue to rep" : "Start conversation";
+  const shouldShowOnboardingBackButton =
+    onboardingFlowIntent === "representative-gate" ||
+    prototypeScenario.entryVariant !== "confirm-details-first";
 
   useEffect(() => {
     closeVoiceModeRef.current = closeVoiceMode;
@@ -588,6 +619,8 @@ export function AiConciergePanel({
       setIsLinkedInConnected(scenario.authState === "linkedin-connected");
       setPanelState(getPrototypeScenarioEntryState(scenario));
       setContactDetails(nextContactDetails);
+      setOnboardingFlowIntent("entry");
+      setPendingIdentityAction(null);
       setMessages([]);
       setConversationState(null);
       setComposerDraft("");
@@ -611,6 +644,20 @@ export function AiConciergePanel({
       onPrototypeScenarioChange?.(scenario);
     },
     [onPrototypeScenarioChange],
+  );
+
+  const openRepresentativeIdentityGate = useCallback(
+    (nextAction: PendingIdentityAction) => {
+      setPendingIdentityAction(nextAction);
+      setOnboardingFlowIntent("representative-gate");
+      setPanelState(
+        isLinkedInConnected ||
+          prototypeScenario.authState === "linkedin-connected"
+          ? "prefill"
+          : "manual",
+      );
+    },
+    [isLinkedInConnected, prototypeScenario.authState],
   );
 
   const handleBackToChat = useCallback(() => {
@@ -804,17 +851,38 @@ export function AiConciergePanel({
           setConversationState(assistantTurn.nextState);
           setIsAssistantResponding(false);
           if (assistantTurn.postCompleteEffect === "representative-match") {
+            if (!isContactDetailsValid) {
+              openRepresentativeIdentityGate({
+                messageId: assistantMessageId,
+                type: "representative-match",
+              });
+              return;
+            }
+
             startRepresentativeMatchFlow(assistantMessageId);
             return;
           }
 
           if (assistantTurn.postCompleteEffect === "live-sales-handoff") {
+            if (!isContactDetailsValid) {
+              openRepresentativeIdentityGate({
+                messageId: assistantMessageId,
+                type: "live-sales-handoff",
+              });
+              return;
+            }
+
             handleStartLiveSalesHandoff(assistantMessageId);
           }
         }, getStreamingInterval(assistantTurn.body));
       }, thinkingDelay);
     },
-    [handleStartLiveSalesHandoff, startRepresentativeMatchFlow],
+    [
+      handleStartLiveSalesHandoff,
+      isContactDetailsValid,
+      openRepresentativeIdentityGate,
+      startRepresentativeMatchFlow,
+    ],
   );
 
   const queueRepresentativeAssistantTurn = useCallback(
@@ -979,10 +1047,34 @@ export function AiConciergePanel({
       entryVariant: prototypeScenario.entryVariant,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
     });
+    if (
+      panelState === "welcome" &&
+      onboardingFlowIntent === "entry" &&
+      isProfileAwareOpening
+    ) {
+      setPanelState("welcome");
+      return;
+    }
+
     setPanelState("prefill");
   };
 
+  const handleContinueWithoutLinkedIn = () => {
+    setOnboardingFlowIntent("entry");
+    setPendingIdentityAction(null);
+    restartConversation();
+    setPanelState("chat");
+  };
+
   const handleGetStarted = () => {
+    if (isProfileAwareOpening) {
+      setOnboardingFlowIntent("entry");
+      setPendingIdentityAction(null);
+      restartConversation();
+      setPanelState("chat");
+      return;
+    }
+
     setPanelState(
       isLinkedInConnected || prototypeScenario.authState === "linkedin-connected"
         ? "prefill"
@@ -990,7 +1082,19 @@ export function AiConciergePanel({
     );
   };
 
+  const handleReviewDetails = () => {
+    setOnboardingFlowIntent("entry");
+    setPanelState("prefill");
+  };
+
   const handleBackFromDetails = () => {
+    if (onboardingFlowIntent === "representative-gate") {
+      setPendingIdentityAction(null);
+      setOnboardingFlowIntent("entry");
+      setPanelState("chat");
+      return;
+    }
+
     setPanelState("welcome");
   };
 
@@ -1002,6 +1106,11 @@ export function AiConciergePanel({
       entryVariant: prototypeScenario.entryVariant,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
     });
+    if (onboardingFlowIntent === "entry" && isProfileAwareOpening) {
+      setPanelState("welcome");
+      return;
+    }
+
     setPanelState("manual");
   };
 
@@ -1037,13 +1146,58 @@ export function AiConciergePanel({
   };
 
   const handleStartConversation = () => {
+    if (pendingIdentityAction !== null) {
+      if (!isContactDetailsValid) {
+        return;
+      }
+
+      const nextAction = pendingIdentityAction;
+
+      setPendingIdentityAction(null);
+      setOnboardingFlowIntent("entry");
+      setPanelState("chat");
+
+      if (nextAction.type === "recommendation-card") {
+        handleRecommendationPrimaryAction(nextAction.messageId);
+        return;
+      }
+
+      if (nextAction.type === "representative-match") {
+        startRepresentativeMatchFlow(nextAction.messageId);
+        return;
+      }
+
+      handleStartLiveSalesHandoff(nextAction.messageId);
+      return;
+    }
+
     if (!isContactDetailsValid) {
       return;
     }
 
+    setOnboardingFlowIntent("entry");
     restartConversation();
     setPanelState("chat");
   };
+
+  const handleRecommendationPrimaryActionWithIdentityGate = useCallback(
+    (messageId: string) => {
+      if (!isContactDetailsValid) {
+        openRepresentativeIdentityGate({
+          messageId,
+          type: "recommendation-card",
+        });
+        return;
+      }
+
+      handleRecommendationPrimaryAction(messageId);
+    },
+    [
+      handleRecommendationPrimaryAction,
+      isContactDetailsValid,
+      openRepresentativeIdentityGate,
+    ],
+  );
 
   const handleRestartConversation = useCallback(() => {
     resetPanelToScenario(prototypeScenario);
@@ -1425,7 +1579,7 @@ export function AiConciergePanel({
                         onInsertOpeningPrompt={handleOpeningPromptInsert}
                         onManageBooking={openMatchedBookingSurface}
                         onRecommendationPrimaryAction={
-                          handleRecommendationPrimaryAction
+                          handleRecommendationPrimaryActionWithIdentityGate
                         }
                       pendingRecommendationMessageId={
                         pendingRecommendationMessageId
@@ -1469,7 +1623,7 @@ export function AiConciergePanel({
                       onInsertOpeningPrompt={handleOpeningPromptInsert}
                       onManageBooking={openMatchedBookingSurface}
                       onRecommendationPrimaryAction={
-                        handleRecommendationPrimaryAction
+                        handleRecommendationPrimaryActionWithIdentityGate
                       }
                       pendingRecommendationMessageId={
                         pendingRecommendationMessageId
@@ -1557,17 +1711,29 @@ export function AiConciergePanel({
                 copyVariant={onboardingCopyVariant}
                 details={contactDetails}
                 isPanelExpanded={isExpanded}
+                isLinkedInConnected={isLinkedInConnected}
                 isValid={isContactDetailsValid}
                 linkedInIdentity={
-                  isLinkedInConnected ? LINKEDIN_IDENTITY : null
+                  panelState === "welcome" && isProfileAwareOpening
+                    ? LINKEDIN_IDENTITY
+                    : isLinkedInConnected
+                      ? LINKEDIN_IDENTITY
+                      : null
                 }
                 mode={panelState}
                 onBack={handleBackFromDetails}
                 onChange={handleContactDetailChange}
+                onContinueWithoutLinkedIn={handleContinueWithoutLinkedIn}
                 onGetStarted={handleGetStarted}
                 onContinueWithLinkedIn={handleStartWithLinkedIn}
+                onReviewDetails={handleReviewDetails}
                 onStartConversation={handleStartConversation}
                 onUseAnotherAccount={handleUseAnotherAccount}
+                showBackButton={shouldShowOnboardingBackButton}
+                submitLabel={onboardingSubmitLabel}
+                welcomeVariant={
+                  isProfileAwareOpening ? "profile-aware" : "legacy"
+                }
               />
             )}
             <AiConciergePhoneCallDialog
