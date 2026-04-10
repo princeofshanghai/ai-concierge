@@ -37,6 +37,7 @@ import {
   LINKEDIN_IDENTITY,
   PREFILLED_CONTACT_DETAILS,
 } from "@/lib/ai-concierge-fixtures";
+import { OPENING_PROMPT_TOPICS } from "@/lib/ai-concierge-opening-presentation";
 import type {
   AiConciergeMessage,
   ConciergeContactDetails,
@@ -84,6 +85,20 @@ const SAMPLE_BODY_MESSAGES: AiConciergeMessage[] = [
     agentName: DEFAULT_REPRESENTATIVE_NAME,
     body: "I can walk you through what would get your team live fastest.",
     timestampLabel: "1:08 PM",
+  },
+];
+
+const SAMPLE_VOICE_OPENING_MESSAGES: AiConciergeMessage[] = [
+  {
+    id: "assistant-message-1",
+    role: "assistant",
+    body: "Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health, answer your questions, and point you in the right direction from there. When you're ready, you can start talking or use what's on screen to get started.",
+    openingSupport: {
+      type: "topic-picker",
+      helperText: "",
+      topics: OPENING_PROMPT_TOPICS,
+    },
+    status: "complete",
   },
 ];
 
@@ -157,7 +172,7 @@ export function AiConciergeComponentGallery() {
           >
             <ComponentRow
               description="The orchestration layer that owns onboarding, chat, matching, booking, voice, and celebration transitions."
-              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border while voice mode starts, and the empty text composer now morphs into the centered voice pill before the live dock takes over."
+              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border while voice mode starts, keeps the opening starter UI visible for the very first voice turn, and morphs the empty text composer into the centered voice pill before the live dock takes over."
               title="AiConciergePanel"
             >
               <PreviewSurface label="How to review">
@@ -197,7 +212,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Entry flow for the legacy welcome, the new profile-aware welcome, and the reused details review states."
-              details="Previews shown: signed-out profile-aware welcome, signed-in profile-aware welcome, and the signed-in details review fallback."
+              details="Previews shown: the signed-out Sign in to LinkedIn entry, the signed-in Continue as Jamie entry, and the optional details review fallback."
               title="AiConciergeOnboarding"
             >
               <div className="grid gap-6">
@@ -211,7 +226,7 @@ export function AiConciergeComponentGallery() {
                       details={onboardingDetails}
                       isLinkedInConnected={false}
                       isValid
-                      linkedInIdentity={LINKEDIN_IDENTITY}
+                      linkedInIdentity={null}
                       mode="welcome"
                       onBack={() => {}}
                       onChange={(field, value) =>
@@ -223,7 +238,6 @@ export function AiConciergeComponentGallery() {
                       onContinueWithoutLinkedIn={() => {}}
                       onContinueWithLinkedIn={() => {}}
                       onGetStarted={() => {}}
-                      onReviewDetails={() => {}}
                       onStartConversation={() => {}}
                       onUseAnotherAccount={() => {}}
                       welcomeVariant="profile-aware"
@@ -251,7 +265,6 @@ export function AiConciergeComponentGallery() {
                       onContinueWithoutLinkedIn={() => {}}
                       onContinueWithLinkedIn={() => {}}
                       onGetStarted={() => {}}
-                      onReviewDetails={() => {}}
                       onStartConversation={() => {}}
                       onUseAnotherAccount={() => {}}
                       welcomeVariant="profile-aware"
@@ -280,7 +293,6 @@ export function AiConciergeComponentGallery() {
                     onContinueWithoutLinkedIn={() => {}}
                     onContinueWithLinkedIn={() => {}}
                     onGetStarted={() => {}}
-                    onReviewDetails={() => {}}
                     onStartConversation={() => {}}
                     onUseAnotherAccount={() => {}}
                   />
@@ -344,24 +356,46 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Main thread surface for assistant, user, system, and rep messages."
-              details="Preview shown: an in-progress chat with inline reply suggestions and the softer live voice draft bubble now used before a spoken turn commits."
+              details="Previews shown: an in-progress chat with inline reply suggestions, plus the first voice-turn state where the opening support stays visible until the user starts speaking and the assistant message now fades in by chunk instead of popping in."
               title="AiConciergeBody"
             >
-              <PreviewSurface
-                className="h-[560px] overflow-hidden"
-                label="Preview"
-                padded={false}
-              >
-                <AiConciergeBody
-                  messages={SAMPLE_BODY_MESSAGES}
-                  onBookAgain={() => {}}
-                  onBookMeeting={() => {}}
-                  onManageBooking={() => {}}
-                  onRecommendationPrimaryAction={() => {}}
-                  onSelectSuggestedReply={() => {}}
-                  voiceDraftText="We need the quickest rollout path for this quarter."
-                />
-              </PreviewSurface>
+              <div className="grid gap-6 md:grid-cols-2">
+                <StatePreview label="In-progress chat">
+                  <PreviewSurface
+                    className="h-[560px] overflow-hidden"
+                    label="Preview"
+                    padded={false}
+                  >
+                    <AiConciergeBody
+                      messages={SAMPLE_BODY_MESSAGES}
+                      onBookAgain={() => {}}
+                      onBookMeeting={() => {}}
+                      onManageBooking={() => {}}
+                      onRecommendationPrimaryAction={() => {}}
+                      onSelectSuggestedReply={() => {}}
+                      voiceDraftText="We need the quickest rollout path for this quarter."
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Voice opening">
+                  <PreviewSurface
+                    className="h-[560px] overflow-hidden"
+                    label="Preview"
+                    padded={false}
+                  >
+                    <AiConciergeBody
+                      isVoiceModeActive
+                      messages={SAMPLE_VOICE_OPENING_MESSAGES}
+                      onBookAgain={() => {}}
+                      onBookMeeting={() => {}}
+                      onInsertOpeningPrompt={() => {}}
+                      onManageBooking={() => {}}
+                      onRecommendationPrimaryAction={() => {}}
+                      onSelectSuggestedReply={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
             </ComponentRow>
 
             <ComponentRow
@@ -533,19 +567,33 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Primary assistant message treatment used inside the conversation."
-              details="Preview shown: default and voice-speaking states with matching text styling, including conversational voice fallbacks that stay in the thread."
+              details="Previews shown: default, streaming fade-in, and voice-speaking states with matching text styling. Streamed assistant text now reveals in soft phrase chunks, while voice replies use the same treatment before audio starts."
               title="ChatAssistantMessage"
             >
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-3">
                 <StatePreview label="Default">
                   <PreviewSurface label="Preview">
                     <ChatAssistantMessage body="Based on what you shared, talking to a sales rep looks like the right next step." />
                   </PreviewSurface>
                 </StatePreview>
+                <StatePreview label="Streaming fade">
+                  <PreviewSurface label="Preview">
+                    <ChatAssistantMessage
+                      body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health and point you in the right direction from there."
+                      status="streaming"
+                      streamedChunks={[
+                        "Hi Jamie, glad you're here. ",
+                        "I can help you explore hiring solutions ",
+                        "for Northstar Health ",
+                        "and point you in the right direction from there.",
+                      ]}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
                 <StatePreview label="Voice speaking">
                   <PreviewSurface label="Preview">
                     <ChatAssistantMessage
-                      body="I can help you explore hiring solutions for Northstar Health and answer questions as we go. When you're ready, just start talking."
+                      body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health, answer your questions, and point you in the right direction from there. When you're ready, you can start talking or use what's on screen to get started."
                       isActiveVoiceTurn
                     />
                   </PreviewSurface>

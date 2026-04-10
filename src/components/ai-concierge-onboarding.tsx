@@ -34,7 +34,6 @@ type AiConciergeOnboardingProps = {
   onContinueWithoutLinkedIn?: () => void;
   onGetStarted: () => void;
   onContinueWithLinkedIn: () => void;
-  onReviewDetails?: () => void;
   onStartConversation: () => void;
   onUseAnotherAccount: () => void;
   showBackButton?: boolean;
@@ -385,7 +384,7 @@ function ManualLinkedInPrompt({
         onClick={onContinueWithLinkedIn}
         leadingVisual={<LinkedInLogoIcon />}
       >
-        Sign in with LinkedIn
+        Sign in to LinkedIn
       </Button>
     </div>
   );
@@ -465,31 +464,17 @@ function getLinkedInIdentityName(linkedInIdentity: LinkedInIdentity) {
   return `${linkedInIdentity.firstName} ${linkedInIdentity.lastName}`.trim();
 }
 
-function maskLinkedInEmail(email: string) {
-  const [localPart = "", domain = ""] = email.trim().split("@");
-
-  if (!localPart || !domain) {
-    return email;
-  }
-
-  return `${localPart[0] ?? ""}${"*".repeat(Math.max(4, localPart.length - 1))}@${domain}`;
-}
-
 function LinkedInIdentityPrimaryButton({
-  isLinkedInConnected,
   linkedInIdentity,
   onClick,
 }: {
-  isLinkedInConnected: boolean;
   linkedInIdentity: LinkedInIdentity;
   onClick: () => void;
 }) {
   const fullName = getLinkedInIdentityName(linkedInIdentity);
   const firstName = linkedInIdentity.firstName.trim() || fullName;
   const title = `Continue as ${firstName}`;
-  const subtitle = isLinkedInConnected
-    ? linkedInIdentity.email
-    : maskLinkedInEmail(linkedInIdentity.email);
+  const subtitle = linkedInIdentity.email;
 
   return (
     <Button
@@ -532,7 +517,6 @@ export function AiConciergeOnboarding({
   onContinueWithoutLinkedIn,
   onGetStarted,
   onContinueWithLinkedIn,
-  onReviewDetails,
   onStartConversation,
   onUseAnotherAccount,
   showBackButton,
@@ -541,9 +525,9 @@ export function AiConciergeOnboarding({
 }: AiConciergeOnboardingProps) {
   if (mode === "welcome") {
     const welcomeTitle = "Got hiring questions? Just ask.";
-    const signedOutDescription =
-      "Continue with the LinkedIn account we found for a faster start, or continue without signing in if you want to explore first.";
-    const signedInDescription = linkedInIdentity
+    const signedOutProfileAwareDescription =
+      "Chat with our AI to find the right hiring solution for your team, and connect with a sales rep when you're ready.";
+    const signedInProfileAwareDescription = linkedInIdentity
       ? `Welcome back, ${linkedInIdentity.firstName}. We can use your LinkedIn profile to get you started faster.`
       : "We can use your LinkedIn profile to get you started faster.";
 
@@ -557,45 +541,27 @@ export function AiConciergeOnboarding({
             <p className="ai-type-body-md-open mt-4 text-ai-text-primary">
               {welcomeVariant === "profile-aware"
                 ? isLinkedInConnected
-                  ? signedInDescription
-                  : signedOutDescription
+                  ? signedInProfileAwareDescription
+                  : signedOutProfileAwareDescription
                 : "Chat with our AI to find the right hiring solution for your team, and connect with a sales rep when you're ready."}
             </p>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:mt-10">
-            {welcomeVariant === "profile-aware" && linkedInIdentity ? (
-              isLinkedInConnected ? (
-                <>
-                  <LinkedInIdentityPrimaryButton
-                    isLinkedInConnected
-                    linkedInIdentity={linkedInIdentity}
-                    onClick={onGetStarted}
-                  />
-                  <Button
-                    fullWidth
-                    variant="secondary"
-                    onClick={onReviewDetails}
-                  >
-                    Review details
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <LinkedInIdentityPrimaryButton
-                    isLinkedInConnected={false}
-                    linkedInIdentity={linkedInIdentity}
-                    onClick={onContinueWithLinkedIn}
-                  />
-                  <Button
-                    fullWidth
-                    variant="secondary"
-                    onClick={onContinueWithoutLinkedIn}
-                  >
-                    Continue without signing in
-                  </Button>
-                </>
-              )
+            {welcomeVariant === "profile-aware" && isLinkedInConnected && linkedInIdentity ? (
+              <>
+                <LinkedInIdentityPrimaryButton
+                  linkedInIdentity={linkedInIdentity}
+                  onClick={onGetStarted}
+                />
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  onClick={onUseAnotherAccount}
+                >
+                  Use another account
+                </Button>
+              </>
             ) : welcomeVariant === "profile-aware" ? (
               <>
                 <Button
@@ -603,7 +569,7 @@ export function AiConciergeOnboarding({
                   onClick={onContinueWithLinkedIn}
                   leadingVisual={<LinkedInLogoIcon />}
                 >
-                  Sign in with LinkedIn
+                  Sign in to LinkedIn
                 </Button>
                 <Button
                   fullWidth

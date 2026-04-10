@@ -6,6 +6,7 @@ type ChatAssistantMessageProps = {
   isActiveVoiceTurn?: boolean;
   showArrivalAnimation?: boolean;
   status?: "complete" | "streaming" | "thinking";
+  streamedChunks?: string[];
 };
 
 function ThinkingIndicator({
@@ -63,6 +64,7 @@ export function ChatAssistantMessage({
   isActiveVoiceTurn = false,
   showArrivalAnimation = false,
   status = "complete",
+  streamedChunks,
 }: ChatAssistantMessageProps) {
   if (status === "thinking") {
     return (
@@ -78,7 +80,16 @@ export function ChatAssistantMessage({
       data-voice-speaking={isActiveVoiceTurn || undefined}
     >
       <p className="ai-type-body-sm-open whitespace-pre-wrap break-words text-ai-text-primary">
-        {body}
+        {streamedChunks?.length
+          ? streamedChunks.map((chunk, index) => (
+              <span
+                key={`${index}-${chunk}`}
+                className="inline animate-[ai-concierge-message-chunk-in_220ms_ease-out_both] motion-reduce:animate-none"
+              >
+                {chunk}
+              </span>
+            ))
+          : body}
       </p>
     </div>
   );

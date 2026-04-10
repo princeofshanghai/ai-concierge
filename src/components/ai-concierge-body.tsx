@@ -55,6 +55,13 @@ export function AiConciergeBody({
   let latestReadyRepresentativeMessageId: string | null = null;
   const visibleMessages = messages;
   const normalizedVoiceDraftText = voiceDraftText.trim();
+  const hasCommittedUserTurn = visibleMessages.some(
+    (message) => message.role === "user",
+  );
+  const shouldShowVoiceOpeningSupport =
+    isVoiceModeActive &&
+    !hasCommittedUserTurn &&
+    normalizedVoiceDraftText.length === 0;
 
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     const scrollContainer = scrollContainerRef.current;
@@ -219,11 +226,12 @@ export function AiConciergeBody({
                         message.status === "thinking"
                       }
                       status={message.status}
+                      streamedChunks={message.streamedChunks}
                     />
                   ) : null}
                   {message.status === "complete" &&
                   message.openingSupport &&
-                  !isVoiceModeActive ? (
+                  (!isVoiceModeActive || shouldShowVoiceOpeningSupport) ? (
                     <AiConciergeOpeningSupportView
                       onInsertPrompt={onInsertOpeningPrompt}
                       support={message.openingSupport}
@@ -266,7 +274,7 @@ export function AiConciergeBody({
                   {message.status === "complete" &&
                   message.suggestedReplies?.length &&
                   message.suggestedReplyDisplay === "inline" &&
-                  !isVoiceModeActive ? (
+                  (!isVoiceModeActive || shouldShowVoiceOpeningSupport) ? (
                     <div className="flex flex-wrap gap-2 animate-[ai-concierge-suggested-replies-in_220ms_ease-out_both] motion-reduce:animate-none">
                       {message.suggestedReplies.map((suggestedReply) => (
                         <SuggestedActionPrompt

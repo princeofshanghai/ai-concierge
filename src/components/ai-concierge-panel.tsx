@@ -308,6 +308,117 @@ export function AiConciergePanel({
   const hasCompletedOpeningMessage =
     messages[0]?.id === "assistant-message-1" &&
     messages[0]?.status === "complete";
+  const queuePlainVoiceAssistantMessage = useCallback(
+    ({
+      body,
+      messageId,
+      messageNumber,
+      openingSupport,
+      replaceExistingMessage = false,
+      suggestedReplies,
+      suggestedReplyDisplay,
+    }: {
+      body: string;
+      messageId: string;
+      messageNumber: number;
+      openingSupport?: AiConciergeMessage["openingSupport"];
+      replaceExistingMessage?: boolean;
+      suggestedReplies?: AiConciergeSuggestedReply[];
+      suggestedReplyDisplay?: AiConciergeMessage["suggestedReplyDisplay"];
+    }) => {
+      const trimmedBody = body.trim();
+
+      if (!trimmedBody) {
+        return null;
+      }
+
+      clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+      setIsAssistantResponding(true);
+      pendingAssistantResponseRef.current = {
+        assistantMessageId: messageId,
+        stopState: conversationState,
+      };
+
+      if (replaceExistingMessage) {
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === messageId && message.role === "assistant"
+              ? {
+                  ...message,
+                  artifact: undefined,
+                  body: "",
+                  openingSupport: undefined,
+                  status: "thinking",
+                  streamedChunks: undefined,
+                  suggestedReplies: undefined,
+                  suggestedReplyDisplay: undefined,
+                }
+              : message,
+          ),
+        );
+      } else {
+        setMessages((currentMessages) => [
+          ...currentMessages,
+          createThinkingAssistantMessage(messageNumber),
+        ]);
+      }
+
+      const streamingChunks = createStreamingChunks(trimmedBody, "voice");
+      let chunkIndex = 0;
+
+      thinkingTimerRef.current = window.setTimeout(() => {
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === messageId && message.role === "assistant"
+              ? {
+                  ...message,
+                  body: "",
+                  status: "streaming",
+                  streamedChunks: [],
+                }
+              : message,
+          ),
+        );
+
+        streamingTimerRef.current = window.setInterval(() => {
+          chunkIndex += 1;
+          const nextChunks = streamingChunks.slice(0, chunkIndex);
+          const nextBody = nextChunks.join("");
+          const isComplete = chunkIndex >= streamingChunks.length;
+
+          setMessages((currentMessages) =>
+            currentMessages.map((message) =>
+              message.id === messageId && message.role === "assistant"
+                ? {
+                    ...message,
+                    body: nextBody,
+                    openingSupport: isComplete ? openingSupport : undefined,
+                    status: isComplete ? "complete" : "streaming",
+                    streamedChunks: nextChunks,
+                    suggestedReplies: isComplete ? suggestedReplies : undefined,
+                    suggestedReplyDisplay: isComplete
+                      ? suggestedReplyDisplay
+                      : undefined,
+                  }
+                : message,
+            ),
+          );
+
+          if (!isComplete) {
+            return;
+          }
+
+          clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+          pendingAssistantResponseRef.current = null;
+          setConversationState(conversationState);
+          setIsAssistantResponding(false);
+        }, getStreamingInterval(trimmedBody, "voice"));
+      }, getThinkingDelay(trimmedBody, "voice"));
+
+      return messageId;
+    },
+    [conversationState],
+  );
   const appendVoiceAssistantMessage = useCallback((body: string) => {
     const trimmedBody = body.trim();
 
@@ -319,19 +430,13 @@ export function AiConciergePanel({
     const messageId = createAssistantMessageId(assistantMessageNumber);
 
     nextAssistantMessageNumberRef.current += 2;
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      createAssistantMessage(
-        trimmedBody,
-        undefined,
-        undefined,
-        undefined,
-        assistantMessageNumber,
-      ),
-    ]);
 
-    return messageId;
-  }, []);
+    return queuePlainVoiceAssistantMessage({
+      body: trimmedBody,
+      messageId,
+      messageNumber: assistantMessageNumber,
+    });
+  }, [queuePlainVoiceAssistantMessage]);
   const ensureVoiceIntroMessage = useCallback(
     (body: string) => {
       const trimmedBody = body.trim();
@@ -347,43 +452,31 @@ export function AiConciergePanel({
         messages[0]?.status === "complete";
 
       if (shouldReplaceOpeningAssistantMessage) {
-        setMessages((currentMessages) =>
-          currentMessages.map((message) =>
-            message.id === "assistant-message-1" && message.role === "assistant"
-              ? {
-                  ...message,
-                  artifact: undefined,
-                  body: trimmedBody,
-                  openingSupport: undefined,
-                  status: "complete",
-                  suggestedReplies: undefined,
-                  suggestedReplyDisplay: undefined,
-                }
-              : message,
-          ),
-        );
+        const openingMessage =
+          messages[0]?.role === "assistant" ? messages[0] : null;
 
-        return "assistant-message-1";
+        return queuePlainVoiceAssistantMessage({
+          body: trimmedBody,
+          messageId: "assistant-message-1",
+          messageNumber: 1,
+          openingSupport: openingMessage?.openingSupport,
+          replaceExistingMessage: true,
+          suggestedReplies: openingMessage?.suggestedReplies,
+          suggestedReplyDisplay: openingMessage?.suggestedReplyDisplay,
+        });
       }
 
       const assistantMessageNumber = nextAssistantMessageNumberRef.current;
       const messageId = createAssistantMessageId(assistantMessageNumber);
 
       nextAssistantMessageNumberRef.current += 2;
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        createAssistantMessage(
-          trimmedBody,
-          undefined,
-          undefined,
-          undefined,
-          assistantMessageNumber,
-        ),
-      ]);
-
-      return messageId;
+      return queuePlainVoiceAssistantMessage({
+        body: trimmedBody,
+        messageId,
+        messageNumber: assistantMessageNumber,
+      });
     },
-    [messages],
+    [messages, queuePlainVoiceAssistantMessage],
   );
 
   const replaceAssistantArtifact = useCallback(
@@ -618,6 +711,7 @@ export function AiConciergePanel({
 
       setIsLinkedInConnected(scenario.authState === "linkedin-connected");
       setPanelState(getPrototypeScenarioEntryState(scenario));
+      setIsExpanded(false);
       setContactDetails(nextContactDetails);
       setOnboardingFlowIntent("entry");
       setPendingIdentityAction(null);
@@ -713,6 +807,7 @@ export function AiConciergePanel({
     }, 0);
 
     const exitTimer = window.setTimeout(() => {
+      resetPanelToScenario(prototypeScenario);
       onClosed?.();
     }, PANEL_EXIT_DURATION_MS);
 
@@ -727,6 +822,8 @@ export function AiConciergePanel({
     clearVoiceFlowSideEffects,
     isOpen,
     onClosed,
+    prototypeScenario,
+    resetPanelToScenario,
     resetLiveSalesChatFlow,
     resetPhoneCallTransientState,
     resetRepresentativeFlowState,
@@ -799,9 +896,13 @@ export function AiConciergePanel({
     shouldShowNextStepSurface,
   ]);
   const streamAssistantTurn = useCallback(
-    (assistantTurn: AiConciergeAssistantTurn, assistantMessageId: string) => {
-      const thinkingDelay = getThinkingDelay(assistantTurn.body);
-      const streamingChunks = createStreamingChunks(assistantTurn.body);
+    (
+      assistantTurn: AiConciergeAssistantTurn,
+      assistantMessageId: string,
+      streamMode: AssistantStreamMode = "text",
+    ) => {
+      const thinkingDelay = getThinkingDelay(assistantTurn.body, streamMode);
+      const streamingChunks = createStreamingChunks(assistantTurn.body, streamMode);
       let chunkIndex = 0;
 
       clearResponseTimers(thinkingTimerRef, streamingTimerRef);
@@ -810,14 +911,15 @@ export function AiConciergePanel({
         setMessages((currentMessages) =>
           currentMessages.map((message) =>
             message.id === assistantMessageId
-              ? { ...message, status: "streaming" }
+              ? { ...message, body: "", status: "streaming", streamedChunks: [] }
               : message,
           ),
         );
 
         streamingTimerRef.current = window.setInterval(() => {
           chunkIndex += 1;
-          const nextBody = streamingChunks.slice(0, chunkIndex).join("");
+          const nextChunks = streamingChunks.slice(0, chunkIndex);
+          const nextBody = nextChunks.join("");
           const isComplete = chunkIndex >= streamingChunks.length;
 
           setMessages((currentMessages) =>
@@ -831,6 +933,7 @@ export function AiConciergePanel({
                       ? assistantTurn.openingSupport
                       : undefined,
                     status: isComplete ? "complete" : "streaming",
+                    streamedChunks: nextChunks,
                     suggestedReplies: isComplete
                       ? assistantTurn.suggestedReplies
                       : undefined,
@@ -874,7 +977,7 @@ export function AiConciergePanel({
 
             handleStartLiveSalesHandoff(assistantMessageId);
           }
-        }, getStreamingInterval(assistantTurn.body));
+        }, getStreamingInterval(assistantTurn.body, streamMode));
       }, thinkingDelay);
     },
     [
@@ -964,7 +1067,11 @@ export function AiConciergePanel({
         ];
       });
 
-      streamAssistantTurn(assistantTurn, assistantMessageId);
+      streamAssistantTurn(
+        assistantTurn,
+        assistantMessageId,
+        isVoiceModeActive ? "voice" : "text",
+      );
       return assistantMessageId;
     },
     [
@@ -975,6 +1082,7 @@ export function AiConciergePanel({
       isLiveAgentReplyPending,
       isLiveSalesChatActive,
       isLiveSalesChatConnecting,
+      isVoiceModeActive,
       queueLiveSalesReply,
       setRepresentativeBookingDraft,
       stopDictationRecognition,
@@ -1037,11 +1145,51 @@ export function AiConciergePanel({
     }));
   };
 
-  const handleStartWithLinkedIn = () => {
-    setIsLinkedInConnected(true);
-    setContactDetails((currentDetails) =>
-      mergeMissingContactDetails(currentDetails, PREFILLED_CONTACT_DETAILS),
+  const restartConversationWithDetails = (
+    nextContactDetails: ConciergeContactDetails,
+  ) => {
+    const openingTurn = createOpeningTurn({
+      contactDetails: nextContactDetails,
+      openingPromptVariant: prototypeScenario.openingPromptVariant,
+    });
+    const openingAssistantMessageNumber = 1;
+    const openingAssistantMessageId = createAssistantMessageId(
+      openingAssistantMessageNumber,
     );
+
+    resetVoiceFlow();
+    clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+    clearPhoneCallTimers();
+    resetRepresentativeMatchFlow();
+    resetLiveSalesChatFlow();
+    setComposerDraft("");
+    setContactDetails(nextContactDetails);
+    setIsAssistantResponding(true);
+    resetPhoneCallFlow({
+      phoneNumber: nextContactDetails.phoneNumber,
+      promptState: "available",
+    });
+    setConversationState(openingTurn.nextState);
+    pendingAssistantResponseRef.current = {
+      assistantMessageId: openingAssistantMessageId,
+      stopState: openingTurn.nextState,
+    };
+    setMessages([createThinkingAssistantMessage(openingAssistantMessageNumber)]);
+    nextAssistantMessageNumberRef.current = 3;
+    streamAssistantTurn(openingTurn, openingAssistantMessageId);
+  };
+
+  const restartConversation = () => {
+    restartConversationWithDetails(contactDetails);
+  };
+
+  const handleStartWithLinkedIn = () => {
+    const nextContactDetails = mergeMissingContactDetails(
+      contactDetails,
+      PREFILLED_CONTACT_DETAILS,
+    );
+
+    setIsLinkedInConnected(true);
     syncPrototypeScenario({
       authState: "linkedin-connected",
       entryVariant: prototypeScenario.entryVariant,
@@ -1052,17 +1200,21 @@ export function AiConciergePanel({
       onboardingFlowIntent === "entry" &&
       isProfileAwareOpening
     ) {
-      setPanelState("welcome");
+      setOnboardingFlowIntent("entry");
+      setPendingIdentityAction(null);
+      restartConversationWithDetails(nextContactDetails);
+      setPanelState("chat");
       return;
     }
 
+    setContactDetails(nextContactDetails);
     setPanelState("prefill");
   };
 
   const handleContinueWithoutLinkedIn = () => {
     setOnboardingFlowIntent("entry");
     setPendingIdentityAction(null);
-    restartConversation();
+    restartConversationWithDetails({ ...EMPTY_CONTACT_DETAILS });
     setPanelState("chat");
   };
 
@@ -1080,11 +1232,6 @@ export function AiConciergePanel({
         ? "prefill"
         : "manual",
     );
-  };
-
-  const handleReviewDetails = () => {
-    setOnboardingFlowIntent("entry");
-    setPanelState("prefill");
   };
 
   const handleBackFromDetails = () => {
@@ -1112,37 +1259,6 @@ export function AiConciergePanel({
     }
 
     setPanelState("manual");
-  };
-
-  const restartConversation = () => {
-    const openingTurn = createOpeningTurn({
-      contactDetails,
-      openingPromptVariant: prototypeScenario.openingPromptVariant,
-    });
-    const openingAssistantMessageNumber = 1;
-    const openingAssistantMessageId = createAssistantMessageId(
-      openingAssistantMessageNumber,
-    );
-
-    resetVoiceFlow();
-    clearResponseTimers(thinkingTimerRef, streamingTimerRef);
-    clearPhoneCallTimers();
-    resetRepresentativeMatchFlow();
-    resetLiveSalesChatFlow();
-    setComposerDraft("");
-    setIsAssistantResponding(true);
-    resetPhoneCallFlow({
-      phoneNumber: contactDetails.phoneNumber,
-      promptState: "available",
-    });
-    setConversationState(openingTurn.nextState);
-    pendingAssistantResponseRef.current = {
-      assistantMessageId: openingAssistantMessageId,
-      stopState: openingTurn.nextState,
-    };
-    setMessages([createThinkingAssistantMessage(openingAssistantMessageNumber)]);
-    nextAssistantMessageNumberRef.current = 3;
-    streamAssistantTurn(openingTurn, openingAssistantMessageId);
   };
 
   const handleStartConversation = () => {
@@ -1714,11 +1830,7 @@ export function AiConciergePanel({
                 isLinkedInConnected={isLinkedInConnected}
                 isValid={isContactDetailsValid}
                 linkedInIdentity={
-                  panelState === "welcome" && isProfileAwareOpening
-                    ? LINKEDIN_IDENTITY
-                    : isLinkedInConnected
-                      ? LINKEDIN_IDENTITY
-                      : null
+                  isLinkedInConnected ? LINKEDIN_IDENTITY : null
                 }
                 mode={panelState}
                 onBack={handleBackFromDetails}
@@ -1726,7 +1838,6 @@ export function AiConciergePanel({
                 onContinueWithoutLinkedIn={handleContinueWithoutLinkedIn}
                 onGetStarted={handleGetStarted}
                 onContinueWithLinkedIn={handleStartWithLinkedIn}
-                onReviewDetails={handleReviewDetails}
                 onStartConversation={handleStartConversation}
                 onUseAnotherAccount={handleUseAnotherAccount}
                 showBackButton={shouldShowOnboardingBackButton}
@@ -1969,25 +2080,46 @@ function getComposerInteractionKey(
   return `composer-${latestMessage.id}`;
 }
 
-function getThinkingDelay(body: string) {
-  if (body.length > 220) {
-    return 900;
-  }
+type AssistantStreamMode = "text" | "voice";
 
-  if (body.length > 120) {
-    return 700;
-  }
+function getThinkingDelay(
+  body: string,
+  streamMode: AssistantStreamMode = "text",
+) {
+  const baseDelay =
+    body.length > 220 ? 900 : body.length > 120 ? 700 : 500;
 
-  return 500;
+  return streamMode === "voice" ? baseDelay + 220 : baseDelay;
 }
 
-function getStreamingInterval(body: string) {
-  return body.length > 180 ? 70 : 55;
+function getStreamingInterval(
+  body: string,
+  streamMode: AssistantStreamMode = "text",
+) {
+  if (streamMode === "voice") {
+    return body.length > 180 ? 150 : 130;
+  }
+
+  return body.length > 180 ? 115 : 95;
 }
 
-function createStreamingChunks(body: string) {
+function createStreamingChunks(
+  body: string,
+  streamMode: AssistantStreamMode = "text",
+) {
   const tokens = body.match(/\S+\s*/g) ?? [body];
-  const chunkSize = tokens.length > 28 ? 3 : 2;
+  const chunkSize =
+    streamMode === "voice"
+      ? tokens.length > 36
+        ? 4
+        : tokens.length > 20
+          ? 3
+          : 2
+      : tokens.length > 30
+        ? 4
+        : tokens.length > 16
+          ? 3
+          : 2;
   const chunks: string[] = [];
 
   for (let index = 0; index < tokens.length; index += chunkSize) {

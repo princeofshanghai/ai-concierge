@@ -205,23 +205,25 @@ function getCompanyReference(company: string) {
   return trimmedCompany.length > 0 ? trimmedCompany : "your team";
 }
 
-function createOpeningBody(contactDetails: ConciergeContactDetails) {
-  const trimmedFirstName = contactDetails.firstName.trim();
+function createOpeningCoreBody(contactDetails: ConciergeContactDetails) {
   const trimmedCompany = contactDetails.company.trim();
-
-  if (trimmedFirstName.length > 0 && trimmedCompany.length > 0) {
-    return `Hi ${trimmedFirstName}, I can help you explore hiring solutions for ${trimmedCompany}, answer your questions, and point you in the right direction from there.`;
-  }
-
-  if (trimmedFirstName.length > 0) {
-    return `Hi ${trimmedFirstName}, I can help you explore hiring solutions, answer your questions, and point you in the right direction from there.`;
-  }
 
   if (trimmedCompany.length > 0) {
     return `I can help you explore hiring solutions for ${trimmedCompany}, answer your questions, and point you in the right direction from there.`;
   }
 
   return "I can help you explore hiring solutions, answer your questions, and point you in the right direction from there.";
+}
+
+function createOpeningBody(contactDetails: ConciergeContactDetails) {
+  const trimmedFirstName = contactDetails.firstName.trim();
+  const openingCoreBody = createOpeningCoreBody(contactDetails);
+
+  if (trimmedFirstName.length > 0) {
+    return `Hi ${trimmedFirstName}, ${openingCoreBody}`;
+  }
+
+  return openingCoreBody;
 }
 
 export function createOpeningTurn({
@@ -270,13 +272,14 @@ export function createVoiceModeIntro({
 }: {
   contactDetails: ConciergeContactDetails;
 }) {
-  const companyReference = getCompanyReference(contactDetails.company);
+  const trimmedFirstName = contactDetails.firstName.trim();
+  const welcomeLead =
+    trimmedFirstName.length > 0
+      ? `Hi ${trimmedFirstName}, glad you're here.`
+      : "Hi, glad you're here.";
+  const openingCoreBody = createOpeningCoreBody(contactDetails);
 
-  if (contactDetails.company.trim().length > 0) {
-    return `I can help you explore hiring solutions for ${companyReference} and answer questions as we go. When you're ready, just start talking.`;
-  }
-
-  return "I can help you explore hiring solutions and answer questions as we go. When you're ready, just start talking.";
+  return `${welcomeLead} ${openingCoreBody} When you're ready, you can start talking or use what's on screen to get started.`;
 }
 
 export function createReturnToChatTurn({

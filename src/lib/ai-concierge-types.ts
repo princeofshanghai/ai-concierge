@@ -47,6 +47,7 @@ export type AiConciergeMessage = {
   openingSupport?: AiConciergeOpeningSupport;
   role: "agent" | "assistant" | "system" | "user";
   status?: "complete" | "streaming" | "thinking";
+  streamedChunks?: string[];
   suggestedReplies?: AiConciergeSuggestedReply[];
   suggestedReplyDisplay?: "composer" | "inline";
   timestampLabel?: string;

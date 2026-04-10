@@ -19,8 +19,8 @@ export type PrototypeScenario = {
 };
 
 export const DEFAULT_PROTOTYPE_SCENARIO: PrototypeScenario = {
-  authState: "signed-out",
-  entryVariant: "welcome-first",
+  authState: "linkedin-connected",
+  entryVariant: "profile-aware-opening",
   openingPromptVariant: "inline-prompts",
 };
 
@@ -40,6 +40,20 @@ export function getPrototypeScenarioAuthLabel(
   authState: PrototypeScenario["authState"],
 ) {
   return authState === "linkedin-connected" ? "Signed in" : "Signed out";
+}
+
+export function getPrototypeScenarioAuthGroupLabel() {
+  return "Identity";
+}
+
+export function getPrototypeScenarioAuthHelperText(
+  entryVariant: PrototypeScenario["entryVariant"],
+) {
+  if (entryVariant !== "profile-aware-opening") {
+    return null;
+  }
+
+  return "Changes whether the opening shows LinkedIn sign-in or Continue as Jamie.";
 }
 
 export function getPrototypeScenarioEntryLabel(

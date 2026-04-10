@@ -13,6 +13,7 @@ type VoiceModeStatus =
 
 type LiveSalesChatStatus = "active" | "connecting" | "idle";
 type PanelState = "chat" | "manual" | "prefill" | "welcome";
+type AwaitedVoiceAssistantMessageKind = "guidance" | "intro" | "reply";
 
 type BrowserSpeechRecognitionAlternativeLike = {
   transcript: string;
@@ -105,6 +106,8 @@ export function useVoiceFlow({
   const isVoiceModeActiveRef = useRef(false);
   const isVoicePlaybackMutedRef = useRef(false);
   const awaitedVoiceAssistantMessageIdRef = useRef<string | null>(null);
+  const awaitedVoiceAssistantMessageKindRef =
+    useRef<AwaitedVoiceAssistantMessageKind | null>(null);
   const hasPlayedVoiceIntroRef = useRef(false);
   const composerDraftRef = useRef("");
   const dictateBaseDraftRef = useRef("");
@@ -229,6 +232,7 @@ export function useVoiceFlow({
     (clearCaptions = true) => {
       isVoiceModeActiveRef.current = false;
       awaitedVoiceAssistantMessageIdRef.current = null;
+      awaitedVoiceAssistantMessageKindRef.current = null;
       voiceTranscriptRef.current = "";
       clearVoiceTransitionTimer();
       setIsVoiceModeActive(false);
@@ -272,6 +276,7 @@ export function useVoiceFlow({
 
   const resetVoiceFlowState = useCallback(() => {
     awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantMessageKindRef.current = null;
     dictateBaseDraftRef.current = "";
     dictateTranscriptRef.current = "";
     voiceTranscriptRef.current = "";
@@ -419,7 +424,9 @@ export function useVoiceFlow({
 
       voiceTranscriptRef.current = "";
       setVoiceUserCaption("");
+      setVoiceAssistantCaption("");
       setVoiceErrorMessage(null);
+      setVoiceModeStatus("thinking");
 
       if (!assistantMessageId) {
         setVoiceModeStatus("error");
@@ -427,16 +434,8 @@ export function useVoiceFlow({
         return;
       }
 
-      playAssistantCaption(fallbackMessage, {
-        assistantMessageId,
-        fallbackDelayMs: 900,
-        onComplete: () => {
-          scheduleVoiceListening();
-        },
-        onError: () => {
-          scheduleVoiceListening();
-        },
-      });
+      awaitedVoiceAssistantMessageIdRef.current = assistantMessageId;
+      awaitedVoiceAssistantMessageKindRef.current = "guidance";
       return;
     }
 
@@ -459,7 +458,8 @@ export function useVoiceFlow({
 
     setVoiceUserCaption("");
     awaitedVoiceAssistantMessageIdRef.current = assistantMessageId;
-  }, [appendVoiceAssistantMessage, playAssistantCaption, scheduleVoiceListening]);
+    awaitedVoiceAssistantMessageKindRef.current = "reply";
+  }, [appendVoiceAssistantMessage]);
 
   const playVoiceGuidanceMessage = useCallback((body: string) => {
     const normalizedBody = normalizeVoiceTranscript(body);
@@ -473,9 +473,12 @@ export function useVoiceFlow({
     }
 
     awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantMessageKindRef.current = null;
     voiceTranscriptRef.current = "";
     setVoiceUserCaption("");
+    setVoiceAssistantCaption("");
     setVoiceErrorMessage(null);
+    setVoiceModeStatus("thinking");
     stopVoiceRecognition();
 
     const assistantMessageId = appendVoiceAssistantMessage(normalizedBody);
@@ -484,23 +487,13 @@ export function useVoiceFlow({
       return null;
     }
 
-    playAssistantCaption(normalizedBody, {
-      assistantMessageId,
-      fallbackDelayMs: 900,
-      onComplete: () => {
-        scheduleVoiceListening();
-      },
-      onError: () => {
-        scheduleVoiceListening();
-      },
-    });
+    awaitedVoiceAssistantMessageIdRef.current = assistantMessageId;
+    awaitedVoiceAssistantMessageKindRef.current = "guidance";
 
     return assistantMessageId;
   }, [
     appendVoiceAssistantMessage,
     panelState,
-    playAssistantCaption,
-    scheduleVoiceListening,
     stopVoiceRecognition,
   ]);
 
@@ -808,22 +801,19 @@ export function useVoiceFlow({
     setVoiceAssistantCaption("");
     voiceTranscriptRef.current = "";
     awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantMessageKindRef.current = null;
 
     if (!hasPlayedVoiceIntroRef.current) {
       const introMessageId = ensureVoiceIntroMessage(voiceIntroMessage);
+      if (!introMessageId) {
+        hasPlayedVoiceIntroRef.current = true;
+        void startListening();
+        return;
+      }
 
-      playAssistantCaption(voiceIntroMessage, {
-        assistantMessageId: introMessageId,
-        fallbackDelayMs: 900,
-        onComplete: () => {
-          hasPlayedVoiceIntroRef.current = true;
-          scheduleVoiceListening();
-        },
-        onError: () => {
-          hasPlayedVoiceIntroRef.current = true;
-          scheduleVoiceListening();
-        },
-      });
+      setVoiceModeStatus("thinking");
+      awaitedVoiceAssistantMessageIdRef.current = introMessageId;
+      awaitedVoiceAssistantMessageKindRef.current = "intro";
       return;
     }
 
@@ -835,8 +825,6 @@ export function useVoiceFlow({
     ensureVoiceIntroMessage,
     liveSalesChatStatus,
     panelState,
-    playAssistantCaption,
-    scheduleVoiceListening,
     startListening,
     stopDictationRecognition,
     voiceIntroMessage,
@@ -900,6 +888,7 @@ export function useVoiceFlow({
     (assistantMessageId: string) => {
       if (awaitedVoiceAssistantMessageIdRef.current === assistantMessageId) {
         awaitedVoiceAssistantMessageIdRef.current = null;
+        awaitedVoiceAssistantMessageKindRef.current = null;
       }
     },
     [],
@@ -950,16 +939,32 @@ export function useVoiceFlow({
       return;
     }
 
+    const awaitedMessageKind = awaitedVoiceAssistantMessageKindRef.current;
+
     awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantMessageKindRef.current = null;
     playAssistantCaption(completedAssistantMessage.body, {
       assistantMessageId: completedAssistantMessage.id,
       onComplete: () => {
+        if (awaitedMessageKind === "intro") {
+          hasPlayedVoiceIntroRef.current = true;
+        }
+
         scheduleVoiceListening();
       },
       onError: () => {
-        showVoiceSystemNotice(
-          "I showed the reply in text, but audio playback was unavailable.",
-        );
+        if (awaitedMessageKind === "reply") {
+          showVoiceSystemNotice(
+            "I showed the reply in text, but audio playback was unavailable.",
+          );
+          return;
+        }
+
+        if (awaitedMessageKind === "intro") {
+          hasPlayedVoiceIntroRef.current = true;
+        }
+
+        scheduleVoiceListening();
       },
     });
   }, [
@@ -1027,13 +1032,14 @@ function mergeDraftWithTranscript(baseDraft: string, transcript: string) {
 
 function getPreferredSpeechVoice(voices: SpeechSynthesisVoice[]) {
   const preferredVoiceNames = [
-    "Samantha",
     "Alex",
-    "Karen",
+    "Ava",
+    "Daniel",
     "Moira",
     "Tessa",
-    "Daniel",
-    "Ava",
+    "Karen",
+    "Samantha",
+    "Google UK English Female",
     "Google US English",
     "Microsoft Aria Online (Natural) - English (United States)",
     "Microsoft Jenny Online (Natural) - English (United States)",

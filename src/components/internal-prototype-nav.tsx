@@ -6,10 +6,13 @@ import { CloseIcon } from "@/components/close-icon";
 import {
   PrototypeShellActionButton,
   PrototypeShellChip,
+  PrototypeShellHelperText,
   PrototypeShellLabel,
   PrototypeShellLinkChip,
 } from "@/components/prototype-shell";
 import {
+  getPrototypeScenarioAuthGroupLabel,
+  getPrototypeScenarioAuthHelperText,
   getPrototypeScenarioAuthLabel,
   getPrototypeScenarioEntryLabel,
   getPrototypeScenarioOpeningPromptLabel,
@@ -117,6 +120,13 @@ export function InternalPrototypeNav({
     });
   }
 
+  const authGroupLabel = shouldShowScenarioControls
+    ? getPrototypeScenarioAuthGroupLabel()
+    : "Identity";
+  const authHelperText = shouldShowScenarioControls
+    ? getPrototypeScenarioAuthHelperText(prototypeScenario.entryVariant)
+    : null;
+
   return (
     <>
       <div
@@ -158,7 +168,7 @@ export function InternalPrototypeNav({
           tabIndex={isDrawerOpen ? 0 : -1}
           aria-label="Close prototype menu"
           onClick={closeDrawer}
-          className="absolute inset-0 bg-slate-950/28 backdrop-blur-[2px]"
+          className="absolute inset-0 bg-slate-950/28"
         />
 
         <div className="absolute inset-y-0 left-0 w-[min(360px,calc(100vw-12px))]">
@@ -233,26 +243,6 @@ export function InternalPrototypeNav({
                   <div className="mt-4 space-y-5">
                     <div>
                       <PrototypeShellLabel className="px-0 pb-0 text-white/48">
-                        Identity
-                      </PrototypeShellLabel>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {AUTH_OPTIONS.map((authState) => (
-                          <PrototypeShellChip
-                            key={authState}
-                            selected={prototypeScenario.authState === authState}
-                            onClick={() =>
-                              updatePrototypeScenario("authState", authState)
-                            }
-                            className="min-h-9 px-3 text-[12px]"
-                          >
-                            {getPrototypeScenarioAuthLabel(authState)}
-                          </PrototypeShellChip>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <PrototypeShellLabel className="px-0 pb-0 text-white/48">
                         Opening
                       </PrototypeShellLabel>
                       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -271,6 +261,31 @@ export function InternalPrototypeNav({
                             className="min-h-9 px-3 text-[12px]"
                           >
                             {getPrototypeScenarioEntryLabel(entryVariant)}
+                          </PrototypeShellChip>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <PrototypeShellLabel className="px-0 pb-0 text-white/48">
+                        {authGroupLabel}
+                      </PrototypeShellLabel>
+                      {authHelperText ? (
+                        <PrototypeShellHelperText className="mt-2 max-w-[28ch] text-white/58">
+                          {authHelperText}
+                        </PrototypeShellHelperText>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {AUTH_OPTIONS.map((authState) => (
+                          <PrototypeShellChip
+                            key={authState}
+                            selected={prototypeScenario.authState === authState}
+                            onClick={() =>
+                              updatePrototypeScenario("authState", authState)
+                            }
+                            className="min-h-9 px-3 text-[12px]"
+                          >
+                            {getPrototypeScenarioAuthLabel(authState)}
                           </PrototypeShellChip>
                         ))}
                       </div>
