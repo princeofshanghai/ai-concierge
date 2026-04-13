@@ -412,8 +412,11 @@ button {
   24% {
     opacity: 0.05;
   }
-  56% {
-    opacity: 0.03;
+  62% {
+    opacity: 0.036;
+  }
+  86% {
+    opacity: 0.02;
   }
   100% {
     opacity: 0;
@@ -431,8 +434,17 @@ button {
   42% {
     opacity: 0.42;
   }
-  78% {
-    opacity: 0.24;
+  72% {
+    opacity: 0.3;
+    transform: translate3d(-18%, -5%, 0) rotate(-12deg) scale(1.02);
+  }
+  88% {
+    opacity: 0.2;
+    transform: translate3d(-38%, -9%, 0) rotate(-12deg) scale(1.02);
+  }
+  96% {
+    opacity: 0.08;
+    transform: translate3d(-46%, -10.5%, 0) rotate(-12deg) scale(1.02);
   }
   100% {
     opacity: 0;
@@ -450,6 +462,10 @@ button {
   }
   56% {
     opacity: 0.9;
+  }
+  84% {
+    opacity: 0.38;
+    background-position: 18% 50%;
   }
   100% {
     opacity: 0;

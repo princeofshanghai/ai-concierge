@@ -53,6 +53,11 @@ type BrowserWindowWithSpeechRecognition = Window &
     webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
   };
 
+type StartListeningOptions = {
+  seedTranscript?: string;
+  skipStopAssistantSpeech?: boolean;
+};
+
 type UseVoiceFlowParams = {
   appendVoiceAssistantMessage: (body: string) => string | null;
   composerDraft: string;
@@ -97,11 +102,14 @@ export function useVoiceFlow({
 
   const dictateRecognitionRef =
     useRef<BrowserSpeechRecognitionLike | null>(null);
+  const bargeInRecognitionRef =
+    useRef<BrowserSpeechRecognitionLike | null>(null);
   const recognitionRef = useRef<BrowserSpeechRecognitionLike | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const preferredSpeechVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechPlaybackRequestRef = useRef(0);
   const hasGrantedMicrophonePermissionRef = useRef(false);
+  const activeAssistantCaptionRef = useRef("");
   const isAssistantRespondingRef = useRef(false);
   const isVoiceModeActiveRef = useRef(false);
   const isVoicePlaybackMutedRef = useRef(false);
@@ -114,7 +122,10 @@ export function useVoiceFlow({
   const dictateTranscriptRef = useRef("");
   const voiceTranscriptRef = useRef("");
   const voiceTransitionTimerRef = useRef<number | null>(null);
-  const startListeningRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const startListeningRef =
+    useRef<(options?: StartListeningOptions) => Promise<void>>(() =>
+      Promise.resolve(),
+    );
   const shouldShowNextStepSurfaceRef = useRef(getShouldShowNextStepSurface);
   const voiceMessageSenderRef = useRef<((body: string) => string | null) | null>(
     null,
@@ -142,6 +153,26 @@ export function useVoiceFlow({
   const stopVoiceRecognition = useCallback(() => {
     const recognition = recognitionRef.current;
     recognitionRef.current = null;
+
+    if (!recognition) {
+      return;
+    }
+
+    recognition.onend = null;
+    recognition.onerror = null;
+    recognition.onresult = null;
+    recognition.onstart = null;
+
+    try {
+      recognition.stop();
+    } catch {
+      // The browser can throw if recognition is already stopped.
+    }
+  }, []);
+
+  const stopBargeInRecognition = useCallback(() => {
+    const recognition = bargeInRecognitionRef.current;
+    bargeInRecognitionRef.current = null;
 
     if (!recognition) {
       return;
@@ -187,6 +218,8 @@ export function useVoiceFlow({
   const stopAssistantSpeech = useCallback(() => {
     speechPlaybackRequestRef.current += 1;
     setActiveVoiceAssistantMessageId(null);
+    activeAssistantCaptionRef.current = "";
+    stopBargeInRecognition();
 
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       speechUtteranceRef.current = null;
@@ -200,7 +233,7 @@ export function useVoiceFlow({
     }
 
     window.speechSynthesis.cancel();
-  }, []);
+  }, [stopBargeInRecognition]);
 
   const resolvePreferredSpeechVoice = useCallback(async () => {
     if (preferredSpeechVoiceRef.current) {
@@ -265,11 +298,13 @@ export function useVoiceFlow({
   const clearVoiceFlowSideEffects = useCallback(() => {
     clearVoiceTransitionTimer();
     releaseDictationRecognition();
+    stopBargeInRecognition();
     stopVoiceRecognition();
     stopAssistantSpeech();
   }, [
     clearVoiceTransitionTimer,
     releaseDictationRecognition,
+    stopBargeInRecognition,
     stopAssistantSpeech,
     stopVoiceRecognition,
   ]);
@@ -324,6 +359,92 @@ export function useVoiceFlow({
       }, delayMs);
     },
     [clearVoiceTransitionTimer],
+  );
+
+  const startBargeInMonitoring = useCallback(
+    (caption: string) => {
+      if (
+        typeof window === "undefined" ||
+        !isVoiceModeActiveRef.current ||
+        !hasGrantedMicrophonePermissionRef.current
+      ) {
+        return;
+      }
+
+      const browserWindow = window as BrowserWindowWithSpeechRecognition;
+      const SpeechRecognitionConstructor =
+        getSpeechRecognitionConstructor(browserWindow);
+
+      if (!SpeechRecognitionConstructor) {
+        return;
+      }
+
+      stopBargeInRecognition();
+      activeAssistantCaptionRef.current = normalizeVoiceComparisonText(caption);
+
+      const recognition = new SpeechRecognitionConstructor();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+      recognition.onresult = (event) => {
+        let nextTranscript = "";
+
+        for (let index = 0; index < event.results.length; index += 1) {
+          nextTranscript += event.results[index][0]?.transcript ?? "";
+        }
+
+        const normalizedTranscript = normalizeVoiceTranscript(nextTranscript);
+
+        if (
+          !shouldTriggerVoiceBargeIn({
+            assistantCaption: activeAssistantCaptionRef.current,
+            transcript: normalizedTranscript,
+          })
+        ) {
+          return;
+        }
+
+        clearVoiceTransitionTimer();
+        stopAssistantSpeech();
+        setVoiceAssistantCaption("");
+        setVoiceErrorMessage(null);
+        void startListeningRef.current({
+          seedTranscript: normalizedTranscript,
+          skipStopAssistantSpeech: true,
+        });
+      };
+      recognition.onerror = (event) => {
+        recognition.onend = null;
+
+        if (bargeInRecognitionRef.current === recognition) {
+          bargeInRecognitionRef.current = null;
+        }
+
+        if (
+          event.error === "aborted" ||
+          event.error === "not-allowed" ||
+          event.error === "service-not-allowed"
+        ) {
+          return;
+        }
+      };
+      recognition.onend = () => {
+        if (bargeInRecognitionRef.current === recognition) {
+          bargeInRecognitionRef.current = null;
+        }
+      };
+
+      bargeInRecognitionRef.current = recognition;
+
+      try {
+        recognition.start();
+      } catch {
+        if (bargeInRecognitionRef.current === recognition) {
+          bargeInRecognitionRef.current = null;
+        }
+      }
+    },
+    [clearVoiceTransitionTimer, stopAssistantSpeech, stopBargeInRecognition],
   );
 
   const playAssistantCaption = useCallback(
@@ -389,11 +510,15 @@ export function useVoiceFlow({
           utterance.voice = preferredVoice;
         }
 
+        activeAssistantCaptionRef.current = normalizeVoiceComparisonText(caption);
+        startBargeInMonitoring(caption);
         utterance.rate = 0.96;
         utterance.pitch = 1;
         utterance.onend = () => {
           speechUtteranceRef.current = null;
           setActiveVoiceAssistantMessageId(null);
+          activeAssistantCaptionRef.current = "";
+          stopBargeInRecognition();
 
           if (isVoiceModeActiveRef.current) {
             onComplete?.();
@@ -402,6 +527,8 @@ export function useVoiceFlow({
         utterance.onerror = () => {
           speechUtteranceRef.current = null;
           setActiveVoiceAssistantMessageId(null);
+          activeAssistantCaptionRef.current = "";
+          stopBargeInRecognition();
 
           if (isVoiceModeActiveRef.current) {
             onError?.();
@@ -412,7 +539,13 @@ export function useVoiceFlow({
         speechSynthesis.speak(utterance);
       })();
     },
-    [clearVoiceTransitionTimer, resolvePreferredSpeechVoice, stopAssistantSpeech],
+    [
+      clearVoiceTransitionTimer,
+      resolvePreferredSpeechVoice,
+      startBargeInMonitoring,
+      stopAssistantSpeech,
+      stopBargeInRecognition,
+    ],
   );
 
   const submitVoiceTranscript = useCallback((body: string) => {
@@ -497,7 +630,11 @@ export function useVoiceFlow({
     stopVoiceRecognition,
   ]);
 
-  const startListening = useCallback(async () => {
+  const startListening = useCallback(async (options: StartListeningOptions = {}) => {
+    const {
+      seedTranscript = "",
+      skipStopAssistantSpeech = false,
+    } = options;
     if (
       typeof window === "undefined" ||
       !isVoiceModeActiveRef.current ||
@@ -508,6 +645,7 @@ export function useVoiceFlow({
       return;
     }
 
+    const normalizedSeedTranscript = normalizeVoiceTranscript(seedTranscript);
     const browserWindow = window as BrowserWindowWithSpeechRecognition;
     const SpeechRecognitionConstructor =
       getSpeechRecognitionConstructor(browserWindow);
@@ -519,7 +657,10 @@ export function useVoiceFlow({
       return;
     }
 
-    stopAssistantSpeech();
+    if (!skipStopAssistantSpeech) {
+      stopAssistantSpeech();
+    }
+    stopBargeInRecognition();
     stopVoiceRecognition();
     setVoiceErrorMessage(null);
     setVoiceModeStatus(
@@ -564,11 +705,19 @@ export function useVoiceFlow({
       }
 
       const normalizedTranscript = normalizeVoiceTranscript(nextTranscript);
-      voiceTranscriptRef.current = normalizedTranscript;
+      const combinedTranscript = normalizedSeedTranscript
+        ? normalizedTranscript
+          ? mergeDraftWithTranscript(
+              normalizedSeedTranscript,
+              normalizedTranscript,
+            )
+          : normalizedSeedTranscript
+        : normalizedTranscript;
+      voiceTranscriptRef.current = combinedTranscript;
 
-      if (normalizedTranscript) {
+      if (combinedTranscript) {
         setVoiceAssistantCaption("");
-        setVoiceUserCaption(normalizedTranscript);
+        setVoiceUserCaption(combinedTranscript);
       }
     };
     recognition.onerror = (event) => {
@@ -617,8 +766,8 @@ export function useVoiceFlow({
     };
 
     recognitionRef.current = recognition;
-    voiceTranscriptRef.current = "";
-    setVoiceUserCaption("");
+    voiceTranscriptRef.current = normalizedSeedTranscript;
+    setVoiceUserCaption(normalizedSeedTranscript);
 
     try {
       recognition.start();
@@ -634,6 +783,7 @@ export function useVoiceFlow({
     handleBlockedMicrophoneInVoiceMode,
     showVoiceSystemNotice,
     submitVoiceTranscript,
+    stopBargeInRecognition,
     stopAssistantSpeech,
     stopVoiceRecognition,
   ]);
@@ -1016,6 +1166,10 @@ function normalizeVoiceTranscript(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function normalizeVoiceComparisonText(value: string) {
+  return normalizeVoiceTranscript(value).toLowerCase();
+}
+
 function mergeDraftWithTranscript(baseDraft: string, transcript: string) {
   if (!transcript) {
     return baseDraft;
@@ -1028,6 +1182,71 @@ function mergeDraftWithTranscript(baseDraft: string, transcript: string) {
   return /\s$/.test(baseDraft)
     ? `${baseDraft}${transcript}`
     : `${baseDraft} ${transcript}`;
+}
+
+function shouldTriggerVoiceBargeIn({
+  assistantCaption,
+  transcript,
+}: {
+  assistantCaption: string;
+  transcript: string;
+}) {
+  const normalizedTranscript = normalizeVoiceComparisonText(transcript);
+
+  if (!normalizedTranscript) {
+    return false;
+  }
+
+  if (isExplicitBargeInPhrase(normalizedTranscript)) {
+    return true;
+  }
+
+  const transcriptWords = normalizedTranscript
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+
+  if (transcriptWords.length < 2 && normalizedTranscript.length < 8) {
+    return false;
+  }
+
+  if (isLikelyAssistantEcho(normalizedTranscript, assistantCaption)) {
+    return false;
+  }
+
+  return true;
+}
+
+function isExplicitBargeInPhrase(transcript: string) {
+  return /^(stop|wait|hold on|hang on|sorry|actually|one sec|one second)\b/.test(
+    transcript,
+  );
+}
+
+function isLikelyAssistantEcho(transcript: string, assistantCaption: string) {
+  if (!assistantCaption) {
+    return false;
+  }
+
+  if (
+    assistantCaption.startsWith(transcript) ||
+    assistantCaption.includes(transcript)
+  ) {
+    return true;
+  }
+
+  const transcriptWords = transcript
+    .split(/\s+/)
+    .filter((word) => word.length > 2);
+
+  if (transcriptWords.length === 0) {
+    return false;
+  }
+
+  const overlappingWordCount = transcriptWords.filter((word) =>
+    assistantCaption.includes(word),
+  ).length;
+
+  return overlappingWordCount / transcriptWords.length >= 0.7;
 }
 
 function getPreferredSpeechVoice(voices: SpeechSynthesisVoice[]) {

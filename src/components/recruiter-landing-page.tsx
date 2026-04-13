@@ -1,11 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import recruiterHero from "../../public/figma/recruiter-hero.png";
 import { AiConciergePanel } from "@/components/ai-concierge-panel";
 import { ContactSalesButton } from "@/components/contact-sales-button";
 import { InternalPrototypeNav } from "@/components/internal-prototype-nav";
+import {
+  getDemoLinkedInAccountById,
+  type DemoLinkedInAccountId,
+} from "@/lib/ai-concierge-fixtures";
+import {
+  beginPrototypeLinkedInAuth,
+  consumeCompletedPrototypeLinkedInAuth,
+  PROTOTYPE_LINKEDIN_SIGN_IN_PATH,
+  type PrototypeLinkedInAuthReason,
+} from "@/lib/prototype-linkedin-auth";
 import {
   DEFAULT_PROTOTYPE_SCENARIO,
   type PrototypeScenario,
@@ -14,15 +25,44 @@ import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 const navItems = ["Products", "Compare Products", "Resources & Support"];
 
-export function RecruiterLandingPage() {
+type RecruiterLandingPageProps = {
+  initialPrototypeLinkedInAuthReturn?: string | null;
+};
+
+export function RecruiterLandingPage({
+  initialPrototypeLinkedInAuthReturn = null,
+}: RecruiterLandingPageProps) {
+  const router = useRouter();
+  const [completedPrototypeLinkedInAuth] = useState(() =>
+    typeof window !== "undefined" &&
+    initialPrototypeLinkedInAuthReturn === "success"
+      ? consumeCompletedPrototypeLinkedInAuth()
+      : null,
+  );
   const [isChatMounted, setIsChatMounted] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [scenarioResetVersion, setScenarioResetVersion] = useState(0);
   const [prototypeScenario, setPrototypeScenario] = useState<PrototypeScenario>(
-    DEFAULT_PROTOTYPE_SCENARIO,
+    completedPrototypeLinkedInAuth
+      ? {
+          ...completedPrototypeLinkedInAuth.prototypeScenario,
+          authState: "linkedin-connected",
+        }
+      : DEFAULT_PROTOTYPE_SCENARIO,
   );
+  const [activeAccountId] = useState<DemoLinkedInAccountId>(
+    completedPrototypeLinkedInAuth?.accountId ?? "jamie-chen",
+  );
+  const [authReturnNonce, setAuthReturnNonce] = useState<number | undefined>(
+    () => (completedPrototypeLinkedInAuth ? 1 : undefined),
+  );
+  const shouldAutoOpenAfterPrototypeAuth = completedPrototypeLinkedInAuth !== null;
   useBodyScrollLock(isChatMounted);
+  const activeAccount = useMemo(
+    () => getDemoLinkedInAccountById(activeAccountId),
+    [activeAccountId],
+  );
 
   const openChat = () => {
     setIsChatMounted(true);
@@ -42,6 +82,48 @@ export function RecruiterLandingPage() {
   const handlePrototypeScenarioRestart = () => {
     setScenarioResetVersion((currentValue) => currentValue + 1);
   };
+  const handlePrototypeLinkedInAuthRequest = (
+    reason: PrototypeLinkedInAuthReason,
+  ) => {
+    beginPrototypeLinkedInAuth({
+      currentAccountId: activeAccountId,
+      prototypeScenario,
+      reason,
+      returnPath: "/",
+    });
+    router.push(PROTOTYPE_LINKEDIN_SIGN_IN_PATH);
+  };
+
+  useEffect(() => {
+    if (!shouldAutoOpenAfterPrototypeAuth) {
+      return;
+    }
+
+    const authReturnTimer = window.setTimeout(() => {
+      setIsChatMounted(true);
+      setIsChatOpen(true);
+      router.replace("/");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(authReturnTimer);
+    };
+  }, [router, shouldAutoOpenAfterPrototypeAuth]);
+
+  useEffect(() => {
+    if (
+      initialPrototypeLinkedInAuthReturn !== "success" ||
+      completedPrototypeLinkedInAuth?.accountId
+    ) {
+      return;
+    }
+
+    router.replace("/");
+  }, [
+    completedPrototypeLinkedInAuth?.accountId,
+    initialPrototypeLinkedInAuthReturn,
+    router,
+  ]);
 
   return (
     <>
@@ -125,15 +207,20 @@ export function RecruiterLandingPage() {
 
         {isChatMounted ? (
           <AiConciergePanel
+            authReturnNonce={authReturnNonce}
             // Preserve in-flow panel state (for example, LinkedIn prefill) unless
             // an explicit scenario reset was requested from the prototype controls.
             key={scenarioResetVersion}
             isOpen={isChatOpen}
             onClose={closeChat}
+            onAuthReturnHandled={() => setAuthReturnNonce(undefined)}
             onClosed={() => setIsChatMounted(false)}
             onExpandedChange={setIsChatExpanded}
+            onPrototypeLinkedInAuthRequest={handlePrototypeLinkedInAuthRequest}
             onPrototypeScenarioChange={handlePrototypeScenarioSync}
             prototypeScenario={prototypeScenario}
+            signedInContactDetails={activeAccount.contactDetails}
+            signedInLinkedInIdentity={activeAccount.linkedInIdentity}
           />
         ) : null}
       </div>

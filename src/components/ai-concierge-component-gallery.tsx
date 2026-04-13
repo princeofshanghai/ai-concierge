@@ -29,6 +29,7 @@ import { IconButton } from "@/components/icon-button";
 import { InternalPrototypeNav } from "@/components/internal-prototype-nav";
 import { LinkedInIdentityChip } from "@/components/linkedin-identity-chip";
 import { PhoneCallIcon } from "@/components/phone-call-icon";
+import { PrototypeLinkedInSignInScreen } from "@/components/prototype-linkedin-sign-in-screen";
 import { SuggestedActionPrompt } from "@/components/suggested-action-prompt";
 import { Tag } from "@/components/tag";
 import {
@@ -172,7 +173,7 @@ export function AiConciergeComponentGallery() {
           >
             <ComponentRow
               description="The orchestration layer that owns onboarding, chat, matching, booking, voice, and celebration transitions."
-              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border while voice mode starts, keeps the opening starter UI visible for the very first voice turn, and morphs the empty text composer into the centered voice pill before the live dock takes over."
+              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border for a touch longer while voice mode starts, with the tail end of that sweep lingering slightly before it settles. It also pairs that motion with a more musical felt-piano phrase that ascends on voice entry and descends on voice exit, keeps the opening starter UI visible for the very first voice turn, and morphs the empty text composer into the centered voice pill at a more deliberate pace before the live dock takes over."
               title="AiConciergePanel"
             >
               <PreviewSurface label="How to review">
@@ -301,6 +302,38 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
+              description="Prototype-only fake sign-in page used to simulate leaving the landing page and returning after LinkedIn auth."
+              details="Preview shown: the standalone sign-in screen used for both Sign in to LinkedIn and Use another account flows."
+              title="PrototypeLinkedInSignInScreen"
+            >
+              <div className="grid gap-6 xl:grid-cols-2">
+                <PreviewSurface
+                  className="overflow-hidden"
+                  label="Sign in flow"
+                  padded={false}
+                >
+                  <PrototypeLinkedInSignInScreen
+                    defaultAccountId="jamie-chen"
+                    isEmbeddedPreview
+                    onSubmit={() => {}}
+                  />
+                </PreviewSurface>
+
+                <PreviewSurface
+                  className="overflow-hidden"
+                  label="Use another account flow"
+                  padded={false}
+                >
+                  <PrototypeLinkedInSignInScreen
+                    defaultAccountId="alex-rivera"
+                    isEmbeddedPreview
+                    onSubmit={() => {}}
+                  />
+                </PreviewSurface>
+              </div>
+            </ComponentRow>
+
+            <ComponentRow
               description="Scheduling surface for format selection, slot picking, contact destination, and notes."
               details="Preview shown: active scheduling. In the main prototype this can stay paired with the voice rail for guidance-first voice mode."
               title="AiConciergeNextStepPanel"
@@ -400,7 +433,7 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Composer for typed input, suggested replies, voice mode, and sending messages."
-              details="Preview shown: default and responding states, including the refreshed white voice-mode waveform icon on the updated premium brand gradient CTA. In the main prototype, that CTA now morphs the empty text composer into the centered voice pill at a touch slower pace while the broader full-panel ribbon sweep and temporary gradient border begin."
+              details="Preview shown: default and responding states, including the refreshed white voice-mode waveform icon on the updated premium brand gradient CTA. In the main prototype, that CTA now morphs the empty text composer into the centered voice pill at a more deliberate pace while the broader full-panel ribbon sweep and temporary gradient border run a bit longer, linger slightly at the tail end, and pair with an ascending felt-piano entry phrase."
               title="AiConciergeComposer"
             >
               <div className="grid gap-6 md:grid-cols-2">
