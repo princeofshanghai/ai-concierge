@@ -17,6 +17,7 @@ import { AiConciergePhoneCallDialog } from "@/components/ai-concierge-phone-call
 import { AiConciergePhoneCallPrompt } from "@/components/ai-concierge-phone-call-prompt";
 import { AiConciergeHeader } from "@/components/ai-concierge-header";
 import { AiConciergeNextStepPanel } from "@/components/ai-concierge-next-step-panel";
+import { AiConciergePremiumPlanPanel } from "@/components/ai-concierge-premium-plan-panel";
 import { AiConciergeRepresentativeReadyBanner } from "@/components/ai-concierge-representative-booking";
 import { AiConciergeOnboarding } from "@/components/ai-concierge-onboarding";
 import { CloseIcon } from "@/components/close-icon";
@@ -41,6 +42,7 @@ import type {
   AiConciergeSuggestedReply,
   ConciergeContactDetails,
   LinkedInIdentity,
+  PremiumPlanId,
 } from "@/lib/ai-concierge-types";
 import type { PrototypeLinkedInAuthReason } from "@/lib/prototype-linkedin-auth";
 import {
@@ -60,9 +62,21 @@ import {
   getPrototypeScenarioEntryState,
   type PrototypeScenario,
 } from "@/lib/prototype-scenario";
+import { getPremiumPlanCheckoutHref } from "@/lib/premium-plan-details";
 
 type AiConciergePanelProps = {
   authReturnNonce?: number;
+  customGetAssistantTurn?: (args: {
+    contactDetails: ConciergeContactDetails;
+    input: string;
+    state: AiConciergeConversationState;
+  }) => AiConciergeAssistantTurn;
+  customOpeningTurn?: (args: {
+    contactDetails: ConciergeContactDetails;
+    openingPromptVariant: PrototypeScenario["openingPromptVariant"];
+  }) => AiConciergeAssistantTurn;
+  disablePhoneCall?: boolean;
+  disableVoiceMode?: boolean;
   isOpen: boolean;
   onClose: () => void;
   onAuthReturnHandled?: () => void;
@@ -263,10 +277,14 @@ export function AiConciergePanel({
   prototypeScenario = DEFAULT_PROTOTYPE_SCENARIO,
   signedInContactDetails = PREFILLED_CONTACT_DETAILS,
   signedInLinkedInIdentity = LINKEDIN_IDENTITY,
+  customGetAssistantTurn,
+  customOpeningTurn,
+  disablePhoneCall = false,
+  disableVoiceMode = false,
 }: AiConciergePanelProps) {
   const shouldResumeConversationFromAuthReturn = authReturnNonce !== undefined;
   const authReturnOpeningTurn = shouldResumeConversationFromAuthReturn
-    ? createOpeningTurn({
+    ? (customOpeningTurn ?? createOpeningTurn)({
         contactDetails: signedInContactDetails,
         openingPromptVariant: prototypeScenario.openingPromptVariant,
       })
@@ -308,6 +326,8 @@ export function AiConciergePanel({
   const [isVoiceEntryAnimating, setIsVoiceEntryAnimating] = useState(false);
   const [voiceEntryAnimationKey, setVoiceEntryAnimationKey] = useState(0);
   const [threadScrollSignal, setThreadScrollSignal] = useState(0);
+  const [activePremiumPlanId, setActivePremiumPlanId] =
+    useState<PremiumPlanId | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -632,13 +652,18 @@ export function AiConciergePanel({
   const isContactDetailsValid = REQUIRED_CONTACT_FIELDS.every(
     (field) => contactDetails[field].trim().length > 0,
   );
+  const isPremiumPlanSurfaceVisible =
+    panelState === "chat" && activePremiumPlanId !== null;
   const shouldShowNextStepSurface =
-    panelState === "chat" && isMatchedBookingSurfaceVisible;
+    panelState === "chat" &&
+    (isMatchedBookingSurfaceVisible || isPremiumPlanSurfaceVisible);
   const shouldShowPhoneCallHeaderAction =
+    !disablePhoneCall &&
     panelState === "chat" &&
     liveSalesChatStatus === "idle" &&
     isContactDetailsValid;
   const shouldDelayPhoneCallPromptReveal =
+    !disablePhoneCall &&
     isOpen &&
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
@@ -694,6 +719,7 @@ export function AiConciergePanel({
     composerSuggestedReplies.length > 0 &&
     composerDraft.trim().length === 0;
   const shouldShowPhoneCallPromptEntryPoint =
+    !disablePhoneCall &&
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
     liveSalesChatStatus === "idle" &&
@@ -715,6 +741,7 @@ export function AiConciergePanel({
       ? "Turn on microphone access and try again"
       : voiceErrorMessage ?? dictateStatusMessage;
   const shouldShowMicrophoneNotice =
+    !disableVoiceMode &&
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
     Boolean(systemNoticeMessage);
@@ -758,6 +785,7 @@ export function AiConciergePanel({
       setPendingIdentityAction(null);
       setMessages([]);
       setConversationState(null);
+      setActivePremiumPlanId(null);
       setComposerDraft("");
       setFocusComposerSignal((currentValue) => currentValue + 1);
       setIsAssistantResponding(false);
@@ -797,6 +825,11 @@ export function AiConciergePanel({
   );
 
   const handleBackToChat = useCallback(() => {
+    if (activePremiumPlanId !== null) {
+      setActivePremiumPlanId(null);
+      return;
+    }
+
     if (isMatchedBookingSurfaceVisible) {
       closeMatchedBookingSurface();
       return;
@@ -828,6 +861,7 @@ export function AiConciergePanel({
     closeMatchedBookingSurface,
     contactDetails,
     conversationState,
+    activePremiumPlanId,
     isMatchedBookingSurfaceVisible,
   ]);
 
@@ -1146,7 +1180,7 @@ export function AiConciergePanel({
         return null;
       }
 
-      const assistantTurn = getAssistantTurn({
+      const assistantTurn = (customGetAssistantTurn ?? getAssistantTurn)({
         contactDetails,
         input: trimmedBody,
         state: conversationState,
@@ -1191,6 +1225,7 @@ export function AiConciergePanel({
       isLiveSalesChatActive,
       isLiveSalesChatConnecting,
       isVoiceModeActive,
+      customGetAssistantTurn,
       queueLiveSalesReply,
       setRepresentativeBookingDraft,
       stopDictationRecognition,
@@ -1256,7 +1291,7 @@ export function AiConciergePanel({
   const restartConversationWithDetails = useCallback((
     nextContactDetails: ConciergeContactDetails,
   ) => {
-    const openingTurn = createOpeningTurn({
+    const openingTurn = (customOpeningTurn ?? createOpeningTurn)({
       contactDetails: nextContactDetails,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
     });
@@ -1272,6 +1307,7 @@ export function AiConciergePanel({
     resetLiveSalesChatFlow();
     setComposerDraft("");
     setContactDetails(nextContactDetails);
+    setActivePremiumPlanId(null);
     setIsAssistantResponding(true);
     resetPhoneCallFlow({
       phoneNumber: nextContactDetails.phoneNumber,
@@ -1287,6 +1323,7 @@ export function AiConciergePanel({
     streamAssistantTurn(openingTurn, openingAssistantMessageId);
   }, [
     clearPhoneCallTimers,
+    customOpeningTurn,
     prototypeScenario.openingPromptVariant,
     resetLiveSalesChatFlow,
     resetPhoneCallFlow,
@@ -1407,19 +1444,14 @@ export function AiConciergePanel({
     }
 
     handledAuthReturnNonceRef.current = authReturnNonce;
-
-    const authResumeTimer = window.setTimeout(() => {
+    queueMicrotask(() => {
       setIsLinkedInConnected(true);
       setOnboardingFlowIntent("entry");
       setPendingIdentityAction(null);
       restartConversationWithDetails(signedInContactDetails);
       setPanelState("chat");
       onAuthReturnHandled?.();
-    }, 0);
-
-    return () => {
-      window.clearTimeout(authResumeTimer);
-    };
+    });
   }, [
     authReturnNonce,
     onAuthReturnHandled,
@@ -1501,6 +1533,19 @@ export function AiConciergePanel({
     setComposerDraft(suggestedReply.label);
     setFocusComposerSignal((currentValue) => currentValue + 1);
   };
+
+  const handlePremiumPlanSelect = useCallback((planId: PremiumPlanId) => {
+    dismissAvailablePhoneCallPrompt();
+    setActivePremiumPlanId(planId);
+  }, [dismissAvailablePhoneCallPrompt]);
+
+  const handlePremiumPlanRedeem = useCallback((planId: PremiumPlanId) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.location.assign(getPremiumPlanCheckoutHref(planId));
+  }, []);
 
   const handleOpeningPromptInsert = (prompt: string) => {
     dismissAvailablePhoneCallPrompt();
@@ -1886,13 +1931,14 @@ export function AiConciergePanel({
                       activeVoiceAssistantMessageId={activeVoiceAssistantMessageId}
                       isVoiceModeActive={isVoiceModeActive}
                       messages={messages}
-                        onBookAgain={handleBookAgain}
-                        onBookMeeting={openMatchedBookingSurface}
-                        onInsertOpeningPrompt={handleOpeningPromptInsert}
-                        onManageBooking={openMatchedBookingSurface}
-                        onRecommendationPrimaryAction={
-                          handleRecommendationPrimaryActionWithIdentityGate
-                        }
+                      onBookAgain={handleBookAgain}
+                      onBookMeeting={openMatchedBookingSurface}
+                      onInsertOpeningPrompt={handleOpeningPromptInsert}
+                      onManageBooking={openMatchedBookingSurface}
+                      onPremiumPlanSelect={handlePremiumPlanSelect}
+                      onRecommendationPrimaryAction={
+                        handleRecommendationPrimaryActionWithIdentityGate
+                      }
                       pendingRecommendationMessageId={
                         pendingRecommendationMessageId
                       }
@@ -1901,20 +1947,30 @@ export function AiConciergePanel({
                       voiceDraftText={voiceUserCaption}
                     />
                   </div>
-                    <AiConciergeNextStepPanel
-                      bookingMode={
-                        representativeMatchStatus === "booked" ? "manage" : "book"
-                      }
-                      contactDetails={contactDetails}
-                      initialSelection={representativeBookingDraft}
-                      onBackToChat={handleBackToChat}
-                      onCancelMeeting={
-                        representativeMatchStatus === "booked"
-                          ? openMeetingCancelDialog
-                          : undefined
-                      }
-                      onConfirmBooking={handleNextStepConfirmed}
-                    />
+                    {activePremiumPlanId ? (
+                      <AiConciergePremiumPlanPanel
+                        onBackToChat={handleBackToChat}
+                        onRedeem={handlePremiumPlanRedeem}
+                        planId={activePremiumPlanId}
+                      />
+                    ) : (
+                      <AiConciergeNextStepPanel
+                        bookingMode={
+                          representativeMatchStatus === "booked"
+                            ? "manage"
+                            : "book"
+                        }
+                        contactDetails={contactDetails}
+                        initialSelection={representativeBookingDraft}
+                        onBackToChat={handleBackToChat}
+                        onCancelMeeting={
+                          representativeMatchStatus === "booked"
+                            ? openMeetingCancelDialog
+                            : undefined
+                        }
+                        onConfirmBooking={handleNextStepConfirmed}
+                      />
+                    )}
                   </div>
                 ) : (
                   <>
@@ -1934,6 +1990,7 @@ export function AiConciergePanel({
                       onBookMeeting={openMatchedBookingSurface}
                       onInsertOpeningPrompt={handleOpeningPromptInsert}
                       onManageBooking={openMatchedBookingSurface}
+                      onPremiumPlanSelect={handlePremiumPlanSelect}
                       onRecommendationPrimaryAction={
                         handleRecommendationPrimaryActionWithIdentityGate
                       }
@@ -1969,11 +2026,13 @@ export function AiConciergePanel({
                     onDismiss={clearMicrophoneBlockedNotice}
                   />
                 ) : null}
-                {isVoiceComposerTransitioning && !shouldShowNextStepSurface ? (
+                {!disableVoiceMode &&
+                isVoiceComposerTransitioning &&
+                !shouldShowNextStepSurface ? (
                   <ComposerToVoiceTransitionShell
                     isPanelExpanded={isExpanded}
                   />
-                ) : isVoiceModeActive ? (
+                ) : !disableVoiceMode && isVoiceModeActive ? (
                   <AiConciergeVoiceDock
                     errorMessage={voiceErrorMessage}
                     isPanelExpanded={isExpanded}
@@ -2014,7 +2073,10 @@ export function AiConciergePanel({
                     onToggleDictation={handleToggleDictation}
                     onStopResponse={handleStopAssistantResponse}
                     onStartVoiceMode={handleStartVoiceModeWithTransition}
-                    showVoiceModeAction={!isLiveSalesChatActive}
+                    showDictationAction={!disableVoiceMode}
+                    showVoiceModeAction={
+                      !disableVoiceMode && !isLiveSalesChatActive
+                    }
                   />
                 ) : null}
               </div>
@@ -2043,14 +2105,16 @@ export function AiConciergePanel({
                 }
               />
             )}
-            <AiConciergePhoneCallDialog
-              isOpen={isPhoneCallDialogOpen}
-              isSubmitting={isPhoneCallSubmitting}
-              onClose={handleClosePhoneCallDialog}
-              onConfirm={handleConfirmPhoneCall}
-              onPhoneNumberChange={setPhoneCallNumberDraft}
-              phoneNumber={phoneCallNumberDraft}
-            />
+            {!disablePhoneCall ? (
+              <AiConciergePhoneCallDialog
+                isOpen={isPhoneCallDialogOpen}
+                isSubmitting={isPhoneCallSubmitting}
+                onClose={handleClosePhoneCallDialog}
+                onConfirm={handleConfirmPhoneCall}
+                onPhoneNumberChange={setPhoneCallNumberDraft}
+                phoneNumber={phoneCallNumberDraft}
+              />
+            ) : null}
             <AiConciergeMeetingCancelDialog
               isOpen={isMeetingCancelDialogOpen}
               isSubmitting={isMeetingCancelSubmitting}

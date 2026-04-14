@@ -44,6 +44,8 @@
   --ai-blue-focus-ring: rgba(55, 143, 233, 0.08);
   --ai-blue-border-subtle: #dbe7f7;
   --ai-blue-border-soft: #a9c9ff;
+  --ai-premium-gold: #c37d16;
+  --ai-premium-gold-light: #f9c982;
   --ai-premium-brand-gradient: linear-gradient(
       0deg,
       rgba(0, 0, 0, 0.12) 0%,
@@ -121,6 +123,8 @@
   --color-ai-blue-fill-active: var(--ai-blue-fill-active);
   --color-ai-blue-border-subtle: var(--ai-blue-border-subtle);
   --color-ai-blue-border-soft: var(--ai-blue-border-soft);
+  --color-ai-premium-gold: var(--ai-premium-gold);
+  --color-ai-premium-gold-light: var(--ai-premium-gold-light);
   --color-ai-checked-primary: var(--ai-checked-primary);
   --color-ai-checked-hover: var(--ai-checked-hover);
   --color-ai-checked-active: var(--ai-checked-active);
@@ -757,6 +761,12 @@ button {
 
 .ai-premium-gradient-frame {
   background: var(--ai-premium-brand-gradient);
+}
+
+.ai-premium-recommendation-surface {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.985) 0%, rgba(255, 255, 255, 0.995) 100%),
+    linear-gradient(97deg, rgba(10, 102, 194, 0.03) 0.8%, rgba(116, 229, 192, 0.045) 85.7%);
 }
 
 .ai-premium-gradient-swoop {

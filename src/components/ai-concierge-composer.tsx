@@ -19,6 +19,7 @@ type AiConciergeComposerProps = {
   onToggleDictation: () => void;
   onStopResponse: () => void;
   onStartVoiceMode: () => void;
+  showDictationAction?: boolean;
   showVoiceModeAction?: boolean;
 };
 
@@ -276,6 +277,7 @@ export function AiConciergeComposer({
   onToggleDictation,
   onStopResponse,
   onStartVoiceMode,
+  showDictationAction = true,
   showVoiceModeAction = true,
 }: AiConciergeComposerProps) {
   const [isFocused, setIsFocused] = useState(false);
@@ -451,14 +453,18 @@ export function AiConciergeComposer({
                     isComposerExpanded ? "justify-end" : "",
                   ].join(" ")}
                 >
-                  <ComposerIconButton
-                    active={isDictating}
-                    ariaLabel={isDictating ? "Stop dictation" : "Start dictation"}
-                    disabled={disabled}
-                    onClick={onToggleDictation}
-                  >
-                    <MicIcon />
-                  </ComposerIconButton>
+                  {showDictationAction ? (
+                    <ComposerIconButton
+                      active={isDictating}
+                      ariaLabel={
+                        isDictating ? "Stop dictation" : "Start dictation"
+                      }
+                      disabled={disabled}
+                      onClick={onToggleDictation}
+                    >
+                      <MicIcon />
+                    </ComposerIconButton>
+                  ) : null}
                   <ComposerPrimaryActionButton
                     disabled={disabled}
                     hasText={hasText}

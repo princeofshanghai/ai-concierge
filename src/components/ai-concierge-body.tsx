@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { AiConciergeOpeningSupportView } from "@/components/ai-concierge-opening-support";
+import { AiConciergePremiumPlanRecommendations } from "@/components/ai-concierge-premium-plan-recommendations";
 import { ChatAssistantMessage } from "@/components/chat-assistant-message";
 import { AiConciergeRecommendationCard } from "@/components/ai-concierge-recommendation-card";
 import { AiConciergeRepresentativeMatchCard } from "@/components/ai-concierge-representative-booking";
@@ -11,6 +12,7 @@ import { SuggestedActionPrompt } from "@/components/suggested-action-prompt";
 import type {
   AiConciergeMessage,
   AiConciergeSuggestedReply,
+  PremiumPlanId,
 } from "@/lib/ai-concierge-types";
 
 type AiConciergeBodyProps = {
@@ -22,6 +24,7 @@ type AiConciergeBodyProps = {
   onBookMeeting: () => void;
   onInsertOpeningPrompt?: (prompt: string) => void;
   onManageBooking: () => void;
+  onPremiumPlanSelect: (planId: PremiumPlanId) => void;
   onRecommendationPrimaryAction: (messageId: string) => void;
   pendingRecommendationMessageId?: string | null;
   onRepresentativeReadyCardVisibilityChange?: (
@@ -41,6 +44,7 @@ export function AiConciergeBody({
   onBookMeeting,
   onInsertOpeningPrompt = () => {},
   onManageBooking,
+  onPremiumPlanSelect,
   onRecommendationPrimaryAction,
   pendingRecommendationMessageId = null,
   onRepresentativeReadyCardVisibilityChange,
@@ -269,6 +273,14 @@ export function AiConciergeBody({
                       onPrimaryAction={() =>
                         onRecommendationPrimaryAction(message.id)
                       }
+                    />
+                  ) : null}
+                  {message.status === "complete" &&
+                  message.artifact?.type === "premium-plan-recommendations" ? (
+                    <AiConciergePremiumPlanRecommendations
+                      artifact={message.artifact}
+                      isPanelExpanded={isPanelExpanded}
+                      onPlanSelect={onPremiumPlanSelect}
                     />
                   ) : null}
                   {message.status === "complete" &&

@@ -12,6 +12,8 @@ import { AiConciergeNextStepPanel } from "@/components/ai-concierge-next-step-pa
 import { AiConciergeOnboarding } from "@/components/ai-concierge-onboarding";
 import { AiConciergePhoneCallDialog } from "@/components/ai-concierge-phone-call-dialog";
 import { AiConciergePhoneCallPrompt } from "@/components/ai-concierge-phone-call-prompt";
+import { AiConciergePremiumPlanPanel } from "@/components/ai-concierge-premium-plan-panel";
+import { AiConciergePremiumPlanRecommendations } from "@/components/ai-concierge-premium-plan-recommendations";
 import { AiConciergeRecommendationCard } from "@/components/ai-concierge-recommendation-card";
 import {
   AiConciergeRepresentativeMatchCard,
@@ -40,6 +42,7 @@ import {
 } from "@/lib/ai-concierge-fixtures";
 import { OPENING_PROMPT_TOPICS } from "@/lib/ai-concierge-opening-presentation";
 import type {
+  AiConciergePremiumPlanRecommendationsArtifact,
   AiConciergeMessage,
   ConciergeContactDetails,
 } from "@/lib/ai-concierge-types";
@@ -50,6 +53,42 @@ const SAMPLE_RECOMMENDATION_ARTIFACT = {
   titleText: "Talk to a sales rep",
   type: "recommendation" as const,
 };
+
+const SAMPLE_PREMIUM_RECOMMENDATIONS_ARTIFACT = {
+  primaryRecommendation: {
+    bodyText:
+      "Sell, market, and hire in one tool",
+    fitLabel: "Best overall fit",
+    id: "all-in-one",
+    priceText: "$74.99/mo",
+    promptText: "Show me details for Premium All-in-One",
+    trialText: "1 month free trial",
+    titleText: "Premium All-in-One",
+  },
+  secondaryRecommendations: [
+    {
+      bodyText:
+        "A lighter option centered on insights and relationship-building.",
+      fitLabel: "If networking matters most",
+      id: "business",
+      priceText: "$44.99/mo",
+      promptText: "Show me details for Premium Business",
+      trialText: "1 month free trial",
+      titleText: "Premium Business",
+    },
+    {
+      bodyText:
+        "Worth considering if finding and hiring talent becomes the main need.",
+      fitLabel: "If hiring becomes the priority",
+      id: "recruiter-lite",
+      priceText: "$139.99/mo",
+      promptText: "Show me details for Recruiter Lite",
+      trialText: "1 month free trial",
+      titleText: "Recruiter Lite",
+    },
+  ],
+  type: "premium-plan-recommendations" as const,
+} satisfies AiConciergePremiumPlanRecommendationsArtifact;
 
 const SAMPLE_BODY_MESSAGES: AiConciergeMessage[] = [
   {
@@ -173,7 +212,7 @@ export function AiConciergeComponentGallery() {
           >
             <ComponentRow
               description="The orchestration layer that owns onboarding, chat, matching, booking, voice, and celebration transitions."
-              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border for a touch longer while voice mode starts, with the tail end of that sweep lingering slightly before it settles. It also pairs that motion with a more musical felt-piano phrase that ascends on voice entry and descends on voice exit, keeps the opening starter UI visible for the very first voice turn, and morphs the empty text composer into the centered voice pill at a more deliberate pace before the live dock takes over."
+              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border for a touch longer while voice mode starts, with the tail end of that sweep lingering slightly before it settles. It also pairs that motion with a more musical felt-piano phrase that ascends on voice entry and descends on voice exit, keeps the opening starter UI visible for the very first voice turn, morphs the empty text composer into the centered voice pill at a more deliberate pace before the live dock takes over, and now also supports a direct-to-chat launch path plus a simpler chat-only configuration so the Premium survey prototype can skip onboarding, voice, and phone UI."
               title="AiConciergePanel"
             >
               <PreviewSurface label="How to review">
@@ -206,6 +245,12 @@ export function AiConciergeComponentGallery() {
                     className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
                   >
                     Open the main prototype route
+                  </Link>
+                  <Link
+                    href="/prototype/premium-survey"
+                    className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+                  >
+                    Open the Premium survey route
                   </Link>
                 </div>
               </PreviewSurface>
@@ -368,23 +413,38 @@ export function AiConciergeComponentGallery() {
             title="Conversation System"
           >
             <ComponentRow
-              description="Header chrome for close, expand, and phone entry points."
-              details="Preview shown: default chat header with the updated maximize and collapse glyphs plus the stronger shared close treatment on this lighter surface."
+              description="Header chrome for close, expand, and the optional phone entry point."
+              details="Previews shown: the default chat header with the phone action, plus the simpler chat-only variant used on the Premium survey prototype."
               title="AiConciergeHeader"
             >
-              <PreviewSurface
-                className="overflow-hidden"
-                label="Preview"
-                padded={false}
-              >
-                <AiConciergeHeader
-                  isExpanded={false}
-                  liveAgentName={DEFAULT_REPRESENTATIVE_NAME}
-                  onClose={() => {}}
-                  onOpenPhoneCall={() => {}}
-                  onToggleExpand={() => {}}
-                />
-              </PreviewSurface>
+              <div className="grid gap-6 md:grid-cols-2">
+                <StatePreview label="Default">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    padded={false}
+                  >
+                    <AiConciergeHeader
+                      isExpanded={false}
+                      liveAgentName={DEFAULT_REPRESENTATIVE_NAME}
+                      onClose={() => {}}
+                      onOpenPhoneCall={() => {}}
+                      onToggleExpand={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Chat-only">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    padded={false}
+                  >
+                    <AiConciergeHeader
+                      isExpanded={false}
+                      onClose={() => {}}
+                      onToggleExpand={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
             </ComponentRow>
 
             <ComponentRow
@@ -404,6 +464,7 @@ export function AiConciergeComponentGallery() {
                       onBookAgain={() => {}}
                       onBookMeeting={() => {}}
                       onManageBooking={() => {}}
+                      onPremiumPlanSelect={() => {}}
                       onRecommendationPrimaryAction={() => {}}
                       onSelectSuggestedReply={() => {}}
                       voiceDraftText="We need the quickest rollout path for this quarter."
@@ -423,6 +484,7 @@ export function AiConciergeComponentGallery() {
                       onBookMeeting={() => {}}
                       onInsertOpeningPrompt={() => {}}
                       onManageBooking={() => {}}
+                      onPremiumPlanSelect={() => {}}
                       onRecommendationPrimaryAction={() => {}}
                       onSelectSuggestedReply={() => {}}
                     />
@@ -432,11 +494,11 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Composer for typed input, suggested replies, voice mode, and sending messages."
-              details="Preview shown: default and responding states, including the refreshed white voice-mode waveform icon on the updated premium brand gradient CTA. In the main prototype, that CTA now morphs the empty text composer into the centered voice pill at a more deliberate pace while the broader full-panel ribbon sweep and temporary gradient border run a bit longer, linger slightly at the tail end, and pair with an ascending felt-piano entry phrase."
+              description="Composer for typed input, suggested replies, optional audio actions, and sending messages."
+              details="Previews shown: the default state, the Premium survey chat-only variant with audio controls removed, and the responding state. In the main prototype, the voice CTA still morphs the empty text composer into the centered voice pill while the broader full-panel ribbon sweep and temporary gradient border run a bit longer, linger slightly at the tail end, and pair with an ascending felt-piano entry phrase."
               title="AiConciergeComposer"
             >
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-3">
                 <StatePreview label="Default">
                   <PreviewSurface
                     className="overflow-hidden"
@@ -449,6 +511,23 @@ export function AiConciergeComponentGallery() {
                       onStartVoiceMode={() => {}}
                       onStopResponse={() => {}}
                       onToggleDictation={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Chat-only">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    padded={false}
+                  >
+                    <AiConciergeComposer
+                      draft={composerDraft}
+                      onDraftChange={setComposerDraft}
+                      onSend={() => setComposerDraft("")}
+                      onStartVoiceMode={() => {}}
+                      onStopResponse={() => {}}
+                      onToggleDictation={() => {}}
+                      showDictationAction={false}
+                      showVoiceModeAction={false}
                     />
                   </PreviewSurface>
                 </StatePreview>
@@ -691,6 +770,39 @@ export function AiConciergeComponentGallery() {
                     onPrimaryAction={() => {}}
                   />
                 </ChatCardPreview>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Grouped plan recommendations for the Premium survey prototype, with one primary recommendation and two secondary options."
+              details="Preview shown: Alex Kim's proactive Premium ranking with a very light Premium-tinted primary card surface, matching light-blue borders across all three cards, sand-toned fit tags, 16px semibold plan names, border-only hover feedback, a cleaner offer row that uses whitespace instead of a divider, and no intermediary section label between the top recommendation and the narrower alternatives."
+              title="AiConciergePremiumPlanRecommendations"
+            >
+              <PreviewSurface label="Preview">
+                <ChatCardPreview>
+                  <AiConciergePremiumPlanRecommendations
+                    artifact={SAMPLE_PREMIUM_RECOMMENDATIONS_ARTIFACT}
+                    onPlanSelect={() => {}}
+                  />
+                </ChatCardPreview>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Plan-detail surface for the Premium survey prototype, opened from a recommendation card and shown side by side with chat."
+              details="Preview shown: the Premium All-in-One detail view in a naturally scrolling panel with the CTAs inline inside the card, a smaller stepped-down type hierarchy, a light-gold 8px inner top accent, a full-width in-card proof banner below the What you get list, internal section dividers, the supplied small Premium gold check icon, an inline crossed-out price before 1 month free trial, and side-by-side Learn more plus Redeem 1 month for $0 actions that both use the supplied external-link icon."
+              title="AiConciergePremiumPlanPanel"
+            >
+              <PreviewSurface
+                className="h-[760px] overflow-hidden"
+                label="Preview"
+                padded={false}
+              >
+                <AiConciergePremiumPlanPanel
+                  onBackToChat={() => {}}
+                  onRedeem={() => {}}
+                  planId="all-in-one"
+                />
               </PreviewSurface>
             </ComponentRow>
 

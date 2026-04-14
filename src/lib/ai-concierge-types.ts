@@ -5,12 +5,35 @@ export type AiConciergeSuggestedReply = {
   label: string;
 };
 
+export type PremiumPlanId =
+  | "career"
+  | "business"
+  | "all-in-one"
+  | "sales-navigator-core"
+  | "recruiter-lite";
+
 export type AiConciergeRecommendationArtifact = {
   bodyText: string;
   ctaLabel: string;
   metaText?: string;
   titleText: string;
   type: "recommendation";
+};
+
+export type AiConciergePremiumPlanRecommendation = {
+  bodyText: string;
+  fitLabel: string;
+  id: PremiumPlanId;
+  priceText: string;
+  promptText: string;
+  trialText: string;
+  titleText: string;
+};
+
+export type AiConciergePremiumPlanRecommendationsArtifact = {
+  primaryRecommendation: AiConciergePremiumPlanRecommendation;
+  secondaryRecommendations: AiConciergePremiumPlanRecommendation[];
+  type: "premium-plan-recommendations";
 };
 
 export type RepresentativeMatchStatus =
@@ -37,6 +60,7 @@ export type AiConciergeRepresentativeMatchArtifact = {
 
 export type AiConciergeMessageArtifact =
   | AiConciergeRecommendationArtifact
+  | AiConciergePremiumPlanRecommendationsArtifact
   | AiConciergeRepresentativeMatchArtifact;
 
 export type AiConciergeMessage = {
