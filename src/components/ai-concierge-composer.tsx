@@ -254,7 +254,7 @@ function ComposerPrimaryActionButton({
         disabled={disabled}
         onClick={onStartVoiceMode}
         size="small"
-        variant="premium"
+        variant="primary"
         iconClassName="h-[18px] w-[18px]"
       >
         <VoiceWaveIcon />

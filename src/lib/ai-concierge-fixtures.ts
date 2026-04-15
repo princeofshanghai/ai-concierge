@@ -95,6 +95,7 @@ export const REQUIRED_CONTACT_FIELDS: Array<keyof ConciergeContactDetails> = [
   "lastName",
   "company",
   "email",
+  "phoneNumber",
   "role",
 ];
 

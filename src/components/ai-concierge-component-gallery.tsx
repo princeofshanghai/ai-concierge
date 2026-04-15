@@ -168,31 +168,14 @@ export function AiConciergeComponentGallery() {
     <>
       <InternalPrototypeNav />
       <main className="min-h-screen bg-[linear-gradient(180deg,#f7fbff_0%,#ffffff_26%,#ffffff_100%)] px-6 pb-24 pt-24 sm:px-8">
-        <div className="mx-auto flex w-full max-w-[920px] flex-col gap-20">
+        <div className="mx-auto flex w-full max-w-[920px] flex-col gap-16">
           <header className="max-w-[720px]">
-            <p className="ai-type-body-xs text-ai-blue-primary">
-              Internal reference
-            </p>
-            <h1 className="ai-type-display-md mt-3 text-ai-text-primary">
+            <h1 className="ai-type-display-md text-ai-text-primary">
               AI Concierge components
             </h1>
-            <p className="ai-type-body-md-open mt-5 text-ai-text-primary">
-              A cleaner review surface for checking individual components,
-              reading hierarchy, and previewing the current handoff moments
-              without digging through the full prototype.
-            </p>
-            <p className="ai-type-body-sm-open mt-3 text-ai-text-meta">
-              Each component now sits in its own row so it is easier to scan,
-              discuss, and compare states one piece at a time.
-            </p>
-            <p className="ai-type-body-xs mt-3 text-ai-text-meta">
-              The gallery now pulls its default identity and representative data
-              from the same shared fixtures as the main prototype so examples
-              stay aligned.
-            </p>
             <nav
               aria-label="Component gallery sections"
-              className="mt-8 flex flex-wrap gap-x-5 gap-y-3"
+              className="mt-6 flex flex-wrap gap-x-5 gap-y-3"
             >
               <SectionLink href="#full-surfaces">Full surfaces</SectionLink>
               <SectionLink href="#conversation-system">
@@ -205,60 +188,58 @@ export function AiConciergeComponentGallery() {
             </nav>
           </header>
 
-          <GallerySection
-            id="full-surfaces"
-            description="The largest surfaces that define the overall AI Concierge flow."
-            title="Full Surfaces"
-          >
+          <GallerySection id="full-surfaces" title="Full Surfaces">
             <ComponentRow
-              description="The orchestration layer that owns onboarding, chat, matching, booking, voice, and celebration transitions."
-              details="Best reviewed in the main prototype because it coordinates full-screen state changes. The live panel now adds a broader, more visible blended premium ribbon plus a full animated gradient border for a touch longer while voice mode starts, with the tail end of that sweep lingering slightly before it settles. It also pairs that motion with a more musical felt-piano phrase that ascends on voice entry and descends on voice exit, keeps the opening starter UI visible for the very first voice turn, morphs the empty text composer into the centered voice pill at a more deliberate pace before the live dock takes over, and now also supports a direct-to-chat launch path plus a simpler chat-only configuration so the Premium survey prototype can skip onboarding, voice, and phone UI."
+              description="Top-level panel that assembles onboarding, conversation, voice, and handoff surfaces."
+              states={["Main prototype"]}
               title="AiConciergePanel"
             >
-              <PreviewSurface label="How to review">
-                <div className="flex flex-col gap-5">
-                  <p className="ai-type-body-sm-open max-w-[60ch] text-ai-text-primary">
-                    This is the composition layer rather than a standalone preview.
-                    It is where the onboarding, conversation, matching, booking,
-                    and phone surfaces all come together.
-                  </p>
-                  <ul className="ai-type-body-sm-open flex list-disc flex-col gap-1 pl-5 text-ai-text-secondary">
-                    {[
-                      "AiConciergeHeader",
-                      "AiConciergeOnboarding",
-                      "AiConciergeBody",
-                      "AiConciergeComposer",
-                      "AiConciergeConfettiOverlay",
-                      "AiConciergePhoneCallPrompt",
-                      "AiConciergeVoiceDock",
-                      "AiConciergePhoneCallDialog",
-                      "AiConciergeNextStepPanel",
-                      "AiConciergeRecommendationCard",
-                      "AiConciergeRepresentativeMatchCard",
-                      "AiConciergeRepresentativeReadyBanner",
-                    ].map((childName) => (
-                      <li key={childName}>{childName}</li>
-                    ))}
-                  </ul>
+              <PreviewSurface label="Routes">
+                <div className="flex flex-col gap-4">
                   <Link
                     href="/"
                     className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
                   >
-                    Open the main prototype route
+                    Main prototype
                   </Link>
-                  <Link
-                    href="/prototype/premium-survey"
-                    className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
-                  >
-                    Open the Premium survey route
-                  </Link>
+                  <p className="ai-type-body-sm max-w-[28rem] text-ai-text-meta">
+                    This is the sales lead qualification prototype shell with
+                    onboarding, handoff, and voice behavior.
+                  </p>
                 </div>
               </PreviewSurface>
             </ComponentRow>
 
             <ComponentRow
-              description="Entry flow for the legacy welcome, the new profile-aware welcome, and the reused details review states."
-              details="Previews shown: the signed-out Sign in to LinkedIn entry, the signed-in Continue as Jamie entry, and the optional details review fallback."
+              description="Premium-specific concierge panel that reuses the shared chat UI language while keeping recommendation behavior separate from the sales lead qualification prototype."
+              states={["Premium survey prototype"]}
+              title="PremiumSurveyConciergePanel"
+            >
+              <PreviewSurface label="Routes">
+                <div className="flex flex-col gap-4">
+                  <Link
+                    href="/prototype/premium-survey"
+                    className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+                  >
+                    Premium survey prototype
+                  </Link>
+                  <p className="ai-type-body-sm max-w-[28rem] text-ai-text-meta">
+                    This route keeps the same panel styling, but its behavior is
+                    fully self-serve and limited to plan and product
+                    recommendations.
+                  </p>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Entry flow for LinkedIn connection and contact-detail confirmation, including the lighter signed-in review state, 14px regular darker-neutral edit-mode helper copy, denser read-only summary rows, and the manual intro copy."
+              states={[
+                "Signed out",
+                "Signed in",
+                "Confirm details / manual",
+                "Confirm details / prefilled",
+              ]}
               title="AiConciergeOnboarding"
             >
               <div className="grid gap-6">
@@ -320,10 +301,40 @@ export function AiConciergeComponentGallery() {
 
                 <PreviewSurface
                   className="overflow-hidden"
-                  label="Details review fallback"
+                  label="Confirm details / manual"
                   padded={false}
                 >
                   <AiConciergeOnboarding
+                    copyVariant="direct-entry"
+                    details={onboardingDetails}
+                    isLinkedInConnected={false}
+                    isValid
+                    linkedInIdentity={null}
+                    mode="manual"
+                    onBack={() => {}}
+                    onChange={(field, value) =>
+                      setOnboardingDetails((currentDetails) => ({
+                        ...currentDetails,
+                        [field]: value,
+                      }))
+                    }
+                    onContinueWithoutLinkedIn={() => {}}
+                    onContinueWithLinkedIn={() => {}}
+                    onGetStarted={() => {}}
+                    onStartConversation={() => {}}
+                    onUseAnotherAccount={() => {}}
+                    showBackButton
+                    welcomeVariant="profile-aware"
+                  />
+                </PreviewSurface>
+
+                <PreviewSurface
+                  className="overflow-hidden"
+                  label="Confirm details / prefilled"
+                  padded={false}
+                >
+                  <AiConciergeOnboarding
+                    copyVariant="direct-entry"
                     details={onboardingDetails}
                     isLinkedInConnected
                     isValid
@@ -341,14 +352,15 @@ export function AiConciergeComponentGallery() {
                     onGetStarted={() => {}}
                     onStartConversation={() => {}}
                     onUseAnotherAccount={() => {}}
+                    showBackButton
                   />
                 </PreviewSurface>
               </div>
             </ComponentRow>
 
             <ComponentRow
-              description="Prototype-only fake sign-in page used to simulate leaving the landing page and returning after LinkedIn auth."
-              details="Preview shown: the standalone sign-in screen used for both Sign in to LinkedIn and Use another account flows."
+              description="Prototype sign-in screen used to simulate returning from LinkedIn auth."
+              states={["Sign in flow", "Use another account"]}
               title="PrototypeLinkedInSignInScreen"
             >
               <div className="grid gap-6 xl:grid-cols-2">
@@ -379,13 +391,13 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Scheduling surface for format selection, slot picking, contact destination, and notes."
-              details="Preview shown: active scheduling. In the main prototype this can stay paired with the voice rail for guidance-first voice mode."
+              description="Scheduling surface for format choice, slot selection, and contact details."
+              states={["Scheduling"]}
               title="AiConciergeNextStepPanel"
             >
               <PreviewSurface
                 className="h-[760px] overflow-hidden"
-                label="Preview"
+                label="Scheduling"
                 padded={false}
               >
                 <AiConciergeNextStepPanel
@@ -407,18 +419,27 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
           </GallerySection>
 
-          <GallerySection
-            id="conversation-system"
-            description="The pieces that make the core chat feel coherent, responsive, and readable."
-            title="Conversation System"
-          >
+          <GallerySection id="conversation-system" title="Conversation System">
             <ComponentRow
-              description="Header chrome for close, expand, and the optional phone entry point."
-              details="Previews shown: the default chat header with the phone action, plus the simpler chat-only variant used on the Premium survey prototype."
+              description="Header bar for close and expand controls. The phone action is parked for MVP and hidden in the live prototype."
+              states={["Prototype default", "Phone action parked"]}
               title="AiConciergeHeader"
             >
               <div className="grid gap-6 md:grid-cols-2">
-                <StatePreview label="Default">
+                <StatePreview label="Prototype default">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    padded={false}
+                  >
+                    <AiConciergeHeader
+                      isExpanded={false}
+                      liveAgentName={DEFAULT_REPRESENTATIVE_NAME}
+                      onClose={() => {}}
+                      onToggleExpand={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Phone action parked">
                   <PreviewSurface
                     className="overflow-hidden"
                     padded={false}
@@ -432,31 +453,18 @@ export function AiConciergeComponentGallery() {
                     />
                   </PreviewSurface>
                 </StatePreview>
-                <StatePreview label="Chat-only">
-                  <PreviewSurface
-                    className="overflow-hidden"
-                    padded={false}
-                  >
-                    <AiConciergeHeader
-                      isExpanded={false}
-                      onClose={() => {}}
-                      onToggleExpand={() => {}}
-                    />
-                  </PreviewSurface>
-                </StatePreview>
               </div>
             </ComponentRow>
 
             <ComponentRow
-              description="Main thread surface for assistant, user, system, and rep messages."
-              details="Previews shown: an in-progress chat with inline reply suggestions, plus the first voice-turn state where the opening support stays visible until the user starts speaking and the assistant message now fades in by chunk instead of popping in."
+              description="Conversation thread for assistant, user, system, and rep messages."
+              states={["In-progress chat", "Voice opening"]}
               title="AiConciergeBody"
             >
               <div className="grid gap-6 md:grid-cols-2">
                 <StatePreview label="In-progress chat">
                   <PreviewSurface
                     className="h-[560px] overflow-hidden"
-                    label="Preview"
                     padded={false}
                   >
                     <AiConciergeBody
@@ -474,7 +482,6 @@ export function AiConciergeComponentGallery() {
                 <StatePreview label="Voice opening">
                   <PreviewSurface
                     className="h-[560px] overflow-hidden"
-                    label="Preview"
                     padded={false}
                   >
                     <AiConciergeBody
@@ -494,8 +501,8 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Composer for typed input, suggested replies, optional audio actions, and sending messages."
-              details="Previews shown: the default state, the Premium survey chat-only variant with audio controls removed, and the responding state. In the main prototype, the voice CTA still morphs the empty text composer into the centered voice pill while the broader full-panel ribbon sweep and temporary gradient border run a bit longer, linger slightly at the tail end, and pair with an ascending felt-piano entry phrase."
+              description="Input composer for typing, sending, dictation, and the primary-blue voice entry action."
+              states={["Default", "Chat-only", "Responding"]}
               title="AiConciergeComposer"
             >
               <div className="grid gap-6 md:grid-cols-3">
@@ -551,8 +558,8 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Inline prompt that offers a phone callback as an alternate entry point."
-              details="Preview shown: available and requested states with the neutral gray container styling and a stronger dismiss glyph treatment on the requested state."
+              description="Parked callback banner kept in the library for a possible post-MVP return."
+              states={["Available", "Requested"]}
               title="AiConciergePhoneCallPrompt"
             >
               <div className="flex flex-col gap-6">
@@ -580,13 +587,13 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Dialog used to confirm the number for a callback request."
-              details="Preview shown: open state with the close glyph scaled up and nudged upward so it aligns better with the title on the light modal surface."
+              description="Parked callback dialog kept in the library for a possible post-MVP return."
+              states={["Open"]}
               title="AiConciergePhoneCallDialog"
             >
               <PreviewSurface
                 className="relative min-h-[320px] overflow-hidden bg-[linear-gradient(180deg,#eff5ff_0%,#ffffff_100%)]"
-                label="Preview"
+                label="Open"
                 padded={false}
               >
                 <AiConciergePhoneCallDialog
@@ -601,8 +608,8 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="The compact live voice stage that keeps turn-taking visible inside the composer area."
-              details="Preview shown: the narrower floating voice pill with reduced center gap, your updated custom check, stop, and redo glyphs on the right-side stateful actions, preserved tooltips, and a softer shadow. The user avatar and assistant mark now stay static in matching circular badges, with a clearer light-gray assistant badge and a larger AI mark while speaking, while live speaking also shifts to a more irregular, different-sized outer shell pulse around the pill. Entry still hands off from the composer morph into a preparation badge before live turn-taking begins, and live speech appears in the thread instead of inside the pill."
+              description="Compact live voice stage that keeps turn-taking visible near the composer."
+              states={["Assistant speaking", "User speaking"]}
               title="AiConciergeVoiceDock"
             >
               <div className="flex flex-col gap-6">
@@ -634,8 +641,8 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Shared system notice for blocked microphone access and browser-level voice or dictation failures, kept separate from live conversation text."
-              details="Preview shown: blocked-mic and generic browser-error states on the neutral gray banner, with a stronger dismiss glyph so the close affordance reads clearly."
+              description="System notice for blocked microphone access or browser voice errors."
+              states={["Microphone blocked", "Browser issue"]}
               title="AiConciergeMicrophoneNotice"
             >
               <div className="flex flex-col gap-6">
@@ -659,13 +666,13 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Dialog used to confirm meeting cancellation after a booking is already on the calendar."
-              details="Preview shown: open state with the same stronger close treatment and upward alignment adjustment used across light modal surfaces."
+              description="Dialog for canceling a meeting that has already been booked."
+              states={["Open"]}
               title="AiConciergeMeetingCancelDialog"
             >
               <PreviewSurface
                 className="relative min-h-[320px] overflow-hidden bg-[linear-gradient(180deg,#eff5ff_0%,#ffffff_100%)]"
-                label="Preview"
+                label="Open"
                 padded={false}
               >
                 <AiConciergeMeetingCancelDialog
@@ -678,18 +685,31 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Primary assistant message treatment used inside the conversation."
-              details="Previews shown: default, streaming fade-in, and voice-speaking states with matching text styling. Streamed assistant text now reveals in soft phrase chunks, while voice replies use the same treatment before audio starts."
+              description="Primary assistant message treatment used in the conversation, with a slightly narrower reading width instead of full-bleed copy."
+              states={[
+                "Default",
+                "Expanded panel",
+                "Streaming",
+                "Voice speaking",
+              ]}
               title="ChatAssistantMessage"
             >
-              <div className="grid gap-6 md:grid-cols-3">
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                 <StatePreview label="Default">
-                  <PreviewSurface label="Preview">
+                  <PreviewSurface>
                     <ChatAssistantMessage body="Based on what you shared, talking to a sales rep looks like the right next step." />
                   </PreviewSurface>
                 </StatePreview>
+                <StatePreview label="Expanded panel">
+                  <PreviewSurface>
+                    <ChatAssistantMessage
+                      body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health, answer your questions, and point you in the right direction from there without making the thread feel like a wall of copy."
+                      isPanelExpanded
+                    />
+                  </PreviewSurface>
+                </StatePreview>
                 <StatePreview label="Streaming fade">
-                  <PreviewSurface label="Preview">
+                  <PreviewSurface>
                     <ChatAssistantMessage
                       body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health and point you in the right direction from there."
                       status="streaming"
@@ -703,7 +723,7 @@ export function AiConciergeComponentGallery() {
                   </PreviewSurface>
                 </StatePreview>
                 <StatePreview label="Voice speaking">
-                  <PreviewSurface label="Preview">
+                  <PreviewSurface>
                     <ChatAssistantMessage
                       body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health, answer your questions, and point you in the right direction from there. When you're ready, you can start talking or use what's on screen to get started."
                       isActiveVoiceTurn
@@ -715,12 +735,12 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="User message styling inside the conversation thread."
-              details="Preview shown: standard and live-draft states. The live-draft treatment keeps the same bubble shape, but drops the border for a cooler light gray fill and lighter gray text while voice capture is still in progress."
+              states={["Standard", "Live draft"]}
               title="ChatUserMessage"
             >
               <div className="grid gap-6 md:grid-cols-2">
                 <StatePreview label="Standard">
-                  <PreviewSurface label="Preview">
+                  <PreviewSurface>
                     <ChatUserMessage>
                       We want something that helps us move this quarter, not
                       next quarter.
@@ -728,7 +748,7 @@ export function AiConciergeComponentGallery() {
                   </PreviewSurface>
                 </StatePreview>
                 <StatePreview label="Live draft">
-                  <PreviewSurface label="Preview">
+                  <PreviewSurface>
                     <ChatUserMessage isDraft>
                       We want something that helps us move this quarter, not
                       next quarter.
@@ -739,11 +759,11 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Live sales rep message treatment once a human joins the chat."
-              details="Preview shown: active rep reply."
+              description="Sales rep message treatment once a human joins the chat."
+              states={["Active reply"]}
               title="ChatLiveAgentMessage"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Active reply">
                 <ChatLiveAgentMessage
                   body="I can show you how similar teams usually structure this rollout."
                   name={DEFAULT_REPRESENTATIVE_NAME}
@@ -753,17 +773,13 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
           </GallerySection>
 
-          <GallerySection
-            id="handoff"
-            description="The recommendation, matching, and booking-adjacent moments that bridge from AI guidance to human support."
-            title="Handoff"
-          >
+          <GallerySection id="handoff" title="Handoff">
             <ComponentRow
-              description="The simplified recommendation artifact that turns a smart suggestion into a clear next action."
-              details="Preview shown: current copy and CTA for the matched sales rep flow."
+              description="Recommendation card that turns a suggestion into a clear next action."
+              states={["Default"]}
               title="AiConciergeRecommendationCard"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Default">
                 <ChatCardPreview>
                   <AiConciergeRecommendationCard
                     artifact={SAMPLE_RECOMMENDATION_ARTIFACT}
@@ -774,11 +790,11 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Grouped plan recommendations for the Premium survey prototype, with one primary recommendation and two secondary options."
-              details="Preview shown: Alex Kim's proactive Premium ranking with a very light Premium-tinted primary card surface, matching light-blue borders across all three cards, sand-toned fit tags, 16px semibold plan names, border-only hover feedback, a cleaner offer row that uses whitespace instead of a divider, and no intermediary section label between the top recommendation and the narrower alternatives."
+              description="Grouped plan recommendations with a primary option and supporting alternatives."
+              states={["Default"]}
               title="AiConciergePremiumPlanRecommendations"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Default">
                 <ChatCardPreview>
                   <AiConciergePremiumPlanRecommendations
                     artifact={SAMPLE_PREMIUM_RECOMMENDATIONS_ARTIFACT}
@@ -789,13 +805,13 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Plan-detail surface for the Premium survey prototype, opened from a recommendation card and shown side by side with chat."
-              details="Preview shown: the Premium All-in-One detail view in a naturally scrolling panel with the CTAs inline inside the card, a smaller stepped-down type hierarchy, a light-gold 8px inner top accent, a full-width in-card proof banner below the What you get list, internal section dividers, the supplied small Premium gold check icon, an inline crossed-out price before 1 month free trial, and side-by-side Learn more plus Redeem 1 month for $0 actions that both use the supplied external-link icon."
+              description="Plan-detail panel shown beside chat after a recommendation is selected."
+              states={["Plan details"]}
               title="AiConciergePremiumPlanPanel"
             >
               <PreviewSurface
                 className="h-[760px] overflow-hidden"
-                label="Preview"
+                label="Plan details"
                 padded={false}
               >
                 <AiConciergePremiumPlanPanel
@@ -807,8 +823,8 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="The durable thread-level status card for matching, ready, booked, and canceled states."
-              details="Preview shown: matching, connecting, ready, booked, and canceled states."
+              description="Thread-level status card for matching, ready, booked, and canceled states."
+              states={["Matching", "Connecting", "Ready", "Booked", "Canceled"]}
               title="AiConciergeRepresentativeMatchCard"
             >
               <div className="flex flex-col gap-6">
@@ -873,13 +889,13 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Foreground banner that pulls the user back when matching is complete."
-              details="Preview shown: ready state. In the main prototype this banner can remain visible while voice mode stays active."
+              description="Foreground banner that appears when a representative is ready."
+              states={["Ready"]}
               title="AiConciergeRepresentativeReadyBanner"
             >
               <PreviewSurface
                 className="overflow-hidden"
-                label="Preview"
+                label="Ready"
                 padded={false}
               >
                 <AiConciergeRepresentativeReadyBanner
@@ -890,27 +906,18 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Canvas overlay that celebrates a successful booking without interrupting the scheduling flow."
-              details="Preview shown: denser, slower, single-burst celebration. Use Replay to trigger it again."
+              description="Canvas overlay that celebrates a successful booking."
+              states={["Celebration"]}
               title="AiConciergeConfettiOverlay"
             >
               <PreviewSurface
                 className="overflow-hidden"
-                label="Preview"
+                label="Celebration"
                 padded={false}
               >
-                <div className="relative min-h-[240px] bg-[radial-gradient(circle_at_top,#e6f2ff_0%,#f7fbff_40%,#ffffff_100%)] px-6 py-6">
+                <div className="relative flex min-h-[240px] items-end bg-[radial-gradient(circle_at_top,#e6f2ff_0%,#f7fbff_40%,#ffffff_100%)] px-6 py-6">
                   <AiConciergeConfettiOverlay trigger={confettiPreviewTrigger} />
-                  <div className="relative z-10 flex min-h-[192px] flex-col justify-end gap-6 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="max-w-[34ch]">
-                      <p className="ai-type-heading-sm text-ai-text-primary">
-                        Booking celebration
-                      </p>
-                      <p className="ai-type-body-sm-open mt-2 text-ai-text-secondary">
-                        Tuned to a single, fuller burst so the success moment
-                        feels more intentional and less distracting.
-                      </p>
-                    </div>
+                  <div className="relative z-10">
                     <Button
                       onClick={() =>
                         setConfettiPreviewTrigger(
@@ -926,23 +933,22 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
           </GallerySection>
 
-          <GallerySection
-            id="shared-primitives"
-            description="The reusable building blocks shared across onboarding, chat, handoff, and landing page moments."
-            title="Shared Primitives"
-          >
+          <GallerySection id="shared-primitives" title="Shared Primitives">
             <ComponentRow
-              description="Primary, secondary, tertiary, and compact button treatments."
-              details="Preview shown: common variants."
+              description="Shared button component aligned to the design system button matrix, including brand, neutral, text-only, and overlay treatments."
+              states={["Primary", "Secondary", "Tertiary", "Overlay", "Compact with icon", "Full width"]}
               title="Button"
             >
-              <PreviewSurface label="Preview">
-                <div className="flex flex-wrap gap-3">
+              <PreviewSurface label="Variants">
+                <div className="flex flex-wrap items-center gap-3">
                   <Button>Schedule a call</Button>
                   <Button variant="secondary" emphasis={false}>
                     Keep exploring
                   </Button>
                   <Button variant="tertiary">Learn more</Button>
+                  <div className="rounded-[28px] bg-ai-surface-overlay-soft px-4 py-3">
+                    <Button variant="overlay">Use overlay action</Button>
+                  </div>
                   <Button
                     size="compact"
                     leadingVisual={<PhoneCallIcon className="h-4 w-4" />}
@@ -951,14 +957,22 @@ export function AiConciergeComponentGallery() {
                   </Button>
                 </div>
               </PreviewSurface>
+              <PreviewSurface label="Full width">
+                <div className="grid max-w-[280px] gap-3">
+                  <Button fullWidth>Primary full width</Button>
+                  <Button fullWidth variant="secondary">
+                    Secondary full width
+                  </Button>
+                </div>
+              </PreviewSurface>
             </ComponentRow>
 
             <ComponentRow
-              description="Compact icon-only button treatments used for utility actions."
-              details="Preview shown: premium, primary, secondary, and tertiary, including the shared close glyph now used in voice mode and other dismiss controls."
+              description="Compact icon-only button for utility and quick actions."
+              states={["Premium", "Primary", "Secondary", "Tertiary"]}
               title="IconButton"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Variants">
                 <div className="flex flex-wrap gap-3">
                   <IconButton ariaLabel="Phone premium" variant="premium">
                     <PhoneCallIcon className="h-4 w-4" />
@@ -993,11 +1007,11 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Selection pills used for quick choices like dates, formats, and focus areas."
-              details="Preview shown: selected and unselected."
+              description="Selection pill used for quick choices like dates and formats."
+              states={["Selected", "Default"]}
               title="ChoicePill"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Variants">
                 <div className="flex flex-wrap gap-3">
                   <ChoicePill selected>Tue, Apr 7</ChoicePill>
                   <ChoicePill>Wed, Apr 8</ChoicePill>
@@ -1007,11 +1021,11 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Small metadata tags used for status and compact supporting information."
-              details="Preview shown: default and supportive."
+              description="Small tag used for status and supporting metadata."
+              states={["Default", "Supportive"]}
               title="Tag"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Variants">
                 <div className="flex flex-wrap items-center gap-3">
                   <Tag tone="default">30-minute conversation</Tag>
                   <Tag tone="supportive1">Representative ready</Tag>
@@ -1020,11 +1034,11 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Reply chips used to help users start or continue the conversation quickly."
-              details="Preview shown: common prompts."
+              description="Prompt chip used to help users start or continue the conversation."
+              states={["Default"]}
               title="SuggestedActionPrompt"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Default">
                 <div className="flex flex-wrap gap-2">
                   <SuggestedActionPrompt>
                     We&apos;re not sure which hiring solution fits
@@ -1038,10 +1052,10 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Identity chip used during LinkedIn prefill and account confirmation."
-              details="Preview shown: connected identity with subtle gray border and light gray background."
+              states={["Connected identity"]}
               title="LinkedInIdentityChip"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Connected identity">
                 <LinkedInIdentityChip
                   linkedInIdentity={LINKEDIN_IDENTITY}
                   onUseAnotherAccount={() => {}}
@@ -1050,11 +1064,39 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Landing-page CTA button used to enter the AI Concierge experience."
-              details="Preview shown: outline and solid variants."
+              description="Shared internal-only floating pill that opens the prototype drawer, with optional page links and route-specific controls."
+              states={["Main route", "Premium survey route", "Scenario controls", "No Pages section"]}
+              title="InternalPrototypeNav"
+            >
+              <PreviewSurface label="Routes">
+                <div className="flex flex-col gap-4">
+                  <Link
+                    href="/"
+                    className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+                  >
+                    Main prototype
+                  </Link>
+                  <Link
+                    href="/prototype/premium-survey"
+                    className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+                  >
+                    Premium survey prototype
+                  </Link>
+                  <p className="ai-type-body-sm max-w-[32rem] text-ai-text-meta">
+                    The main route uses the drawer for shared prototype state,
+                    while the premium survey uses the same shell with only its
+                    own controls and no Pages section.
+                  </p>
+                </div>
+              </PreviewSurface>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Landing-page CTA wrapper that now composes the shared Button while keeping the simpler landing-page API."
+              states={["Outline", "Solid"]}
               title="ContactSalesButton"
             >
-              <PreviewSurface label="Preview">
+              <PreviewSurface label="Variants">
                 <div className="flex flex-wrap gap-4">
                   <ContactSalesButton
                     label="Contact sales"
@@ -1077,26 +1119,16 @@ export function AiConciergeComponentGallery() {
 
 function GallerySection({
   children,
-  description,
   id,
   title,
 }: {
   children: ReactNode;
-  description: string;
   id: string;
   title: string;
 }) {
   return (
     <section id={id} className="scroll-mt-28 border-t border-ai-divider pt-14">
-      <div className="max-w-[720px]">
-        <p className="ai-type-body-xs text-ai-text-meta">Section</p>
-        <h2 className="ai-type-heading-xl mt-2 text-ai-text-primary">
-          {title}
-        </h2>
-        <p className="ai-type-body-sm-open mt-3 text-ai-text-meta">
-          {description}
-        </p>
-      </div>
+      <h2 className="ai-type-heading-xl text-ai-text-primary">{title}</h2>
       <div className="mt-8 flex flex-col gap-6">{children}</div>
     </section>
   );
@@ -1105,30 +1137,53 @@ function GallerySection({
 function ComponentRow({
   children,
   description,
-  details,
+  states,
   title,
 }: {
   children: ReactNode;
   description: string;
-  details: string;
+  states: string[];
   title: string;
 }) {
   return (
-    <article className="border-t border-ai-divider pt-10 first:border-t-0 first:pt-0">
-      <div className="flex flex-col gap-6">
-        <div className="max-w-[720px]">
-          <p className="ai-type-body-xs text-ai-text-meta">Component</p>
-          <h3 className="ai-type-heading-lg mt-2 text-ai-text-primary">
-            {title}
-          </h3>
-          <p className="ai-type-body-sm-open mt-3 text-ai-text-primary">
+    <article className="border-t border-ai-divider pt-8 first:border-t-0 first:pt-0">
+      <div className="flex flex-col gap-5">
+        <div className="max-w-[760px]">
+          <h3 className="ai-type-heading-lg text-ai-text-primary">{title}</h3>
+          <p className="ai-type-body-sm-open mt-2 text-ai-text-primary">
             {description}
           </p>
-          <p className="ai-type-body-xs mt-3 text-ai-text-meta">{details}</p>
+          <StateList states={states} title={title} />
         </div>
         <div className="min-w-0">{children}</div>
       </div>
     </article>
+  );
+}
+
+function StateList({
+  states,
+  title,
+}: {
+  states: string[];
+  title: string;
+}) {
+  return (
+    <div className="mt-4">
+      <p className="ai-type-body-xs text-ai-text-meta">States</p>
+      <ul
+        aria-label={`${title} states`}
+        className="mt-3 flex flex-wrap gap-2"
+      >
+        {states.map((state) => (
+          <li key={state}>
+            <span className="ai-type-body-xs inline-flex rounded-full border border-ai-divider bg-ai-surface-panel-subtle px-3 py-1 text-ai-text-secondary">
+              {state}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

@@ -219,11 +219,11 @@ export function AiConciergeBody({
                   {message.status === "thinking" || message.body.trim().length > 0 ? (
                     <ChatAssistantMessage
                       body={message.body}
-                      className={isPanelExpanded ? "max-w-[680px]" : ""}
                       isActiveVoiceTurn={
                         message.status === "complete" &&
                         message.id === activeVoiceAssistantMessageId
                       }
+                      isPanelExpanded={isPanelExpanded}
                       showArrivalAnimation={
                         messages.length === 1 &&
                         message.id === "assistant-message-1" &&

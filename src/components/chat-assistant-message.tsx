@@ -4,6 +4,7 @@ type ChatAssistantMessageProps = {
   body: string;
   className?: string;
   isActiveVoiceTurn?: boolean;
+  isPanelExpanded?: boolean;
   showArrivalAnimation?: boolean;
   status?: "complete" | "streaming" | "thinking";
   streamedChunks?: string[];
@@ -62,14 +63,21 @@ export function ChatAssistantMessage({
   body,
   className = "",
   isActiveVoiceTurn = false,
+  isPanelExpanded = false,
   showArrivalAnimation = false,
   status = "complete",
   streamedChunks,
 }: ChatAssistantMessageProps) {
+  const widthClassName = isPanelExpanded
+    ? "max-w-[33rem]"
+    : "max-w-[21.5rem]";
+
   if (status === "thinking") {
     return (
       <div className={["w-full", className].join(" ")}>
-        <ThinkingIndicator showArrivalAnimation={showArrivalAnimation} />
+        <div className={widthClassName}>
+          <ThinkingIndicator showArrivalAnimation={showArrivalAnimation} />
+        </div>
       </div>
     );
   }
@@ -79,18 +87,20 @@ export function ChatAssistantMessage({
       className={["w-full", className].join(" ")}
       data-voice-speaking={isActiveVoiceTurn || undefined}
     >
-      <p className="ai-type-body-sm-open whitespace-pre-wrap break-words text-ai-text-primary">
-        {streamedChunks?.length
-          ? streamedChunks.map((chunk, index) => (
-              <span
-                key={`${index}-${chunk}`}
-                className="inline animate-[ai-concierge-message-chunk-in_220ms_ease-out_both] motion-reduce:animate-none"
-              >
-                {chunk}
-              </span>
-            ))
-          : body}
-      </p>
+      <div className={widthClassName}>
+        <p className="ai-type-body-sm-open whitespace-pre-wrap break-words text-ai-text-primary">
+          {streamedChunks?.length
+            ? streamedChunks.map((chunk, index) => (
+                <span
+                  key={`${index}-${chunk}`}
+                  className="inline animate-[ai-concierge-message-chunk-in_220ms_ease-out_both] motion-reduce:animate-none"
+                >
+                  {chunk}
+                </span>
+              ))
+            : body}
+        </p>
+      </div>
     </div>
   );
 }

@@ -22,6 +22,11 @@ import { AiConciergeRepresentativeReadyBanner } from "@/components/ai-concierge-
 import { AiConciergeOnboarding } from "@/components/ai-concierge-onboarding";
 import { CloseIcon } from "@/components/close-icon";
 import {
+  getAiConciergeEntryIdentityKey,
+  readStoredAiConciergeEntrySession,
+  writeStoredAiConciergeEntrySession,
+} from "@/lib/ai-concierge-entry-session";
+import {
   createRepresentativeMatchingTurn,
   createReturnToChatTurn,
   createOpeningTurn,
@@ -159,9 +164,7 @@ function ComposerToVoiceTransitionShell({
       >
         <div className="relative h-14 w-full max-w-full animate-[ai-concierge-composer-to-voice-shell_520ms_cubic-bezier(0.22,1,0.36,1)_both] will-change-[width]">
           <div className="absolute inset-0 rounded-full border border-ai-border-faint bg-ai-surface-base shadow-[0_0_0_1px_rgba(140,140,140,0.04),0_4px_12px_rgba(140,140,140,0.16)] animate-[ai-concierge-composer-to-voice-neutral-frame_520ms_ease-out_both]" />
-          <div className="ai-premium-gradient-frame absolute inset-0 rounded-full p-px opacity-0 animate-[ai-concierge-composer-to-voice-gradient-frame_520ms_cubic-bezier(0.22,1,0.36,1)_both]">
-            <div className="h-full w-full rounded-full bg-ai-surface-base" />
-          </div>
+          <div className="absolute inset-0 rounded-full border border-ai-blue-primary opacity-0 animate-[ai-concierge-composer-to-voice-gradient-frame_520ms_cubic-bezier(0.22,1,0.36,1)_both]" />
           <div className="absolute inset-0 flex items-center justify-between gap-4 px-3 opacity-100 animate-[ai-concierge-composer-to-voice-content_520ms_cubic-bezier(0.22,1,0.36,1)_both]">
             <span className="ai-type-body-md-open max-w-[220px] truncate text-ai-text-disabled">
               Type your message
@@ -170,13 +173,13 @@ function ComposerToVoiceTransitionShell({
               <span className="flex h-8 w-8 items-center justify-center rounded-full text-ai-text-secondary">
                 <TransitionMicIcon />
               </span>
-              <span className="ai-premium-gradient-button flex h-8 w-8 items-center justify-center rounded-full text-ai-text-inverse">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ai-blue-primary text-ai-text-inverse shadow-[0_8px_18px_rgba(10,102,194,0.22)]">
                 <TransitionVoiceWaveIcon className="h-[18px] w-[18px]" />
               </span>
             </div>
           </div>
           <div className="absolute inset-0 flex items-center justify-center opacity-0 animate-[ai-concierge-composer-to-voice-center-stage_520ms_cubic-bezier(0.22,1,0.36,1)_both]">
-            <span className="ai-premium-gradient-button flex h-10 w-10 items-center justify-center rounded-full text-ai-text-inverse shadow-[0_12px_24px_rgba(10,102,194,0.18)]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ai-blue-primary text-ai-text-inverse shadow-[0_12px_24px_rgba(10,102,194,0.18)]">
               <TransitionVoiceWaveIcon className="h-5 w-5" />
             </span>
           </div>
@@ -282,10 +285,24 @@ export function AiConciergePanel({
   disablePhoneCall = false,
   disableVoiceMode = false,
 }: AiConciergePanelProps) {
-  const shouldResumeConversationFromAuthReturn = authReturnNonce !== undefined;
-  const authReturnOpeningTurn = shouldResumeConversationFromAuthReturn
+  const [storedEntrySession] = useState(() =>
+    authReturnNonce === undefined ? readStoredAiConciergeEntrySession() : null,
+  );
+  const initialIdentityKey = getAiConciergeEntryIdentityKey({
+    isLinkedInConnected: prototypeScenario.authState === "linkedin-connected",
+    linkedInIdentity:
+      prototypeScenario.authState === "linkedin-connected"
+        ? signedInLinkedInIdentity
+        : null,
+  });
+  const shouldResumeConversationFromStoredEntry =
+    storedEntrySession?.identityKey === initialIdentityKey;
+  const initialContactDetails = shouldResumeConversationFromStoredEntry
+    ? { ...storedEntrySession.contactDetails }
+    : getContactDetailsForScenario(prototypeScenario, signedInContactDetails);
+  const storedEntryOpeningTurn = shouldResumeConversationFromStoredEntry
     ? (customOpeningTurn ?? createOpeningTurn)({
-        contactDetails: signedInContactDetails,
+        contactDetails: initialContactDetails,
         openingPromptVariant: prototypeScenario.openingPromptVariant,
       })
     : null;
@@ -293,33 +310,31 @@ export function AiConciergePanel({
     prototypeScenario.authState === "linkedin-connected",
   );
   const [panelState, setPanelState] = useState<AiConciergePanelState>(
-    shouldResumeConversationFromAuthReturn
+    shouldResumeConversationFromStoredEntry
       ? "chat"
       : getPrototypeScenarioEntryState(prototypeScenario),
   );
   const [isExpanded, setIsExpanded] = useState(false);
   const [contactDetails, setContactDetails] = useState<ConciergeContactDetails>(
-    shouldResumeConversationFromAuthReturn
-      ? { ...signedInContactDetails }
-      : getContactDetailsForScenario(prototypeScenario, signedInContactDetails),
+    initialContactDetails,
   );
   const [onboardingFlowIntent, setOnboardingFlowIntent] =
     useState<OnboardingFlowIntent>("entry");
   const [pendingIdentityAction, setPendingIdentityAction] =
     useState<PendingIdentityAction | null>(null);
   const [messages, setMessages] = useState<AiConciergeMessage[]>(
-    shouldResumeConversationFromAuthReturn
+    shouldResumeConversationFromStoredEntry
       ? [createThinkingAssistantMessage(1)]
       : [],
   );
   const [conversationState, setConversationState] =
     useState<AiConciergeConversationState | null>(
-      authReturnOpeningTurn?.nextState ?? null,
+      storedEntryOpeningTurn?.nextState ?? null,
     );
   const [composerDraft, setComposerDraft] = useState("");
   const [focusComposerSignal, setFocusComposerSignal] = useState(0);
   const [isAssistantResponding, setIsAssistantResponding] = useState(
-    shouldResumeConversationFromAuthReturn,
+    shouldResumeConversationFromStoredEntry,
   );
   const [isVoiceComposerTransitioning, setIsVoiceComposerTransitioning] =
     useState(false);
@@ -334,7 +349,7 @@ export function AiConciergePanel({
       : false,
   );
   const nextAssistantMessageNumberRef = useRef(
-    shouldResumeConversationFromAuthReturn ? 3 : 2,
+    shouldResumeConversationFromStoredEntry ? 3 : 2,
   );
   const thinkingTimerRef = useRef<number | null>(null);
   const streamingTimerRef = useRef<number | null>(null);
@@ -349,6 +364,7 @@ export function AiConciergePanel({
   const pendingAssistantResponseRef =
     useRef<PendingAssistantResponse | null>(null);
   const handledAuthReturnNonceRef = useRef<number | null>(null);
+  const handledStoredEntryResumeRef = useRef(false);
   const appendStandaloneBookingConfirmation = useCallback(
     (body: string) => {
       const assistantMessageNumber = nextAssistantMessageNumberRef.current;
@@ -745,18 +761,10 @@ export function AiConciergePanel({
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
     Boolean(systemNoticeMessage);
-  const isProfileAwareOpening =
-    prototypeScenario.entryVariant === "profile-aware-opening";
-  const onboardingCopyVariant =
-    onboardingFlowIntent === "representative-gate" ||
-    prototypeScenario.entryVariant === "confirm-details-first"
-      ? "direct-entry"
-      : "default";
+  const onboardingCopyVariant = "direct-entry";
   const onboardingSubmitLabel =
-    pendingIdentityAction !== null ? "Continue to rep" : "Start conversation";
-  const shouldShowOnboardingBackButton =
-    onboardingFlowIntent === "representative-gate" ||
-    prototypeScenario.entryVariant !== "confirm-details-first";
+    pendingIdentityAction !== null ? "Continue to rep" : "Start chat";
+  const shouldShowOnboardingBackButton = true;
 
   useEffect(() => {
     shouldShowNextStepSurfaceRef.current = shouldShowNextStepSurface;
@@ -1336,12 +1344,25 @@ export function AiConciergePanel({
     restartConversationWithDetails(contactDetails);
   };
 
+  const persistConfirmedEntryDetails = useCallback(
+    (nextContactDetails: ConciergeContactDetails) => {
+      writeStoredAiConciergeEntrySession({
+        contactDetails: nextContactDetails,
+        identityKey: getAiConciergeEntryIdentityKey({
+          isLinkedInConnected,
+          linkedInIdentity: isLinkedInConnected
+            ? signedInLinkedInIdentity
+            : null,
+        }),
+      });
+    },
+    [isLinkedInConnected, signedInLinkedInIdentity],
+  );
+
   const handleStartWithLinkedIn = () => {
     if (
       onPrototypeLinkedInAuthRequest &&
-      panelState === "welcome" &&
       onboardingFlowIntent === "entry" &&
-      isProfileAwareOpening &&
       !isLinkedInConnected
     ) {
       onPrototypeLinkedInAuthRequest("sign-in");
@@ -1359,18 +1380,8 @@ export function AiConciergePanel({
       entryVariant: prototypeScenario.entryVariant,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
     });
-    if (
-      panelState === "welcome" &&
-      onboardingFlowIntent === "entry" &&
-      isProfileAwareOpening
-    ) {
-      setOnboardingFlowIntent("entry");
-      setPendingIdentityAction(null);
-      restartConversationWithDetails(nextContactDetails);
-      setPanelState("chat");
-      return;
-    }
-
+    setOnboardingFlowIntent("entry");
+    setPendingIdentityAction(null);
     setContactDetails(nextContactDetails);
     setPanelState("prefill");
   };
@@ -1378,19 +1389,19 @@ export function AiConciergePanel({
   const handleContinueWithoutLinkedIn = () => {
     setOnboardingFlowIntent("entry");
     setPendingIdentityAction(null);
-    restartConversationWithDetails({ ...EMPTY_CONTACT_DETAILS });
-    setPanelState("chat");
+    setIsLinkedInConnected(false);
+    setContactDetails({ ...EMPTY_CONTACT_DETAILS });
+    syncPrototypeScenario({
+      authState: "signed-out",
+      entryVariant: prototypeScenario.entryVariant,
+      openingPromptVariant: prototypeScenario.openingPromptVariant,
+    });
+    setPanelState("manual");
   };
 
   const handleGetStarted = () => {
-    if (isProfileAwareOpening) {
-      setOnboardingFlowIntent("entry");
-      setPendingIdentityAction(null);
-      restartConversation();
-      setPanelState("chat");
-      return;
-    }
-
+    setOnboardingFlowIntent("entry");
+    setPendingIdentityAction(null);
     setPanelState(
       isLinkedInConnected || prototypeScenario.authState === "linkedin-connected"
         ? "prefill"
@@ -1413,8 +1424,7 @@ export function AiConciergePanel({
     if (
       onPrototypeLinkedInAuthRequest &&
       onboardingFlowIntent === "entry" &&
-      isProfileAwareOpening &&
-      panelState === "welcome"
+      panelState !== "chat"
     ) {
       onPrototypeLinkedInAuthRequest("switch-account");
       return;
@@ -1427,13 +1437,33 @@ export function AiConciergePanel({
       entryVariant: prototypeScenario.entryVariant,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
     });
-    if (onboardingFlowIntent === "entry" && isProfileAwareOpening) {
+    if (onboardingFlowIntent === "entry") {
       setPanelState("welcome");
       return;
     }
 
     setPanelState("manual");
   };
+
+  useEffect(() => {
+    if (
+      !shouldResumeConversationFromStoredEntry ||
+      handledStoredEntryResumeRef.current ||
+      storedEntrySession === null
+    ) {
+      return;
+    }
+
+    handledStoredEntryResumeRef.current = true;
+    queueMicrotask(() => {
+      restartConversationWithDetails(storedEntrySession.contactDetails);
+      setPanelState("chat");
+    });
+  }, [
+    restartConversationWithDetails,
+    shouldResumeConversationFromStoredEntry,
+    storedEntrySession,
+  ]);
 
   useEffect(() => {
     if (
@@ -1448,14 +1478,13 @@ export function AiConciergePanel({
       setIsLinkedInConnected(true);
       setOnboardingFlowIntent("entry");
       setPendingIdentityAction(null);
-      restartConversationWithDetails(signedInContactDetails);
-      setPanelState("chat");
+      setContactDetails(signedInContactDetails);
+      setPanelState("prefill");
       onAuthReturnHandled?.();
     });
   }, [
     authReturnNonce,
     onAuthReturnHandled,
-    restartConversationWithDetails,
     signedInContactDetails,
   ]);
 
@@ -1470,6 +1499,7 @@ export function AiConciergePanel({
       setPendingIdentityAction(null);
       setOnboardingFlowIntent("entry");
       setPanelState("chat");
+      persistConfirmedEntryDetails(contactDetails);
 
       if (nextAction.type === "recommendation-card") {
         handleRecommendationPrimaryAction(nextAction.messageId);
@@ -1490,6 +1520,7 @@ export function AiConciergePanel({
     }
 
     setOnboardingFlowIntent("entry");
+    persistConfirmedEntryDetails(contactDetails);
     restartConversation();
     setPanelState("chat");
   };
@@ -2055,7 +2086,7 @@ export function AiConciergePanel({
                       isLiveAgentReplyPending
                         ? `${DEFAULT_REPRESENTATIVE_NAME} is replying...`
                         : isLiveSalesChatConnecting
-                          ? "Connecting to your account rep..."
+                          ? "Connecting to your sales rep..."
                           : "Responding..."
                     }
                     draft={composerDraft}
@@ -2098,11 +2129,12 @@ export function AiConciergePanel({
                 onContinueWithLinkedIn={handleStartWithLinkedIn}
                 onStartConversation={handleStartConversation}
                 onUseAnotherAccount={handleUseAnotherAccount}
+                showLinkedInPromptInManualMode={
+                  onboardingFlowIntent === "representative-gate"
+                }
                 showBackButton={shouldShowOnboardingBackButton}
                 submitLabel={onboardingSubmitLabel}
-                welcomeVariant={
-                  isProfileAwareOpening ? "profile-aware" : "legacy"
-                }
+                welcomeVariant="profile-aware"
               />
             )}
             {!disablePhoneCall ? (

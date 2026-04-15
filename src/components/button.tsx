@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "tertiary";
+type ButtonVariant = "primary" | "secondary" | "tertiary" | "overlay";
 type ButtonSize = "compact" | "small" | "medium";
 
 type ButtonProps = {
@@ -61,12 +61,14 @@ export function Button({
     ? "border-transparent bg-ai-surface-disabled text-ai-text-disabled"
     : variant === "secondary" && isBrandEmphasis
       ? "border border-ai-blue-primary bg-transparent text-ai-blue-primary hover:border-ai-blue-hover hover:bg-ai-blue-fill-hover hover:text-ai-blue-hover hover:ring-1 hover:ring-inset hover:ring-ai-blue-hover active:border-ai-blue-hover active:bg-ai-blue-fill-active active:text-ai-blue-hover active:ring-0"
-      : variant === "secondary"
+    : variant === "secondary"
         ? "border border-ai-border-strong bg-transparent text-ai-text-secondary hover:border-ai-border-focus hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary hover:ring-1 hover:ring-inset hover:ring-ai-border-focus active:border-ai-border-focus active:bg-ai-surface-overlay-active active:text-ai-text-primary active:ring-0"
         : variant === "tertiary" && isBrandEmphasis
         ? "border-transparent bg-transparent text-ai-blue-primary hover:bg-ai-blue-fill-hover hover:text-ai-blue-hover active:bg-ai-blue-fill-active active:text-ai-blue-hover"
         : variant === "tertiary"
           ? "border-transparent bg-transparent text-ai-text-secondary hover:bg-ai-surface-overlay-hover hover:text-ai-text-primary active:bg-ai-surface-overlay-active active:text-ai-text-primary"
+          : variant === "overlay"
+            ? "border-transparent bg-ai-border-strong text-ai-text-inverse hover:bg-ai-border-focus active:bg-ai-border-focus active:text-ai-text-inverse-muted"
         : "border-transparent bg-ai-blue-primary text-ai-text-inverse hover:bg-ai-blue-hover active:bg-ai-blue-hover active:text-ai-text-inverse-muted";
 
   return (

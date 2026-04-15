@@ -299,7 +299,7 @@ export function createReturnToChatTurn({
 
   if (state.likelySolution === "lighter_touch") {
     return {
-      body: `No problem. I can keep helping you compare which hiring option could fit ${companyReference} best, and we can revisit the account rep option anytime.`,
+      body: `No problem. I can keep helping you compare which hiring option could fit ${companyReference} best, and we can revisit the sales rep option anytime.`,
       nextState,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
@@ -307,7 +307,7 @@ export function createReturnToChatTurn({
   }
 
   return {
-    body: `No problem. I can keep helping you understand where Recruiter could fit for ${companyReference}, and we can revisit the account rep option anytime.`,
+    body: `No problem. I can keep helping you understand where Recruiter could fit for ${companyReference}, and we can revisit the sales rep option anytime.`,
     nextState,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -613,10 +613,10 @@ function createNextStepResponse(
     return {
       body:
         state.likelySolution === "lighter_touch"
-          ? `That makes sense. If you'd like, I can connect you with an account rep here in chat now, or help you book time.`
+          ? `That makes sense. If you'd like, I can connect you with a sales rep here in chat now, or help you book time.`
           : state.likelySolution === "recruiter"
           ? "Based on what you shared, talking to a sales rep looks like the right next step."
-          : `That makes sense. A short conversation with an account rep could help narrow the right option for ${companyReference}.\n\nI can help you book a meeting.`,
+          : `That makes sense. A short conversation with a sales rep could help narrow the right option for ${companyReference}.\n\nI can help you book a meeting.`,
       nextState: {
         ...state,
         stage: "awaiting_handoff_choice",
@@ -642,7 +642,7 @@ function createNextStepResponse(
     return {
       body:
         state.likelySolution === "recruiter"
-          ? "Pricing usually depends on hiring volume, role complexity, and the level of support your team needs. For teams with broader ongoing or harder-to-fill hiring needs, that is usually where Recruiter becomes easier to justify. If helpful, I can keep helping you gauge fit or connect you with an account rep for specifics."
+          ? "Pricing usually depends on hiring volume, role complexity, and the level of support your team needs. For teams with broader ongoing or harder-to-fill hiring needs, that is usually where Recruiter becomes easier to justify. If helpful, I can keep helping you gauge fit or connect you with a sales rep for specifics."
           : "Pricing usually depends on hiring volume, role complexity, and how much ongoing support the team needs. If your hiring is more occasional, it may make sense to compare a lighter-touch option before jumping into a full proactive sourcing workflow.",
       nextState: {
         ...state,

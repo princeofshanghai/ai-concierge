@@ -7,6 +7,7 @@ import recruiterHero from "../../public/figma/recruiter-hero.png";
 import { AiConciergePanel } from "@/components/ai-concierge-panel";
 import { ContactSalesButton } from "@/components/contact-sales-button";
 import { InternalPrototypeNav } from "@/components/internal-prototype-nav";
+import { clearStoredAiConciergeEntrySession } from "@/lib/ai-concierge-entry-session";
 import {
   getDemoLinkedInAccountById,
   type DemoLinkedInAccountId,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/prototype-linkedin-auth";
 import {
   DEFAULT_PROTOTYPE_SCENARIO,
+  normalizePrototypeScenario,
   type PrototypeScenario,
 } from "@/lib/prototype-scenario";
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
@@ -45,10 +47,10 @@ export function RecruiterLandingPage({
   const [scenarioResetVersion, setScenarioResetVersion] = useState(0);
   const [prototypeScenario, setPrototypeScenario] = useState<PrototypeScenario>(
     completedPrototypeLinkedInAuth
-      ? {
+      ? normalizePrototypeScenario({
           ...completedPrototypeLinkedInAuth.prototypeScenario,
           authState: "linkedin-connected",
-        }
+        })
       : DEFAULT_PROTOTYPE_SCENARIO,
   );
   const [activeAccountId] = useState<DemoLinkedInAccountId>(
@@ -73,13 +75,15 @@ export function RecruiterLandingPage({
     setIsChatOpen(false);
   };
   const handlePrototypeScenarioChange = (nextScenario: PrototypeScenario) => {
-    setPrototypeScenario(nextScenario);
+    clearStoredAiConciergeEntrySession();
+    setPrototypeScenario(normalizePrototypeScenario(nextScenario));
     setScenarioResetVersion((currentValue) => currentValue + 1);
   };
   const handlePrototypeScenarioSync = (nextScenario: PrototypeScenario) => {
-    setPrototypeScenario(nextScenario);
+    setPrototypeScenario(normalizePrototypeScenario(nextScenario));
   };
   const handlePrototypeScenarioRestart = () => {
+    clearStoredAiConciergeEntrySession();
     setScenarioResetVersion((currentValue) => currentValue + 1);
   };
   const handlePrototypeLinkedInAuthRequest = (
@@ -211,6 +215,7 @@ export function RecruiterLandingPage({
             // Preserve in-flow panel state (for example, LinkedIn prefill) unless
             // an explicit scenario reset was requested from the prototype controls.
             key={scenarioResetVersion}
+            disablePhoneCall
             isOpen={isChatOpen}
             onClose={closeChat}
             onAuthReturnHandled={() => setAuthReturnNonce(undefined)}

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Avatar } from "@/components/avatar";
-import { LinkedInIdentityChip } from "@/components/linkedin-identity-chip";
 import { Button } from "@/components/button";
 import {
   FormSelectField,
@@ -36,6 +35,7 @@ type AiConciergeOnboardingProps = {
   onContinueWithLinkedIn: () => void;
   onStartConversation: () => void;
   onUseAnotherAccount: () => void;
+  showLinkedInPromptInManualMode?: boolean;
   showBackButton?: boolean;
   submitLabel?: string;
   welcomeVariant?: "legacy" | "profile-aware";
@@ -70,8 +70,9 @@ function OnboardingDetailsForm({
   onContinueWithLinkedIn,
   onStartConversation,
   onUseAnotherAccount,
+  showLinkedInPromptInManualMode = false,
   showBackButton,
-  submitLabel = "Start conversation",
+  submitLabel = "Start chat",
 }: Omit<
   AiConciergeOnboardingProps,
   "onGetStarted"
@@ -84,6 +85,10 @@ function OnboardingDetailsForm({
     isPrefill &&
     linkedInIdentity !== null &&
     !isEditingPrefillDetails;
+  const isEditingKnownIdentity =
+    isPrefill &&
+    linkedInIdentity !== null &&
+    isEditingPrefillDetails;
   const shouldShowRoleField =
     !shouldShowPrefillSummary || details.role.trim().length === 0;
   const shouldShowAllContactFields =
@@ -91,16 +96,27 @@ function OnboardingDetailsForm({
     (isPrefill && isEditingPrefillDetails) ||
     (isPrefill && linkedInIdentity === null);
   const title =
-    copyVariant === "direct-entry" && isPrefill
-      ? "Review details"
-      : "Confirm details";
+    shouldShowPrefillSummary && linkedInIdentity
+      ? `Looks right, ${getLinkedInIdentityFirstName(linkedInIdentity)}?`
+      : isEditingKnownIdentity
+        ? "Update your details"
+      : copyVariant === "direct-entry" && mode === "manual"
+        ? "Let's get acquainted"
+        : "Confirm details";
   const shouldShowBackButton = showBackButton ?? copyVariant !== "direct-entry";
   const directEntryDescription =
-    copyVariant === "direct-entry"
-      ? isPrefill
-        ? "Review the details we'll use to connect you with the right account rep."
-        : "Before I connect you with the right account rep, share a few details so I can hand you off cleanly."
-      : null;
+    copyVariant !== "direct-entry"
+      ? null
+      : mode === "manual"
+        ? "to get you the most relevant help"
+        : isEditingKnownIdentity
+          ? "Changes apply to this chat only"
+        : shouldShowPrefillSummary
+          ? null
+          : "Before you start, confirm your details so we can connect you with the right sales rep.";
+  const directEntryDescriptionClassName = isEditingKnownIdentity
+    ? "ai-type-body-sm mt-3 text-ai-text-primary"
+    : "ai-type-body-md-open mt-3 text-ai-text-primary";
 
   return (
     <div className="flex h-full flex-col">
@@ -137,28 +153,29 @@ function OnboardingDetailsForm({
           >
             <h3 className="ai-type-heading-xl text-ai-text-primary">{title}</h3>
             {directEntryDescription ? (
-              <p className="ai-type-body-md-open mt-3 text-ai-text-primary">
+              <p className={directEntryDescriptionClassName}>
                 {directEntryDescription}
               </p>
             ) : null}
           </div>
 
-          {mode === "manual" ? (
+          {shouldShowPrefillSummary && linkedInIdentity ? (
+            <div className="mt-3">
+              <LinkedInAccountSwitchRow
+                linkedInIdentity={linkedInIdentity}
+                onUseAnotherAccount={onUseAnotherAccount}
+              />
+            </div>
+          ) : null}
+
+          {mode === "manual" && showLinkedInPromptInManualMode ? (
             <ManualLinkedInPrompt
               onContinueWithLinkedIn={onContinueWithLinkedIn}
             />
           ) : shouldShowPrefillSummary ? (
             <LinkedInDetailsSummary
               details={details}
-              isPanelExpanded={isPanelExpanded}
-              linkedInIdentity={linkedInIdentity}
               onEdit={() => setIsEditingPrefillDetails(true)}
-              onUseAnotherAccount={onUseAnotherAccount}
-            />
-          ) : isPrefill ? (
-            <LinkedInProfileSection
-              linkedInIdentity={linkedInIdentity}
-              onUseAnotherAccount={onUseAnotherAccount}
             />
           ) : null}
 
@@ -307,65 +324,37 @@ function ContactDetailFields({
 
 function LinkedInDetailsSummary({
   details,
-  isPanelExpanded,
-  linkedInIdentity,
   onEdit,
-  onUseAnotherAccount,
 }: {
   details: ConciergeContactDetails;
-  isPanelExpanded: boolean;
-  linkedInIdentity: LinkedInIdentity;
   onEdit: () => void;
-  onUseAnotherAccount: () => void;
 }) {
+  const summaryFields = [
+    { label: "First name", value: details.firstName },
+    { label: "Last name", value: details.lastName },
+    { label: "Company", value: details.company },
+    { label: "Email", value: details.email },
+    { label: "Phone number", value: details.phoneNumber },
+    { label: "Country/region", value: details.countryRegion },
+    { label: "Your role", value: details.role },
+  ];
+
   return (
     <div className="mt-4">
-      <LinkedInProfileSection
-        linkedInIdentity={linkedInIdentity}
-        onUseAnotherAccount={onUseAnotherAccount}
-      />
-
-      <div className="mt-4 rounded-[20px] border border-ai-divider-subtle bg-ai-surface-base p-4">
-        <div className="mb-4 flex justify-end">
-          <Button
-            size="compact"
-            variant="tertiary"
-            onClick={onEdit}
-            leadingVisual={<EditIcon className="h-3.5 w-3.5" />}
-            className="!h-7 !px-2 shrink-0"
-          >
-            <span className="ai-type-label-xs">Edit</span>
+      <div className="rounded-[20px] border border-ai-divider-subtle bg-ai-surface-base p-4">
+        <div className="mb-6 flex justify-end">
+          <Button size="compact" variant="secondary" onClick={onEdit}>
+            Edit
           </Button>
         </div>
-        <div
-          className={[
-            "grid gap-4",
-            isPanelExpanded ? "sm:grid-cols-2" : "",
-          ].join(" ")}
-        >
-          <ReadOnlyDetail label="First name" value={details.firstName} />
-          <ReadOnlyDetail label="Last name" value={details.lastName} />
-        </div>
-        <div className="mt-4">
-          <ReadOnlyDetail label="Company" value={details.company} />
-        </div>
-        <div className="mt-4">
-          <ReadOnlyDetail label="Email" value={details.email} />
-        </div>
-        <div
-          className={[
-            "mt-4 grid gap-4",
-            isPanelExpanded ? "sm:grid-cols-2" : "",
-          ].join(" ")}
-        >
-          <ReadOnlyDetail label="Phone number" value={details.phoneNumber} />
-          <ReadOnlyDetail
-            label="Country/region"
-            value={details.countryRegion}
-          />
-        </div>
-        <div className="mt-4">
-          <ReadOnlyDetail label="Your role" value={details.role} />
+        <div className="divide-y divide-ai-divider-subtle">
+          {summaryFields.map((field) => (
+            <ReadOnlyDetail
+              key={field.label}
+              label={field.label}
+              value={field.value}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -384,29 +373,8 @@ function ManualLinkedInPrompt({
         onClick={onContinueWithLinkedIn}
         leadingVisual={<LinkedInLogoIcon />}
       >
-        Sign in to LinkedIn
+        Sign in with LinkedIn
       </Button>
-    </div>
-  );
-}
-
-function LinkedInProfileSection({
-  linkedInIdentity,
-  onUseAnotherAccount,
-}: {
-  linkedInIdentity: LinkedInIdentity | null;
-  onUseAnotherAccount: () => void;
-}) {
-  if (!linkedInIdentity) {
-    return null;
-  }
-
-  return (
-    <div className="mt-4">
-      <LinkedInIdentityChip
-        linkedInIdentity={linkedInIdentity}
-        onUseAnotherAccount={onUseAnotherAccount}
-      />
     </div>
   );
 }
@@ -421,31 +389,19 @@ function ReadOnlyDetail({
   const hasValue = value.trim().length > 0;
 
   return (
-    <div>
-      <p className="ai-type-label-xs text-ai-text-meta">{label}</p>
+    <div className="grid grid-cols-[minmax(96px,112px)_minmax(0,1fr)] items-start gap-4 py-3 first:pt-0 last:pb-0">
+      <p className="ai-type-body-sm text-ai-text-meta">{label}</p>
       <p
         className={[
-          "mt-1",
+          "min-w-0 text-right [overflow-wrap:anywhere]",
           hasValue
-            ? "ai-type-body-sm text-ai-text-primary"
+            ? "ai-type-heading-sm text-ai-text-primary"
             : "ai-type-body-sm text-ai-text-meta",
         ].join(" ")}
       >
         {hasValue ? value : "Not provided"}
       </p>
     </div>
-  );
-}
-
-function EditIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none">
-      <path
-        d="M21.1 2.9C20.6 2.3 19.8 2 19 2C18.2 2 17.5 2.3 16.9 2.9L3.9 15.9L2 22L8.2 20L21.1 7C21.7 6.5 22 5.7 22 5C22 4.2 21.7 3.5 21.1 2.9ZM6.8 18.6L5.5 17.3L16.6 6L18 7.4L6.8 18.6Z"
-        fill="currentColor"
-        fillOpacity="0.75"
-      />
-    </svg>
   );
 }
 
@@ -464,6 +420,33 @@ function getLinkedInIdentityName(linkedInIdentity: LinkedInIdentity) {
   return `${linkedInIdentity.firstName} ${linkedInIdentity.lastName}`.trim();
 }
 
+function getLinkedInIdentityFirstName(linkedInIdentity: LinkedInIdentity) {
+  return linkedInIdentity.firstName.trim() || getLinkedInIdentityName(linkedInIdentity);
+}
+
+function LinkedInAccountSwitchRow({
+  linkedInIdentity,
+  onUseAnotherAccount,
+}: {
+  linkedInIdentity: LinkedInIdentity;
+  onUseAnotherAccount: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-start gap-1.5 text-left">
+      <span className="ai-type-body-sm text-ai-text-primary">
+        {`Not ${getLinkedInIdentityFirstName(linkedInIdentity)}?`}
+      </span>
+      <button
+        type="button"
+        onClick={onUseAnotherAccount}
+        className="ai-type-heading-sm text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+      >
+        Switch account
+      </button>
+    </div>
+  );
+}
+
 function LinkedInIdentityPrimaryButton({
   linkedInIdentity,
   onClick,
@@ -472,7 +455,7 @@ function LinkedInIdentityPrimaryButton({
   onClick: () => void;
 }) {
   const fullName = getLinkedInIdentityName(linkedInIdentity);
-  const firstName = linkedInIdentity.firstName.trim() || fullName;
+  const firstName = getLinkedInIdentityFirstName(linkedInIdentity);
   const title = `Continue as ${firstName}`;
   const subtitle = linkedInIdentity.email;
 
@@ -490,7 +473,7 @@ function LinkedInIdentityPrimaryButton({
           className="border border-white/30 shadow-[0_2px_8px_rgba(4,33,64,0.18)]"
         />
       }
-      className="!min-h-[64px] !justify-start !gap-3 !rounded-full !px-3 !py-2"
+      className="!min-h-[64px] !justify-start !gap-3 !rounded-full !px-3 !py-1.5"
     >
       <span className="flex min-w-0 flex-col items-start text-left">
         <span className="ai-type-heading-md w-full truncate text-ai-text-inverse">
@@ -519,17 +502,15 @@ export function AiConciergeOnboarding({
   onContinueWithLinkedIn,
   onStartConversation,
   onUseAnotherAccount,
+  showLinkedInPromptInManualMode,
   showBackButton,
-  submitLabel = "Start conversation",
+  submitLabel = "Start chat",
   welcomeVariant = "legacy",
 }: AiConciergeOnboardingProps) {
   if (mode === "welcome") {
-    const welcomeTitle = "Got hiring questions? Just ask.";
-    const signedOutProfileAwareDescription =
+    const welcomeTitle = "Hire the right people, faster";
+    const welcomeDescription =
       "Chat with our AI to find the right hiring solution for your team, and connect with a sales rep when you're ready.";
-    const signedInProfileAwareDescription = linkedInIdentity
-      ? `Welcome back, ${linkedInIdentity.firstName}. We can use your LinkedIn profile to get you started faster.`
-      : "We can use your LinkedIn profile to get you started faster.";
 
     return (
       <div className="relative flex h-full flex-col overflow-hidden px-5 pb-10 pt-8">
@@ -539,11 +520,7 @@ export function AiConciergeOnboarding({
               {welcomeTitle}
             </h3>
             <p className="ai-type-body-md-open mt-4 text-ai-text-primary">
-              {welcomeVariant === "profile-aware"
-                ? isLinkedInConnected
-                  ? signedInProfileAwareDescription
-                  : signedOutProfileAwareDescription
-                : "Chat with our AI to find the right hiring solution for your team, and connect with a sales rep when you're ready."}
+              {welcomeDescription}
             </p>
           </div>
 
@@ -555,8 +532,9 @@ export function AiConciergeOnboarding({
                   onClick={onGetStarted}
                 />
                 <Button
-                  fullWidth
-                  variant="secondary"
+                  variant="tertiary"
+                  emphasis
+                  size="medium"
                   onClick={onUseAnotherAccount}
                 >
                   Use another account
@@ -569,14 +547,15 @@ export function AiConciergeOnboarding({
                   onClick={onContinueWithLinkedIn}
                   leadingVisual={<LinkedInLogoIcon />}
                 >
-                  Sign in to LinkedIn
+                  Sign in with LinkedIn
                 </Button>
                 <Button
-                  fullWidth
-                  variant="secondary"
+                  variant="tertiary"
+                  emphasis
+                  size="medium"
                   onClick={onContinueWithoutLinkedIn}
                 >
-                  Continue without signing in
+                  Continue manually
                 </Button>
               </>
             ) : (
@@ -604,6 +583,7 @@ export function AiConciergeOnboarding({
         onContinueWithLinkedIn={onContinueWithLinkedIn}
         onStartConversation={onStartConversation}
         onUseAnotherAccount={onUseAnotherAccount}
+        showLinkedInPromptInManualMode={showLinkedInPromptInManualMode}
         showBackButton={showBackButton}
         submitLabel={submitLabel}
       />

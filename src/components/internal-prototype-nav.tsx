@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { CloseIcon } from "@/components/close-icon";
 import {
@@ -14,16 +14,20 @@ import {
   getPrototypeScenarioAuthGroupLabel,
   getPrototypeScenarioAuthHelperText,
   getPrototypeScenarioAuthLabel,
-  getPrototypeScenarioEntryLabel,
   getPrototypeScenarioOpeningPromptLabel,
   type PrototypeScenario,
 } from "@/lib/prototype-scenario";
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 type InternalPrototypeNavProps = {
+  drawerSections?: ReactNode;
   hidden?: boolean;
   onPrototypeScenarioChange?: (scenario: PrototypeScenario) => void;
   onRestartPrototypeScenario?: () => void;
+  pageLinks?: Array<{
+    href: string;
+    label: string;
+  }>;
   prototypeScenario?: PrototypeScenario;
 };
 
@@ -38,12 +42,6 @@ const AUTH_OPTIONS: PrototypeScenario["authState"][] = [
   "linkedin-connected",
 ];
 
-const ENTRY_OPTIONS: PrototypeScenario["entryVariant"][] = [
-  "welcome-first",
-  "confirm-details-first",
-  "profile-aware-opening",
-];
-
 const OPENING_PROMPT_OPTIONS: PrototypeScenario["openingPromptVariant"][] = [
   "inline-prompts",
   "helper-examples",
@@ -51,9 +49,11 @@ const OPENING_PROMPT_OPTIONS: PrototypeScenario["openingPromptVariant"][] = [
 ];
 
 export function InternalPrototypeNav({
+  drawerSections,
   hidden = false,
   onPrototypeScenarioChange,
   onRestartPrototypeScenario,
+  pageLinks = INTERNAL_PROTOTYPE_LINKS,
   prototypeScenario,
 }: InternalPrototypeNavProps) {
   const pathname = usePathname();
@@ -124,8 +124,9 @@ export function InternalPrototypeNav({
     ? getPrototypeScenarioAuthGroupLabel()
     : "Identity";
   const authHelperText = shouldShowScenarioControls
-    ? getPrototypeScenarioAuthHelperText(prototypeScenario.entryVariant)
+    ? getPrototypeScenarioAuthHelperText()
     : null;
+  const shouldShowPageLinks = pageLinks.length > 0;
 
   return (
     <>
@@ -207,65 +208,44 @@ export function InternalPrototypeNav({
             </div>
 
             <div className="flex-1 overflow-y-auto pb-4">
-              <section>
-                <h3 className="font-panel-text text-[15px] leading-none font-semibold text-white">
-                  Pages
-                </h3>
-                <nav
-                  aria-label="Internal navigation"
-                  className="mt-3 flex flex-col gap-1.5"
-                >
-                  {INTERNAL_PROTOTYPE_LINKS.map((link) => {
-                    const isActive = pathname === link.href;
+              {shouldShowPageLinks ? (
+                <section>
+                  <h3 className="font-panel-text text-[15px] leading-none font-semibold text-white">
+                    Pages
+                  </h3>
+                  <nav
+                    aria-label="Internal navigation"
+                    className="mt-3 flex flex-col gap-1.5"
+                  >
+                    {pageLinks.map((link) => {
+                      const isActive = pathname === link.href;
 
-                    return (
-                      <PrototypeShellLinkChip
-                        key={link.href}
-                        href={link.href}
-                        aria-current={isActive ? "page" : undefined}
-                        selected={isActive}
-                        onClick={closeDrawer}
-                        className="min-h-9 w-full justify-start px-3.5 text-left text-[12px]"
-                      >
-                        {link.label}
-                      </PrototypeShellLinkChip>
-                    );
-                  })}
-                </nav>
-              </section>
+                      return (
+                        <PrototypeShellLinkChip
+                          key={link.href}
+                          href={link.href}
+                          aria-current={isActive ? "page" : undefined}
+                          selected={isActive}
+                          onClick={closeDrawer}
+                          className="min-h-9 w-full justify-start px-3.5 text-left text-[12px]"
+                        >
+                          {link.label}
+                        </PrototypeShellLinkChip>
+                      );
+                    })}
+                  </nav>
+                </section>
+              ) : null}
+
+              {drawerSections}
 
               {shouldShowScenarioControls ? (
                 <section className="mt-7 border-t border-white/8 pt-6">
                   <h3 className="font-panel-text text-[15px] leading-none font-semibold text-white">
-                    Variations
+                    Prototype state
                   </h3>
 
                   <div className="mt-4 space-y-5">
-                    <div>
-                      <PrototypeShellLabel className="px-0 pb-0 text-white/48">
-                        Opening
-                      </PrototypeShellLabel>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {ENTRY_OPTIONS.map((entryVariant) => (
-                          <PrototypeShellChip
-                            key={entryVariant}
-                            selected={
-                              prototypeScenario.entryVariant === entryVariant
-                            }
-                            onClick={() =>
-                              updatePrototypeScenario(
-                                "entryVariant",
-                                entryVariant,
-                              )
-                            }
-                            className="min-h-9 px-3 text-[12px]"
-                          >
-                            {getPrototypeScenarioEntryLabel(entryVariant)}
-                          </PrototypeShellChip>
-                        ))}
-                      </div>
-                    </div>
-
                     <div>
                       <PrototypeShellLabel className="px-0 pb-0 text-white/48">
                         {authGroupLabel}

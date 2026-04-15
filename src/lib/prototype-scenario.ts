@@ -2,10 +2,7 @@ export type PrototypeScenarioAuthState =
   | "signed-out"
   | "linkedin-connected";
 
-export type PrototypeScenarioEntryVariant =
-  | "welcome-first"
-  | "confirm-details-first"
-  | "profile-aware-opening";
+export type PrototypeScenarioEntryVariant = "guided-onboarding";
 
 export type PrototypeScenarioOpeningPromptVariant =
   | "inline-prompts"
@@ -20,20 +17,17 @@ export type PrototypeScenario = {
 
 export const DEFAULT_PROTOTYPE_SCENARIO: PrototypeScenario = {
   authState: "linkedin-connected",
-  entryVariant: "profile-aware-opening",
+  entryVariant: "guided-onboarding",
   openingPromptVariant: "inline-prompts",
 };
 
 export type PrototypeScenarioEntryState = "manual" | "prefill" | "welcome";
 
 export function getPrototypeScenarioEntryState(
-  scenario: PrototypeScenario,
+  _scenario: PrototypeScenario,
 ): PrototypeScenarioEntryState {
-  if (scenario.entryVariant !== "confirm-details-first") {
-    return "welcome";
-  }
-
-  return scenario.authState === "linkedin-connected" ? "prefill" : "manual";
+  void _scenario;
+  return "welcome";
 }
 
 export function getPrototypeScenarioAuthLabel(
@@ -46,27 +40,24 @@ export function getPrototypeScenarioAuthGroupLabel() {
   return "Identity";
 }
 
-export function getPrototypeScenarioAuthHelperText(
-  entryVariant: PrototypeScenario["entryVariant"],
-) {
-  if (entryVariant !== "profile-aware-opening") {
-    return null;
-  }
-
-  return "Changes whether the opening shows LinkedIn sign-in or Continue as Jamie.";
+export function getPrototypeScenarioAuthHelperText() {
+  return "Changes whether the welcome shows Sign in with LinkedIn or Continue as Jamie.";
 }
 
 export function getPrototypeScenarioEntryLabel(
-  entryVariant: PrototypeScenario["entryVariant"],
+  _entryVariant: PrototypeScenario["entryVariant"],
 ) {
-  switch (entryVariant) {
-    case "confirm-details-first":
-      return "Confirm details first";
-    case "profile-aware-opening":
-      return "Profile-aware opening";
-    case "welcome-first":
-      return "Welcome first";
-  }
+  void _entryVariant;
+  return "Consolidated flow";
+}
+
+export function normalizePrototypeScenario(
+  scenario: PrototypeScenario,
+): PrototypeScenario {
+  return {
+    ...scenario,
+    entryVariant: "guided-onboarding",
+  };
 }
 
 export function getPrototypeScenarioOpeningPromptLabel(
