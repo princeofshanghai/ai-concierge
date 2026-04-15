@@ -1,11 +1,10 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
-  type MutableRefObject,
 } from "react";
 import { AiConciergeBody } from "@/components/ai-concierge-body";
 import { AiConciergeComposer } from "@/components/ai-concierge-composer";
@@ -19,6 +18,16 @@ import type {
   AiConciergeAssistantTurn,
   AiConciergeConversationState,
 } from "@/lib/ai-concierge-conversation";
+import {
+  clearResponseTimers,
+  clearSuggestedReplies,
+  createAssistantMessageId,
+  createThinkingAssistantMessage,
+  createUserMessage,
+  getComposerInteractionKey,
+  getComposerSuggestedReplies,
+  streamAssistantTurnPlayback,
+} from "@/lib/ai-concierge-assistant-playback";
 import type {
   AiConciergeMessage,
   AiConciergeSuggestedReply,
@@ -44,6 +53,11 @@ type PremiumSurveyConciergePanelProps = {
   onExpandedChange?: (isExpanded: boolean) => void;
 };
 
+type PendingAssistantResponse = {
+  assistantMessageId: string;
+  stopState: AiConciergeConversationState;
+};
+
 export function PremiumSurveyConciergePanel({
   candidate,
   contactDetails,
@@ -60,27 +74,31 @@ export function PremiumSurveyConciergePanel({
     candidate === "candidate-2"
       ? getPremiumCandidateTwoAssistantTurn
       : getPremiumCandidateOneAssistantTurn;
-  const initialOpeningTurn = useMemo(
-    () =>
-      openingTurnFactory({
-        contactDetails,
-        openingPromptVariant: "inline-prompts",
-      }),
-    [contactDetails, openingTurnFactory],
+  const [openingTurn] = useState<AiConciergeAssistantTurn>(() =>
+    openingTurnFactory({
+      contactDetails,
+      openingPromptVariant: "inline-prompts",
+    }),
   );
+  const openingAssistantMessageId = createAssistantMessageId(1);
   const [isExpanded, setIsExpanded] = useState(false);
   const [composerDraft, setComposerDraft] = useState("");
   const [focusComposerSignal, setFocusComposerSignal] = useState(0);
-  const [isAssistantResponding, setIsAssistantResponding] = useState(false);
+  const [isAssistantResponding, setIsAssistantResponding] = useState(true);
   const [activePremiumPlanId, setActivePremiumPlanId] =
     useState<PremiumPlanId | null>(null);
   const [messages, setMessages] = useState<AiConciergeMessage[]>(() => [
-    createAssistantMessageFromTurn(initialOpeningTurn, 1),
+    createThinkingAssistantMessage(1),
   ]);
   const [conversationState, setConversationState] =
-    useState<AiConciergeConversationState>(initialOpeningTurn.nextState);
+    useState<AiConciergeConversationState>(openingTurn.nextState);
   const nextMessageNumberRef = useRef(2);
-  const responseTimeoutRef = useRef<number | null>(null);
+  const pendingAssistantResponseRef = useRef<PendingAssistantResponse | null>({
+    assistantMessageId: openingAssistantMessageId,
+    stopState: openingTurn.nextState,
+  });
+  const thinkingTimerRef = useRef<number | null>(null);
+  const streamingTimerRef = useRef<number | null>(null);
   const isDockedPlanSurface = activePremiumPlanId !== null && !isExpanded;
   const composerSuggestedReplies = getComposerSuggestedReplies(
     messages,
@@ -105,8 +123,7 @@ export function PremiumSurveyConciergePanel({
       return;
     }
 
-    setIsExpanded(false);
-    clearPendingAssistantResponse(responseTimeoutRef);
+    clearResponseTimers(thinkingTimerRef, streamingTimerRef);
 
     const timeoutId = window.setTimeout(() => {
       onClosed?.();
@@ -119,13 +136,39 @@ export function PremiumSurveyConciergePanel({
 
   useEffect(
     () => () => {
-      clearPendingAssistantResponse(responseTimeoutRef);
+      clearResponseTimers(thinkingTimerRef, streamingTimerRef);
     },
     [],
   );
 
+  const streamAssistantTurn = useCallback(
+    (
+      assistantTurn: AiConciergeAssistantTurn,
+      assistantMessageId: string,
+    ) => {
+      streamAssistantTurnPlayback({
+        assistantTurn,
+        assistantMessageId,
+        onComplete: () => {
+          pendingAssistantResponseRef.current = null;
+          setConversationState(assistantTurn.nextState);
+          setIsAssistantResponding(false);
+        },
+        setMessages,
+        streamingTimerRef,
+        thinkingTimerRef,
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    streamAssistantTurn(openingTurn, openingAssistantMessageId);
+  }, [openingAssistantMessageId, openingTurn, streamAssistantTurn]);
+
   const handlePanelClose = () => {
     setActivePremiumPlanId(null);
+    setIsExpanded(false);
     onClose();
   };
 
@@ -134,29 +177,31 @@ export function PremiumSurveyConciergePanel({
   };
 
   const handleStopAssistantResponse = () => {
-    clearPendingAssistantResponse(responseTimeoutRef);
-    setIsAssistantResponding(false);
-    setMessages((currentMessages) =>
-      currentMessages.filter((message) => message.status !== "thinking"),
-    );
-  };
+    const pendingAssistantResponse = pendingAssistantResponseRef.current;
+    if (!pendingAssistantResponse) {
+      return;
+    }
 
-  const queueAssistantTurn = (
-    assistantTurn: AiConciergeAssistantTurn,
-    assistantMessageNumber: number,
-  ) => {
-    clearPendingAssistantResponse(responseTimeoutRef);
-    responseTimeoutRef.current = window.setTimeout(() => {
-      setMessages((currentMessages) =>
-        currentMessages.map((message) =>
-          message.id === createAssistantMessageId(assistantMessageNumber)
-            ? createAssistantMessageFromTurn(assistantTurn, assistantMessageNumber)
-            : message,
-        ),
-      );
-      setConversationState(assistantTurn.nextState);
-      setIsAssistantResponding(false);
-    }, getThinkingDelay(assistantTurn.body));
+    clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+    pendingAssistantResponseRef.current = null;
+    setIsAssistantResponding(false);
+    setConversationState(pendingAssistantResponse.stopState);
+    setMessages((currentMessages) =>
+      currentMessages.flatMap((message) => {
+        if (
+          message.id !== pendingAssistantResponse.assistantMessageId ||
+          message.role !== "assistant"
+        ) {
+          return [message];
+        }
+
+        if (!message.body.trim().length) {
+          return [];
+        }
+
+        return [{ ...message, status: "complete" as const }];
+      }),
+    );
   };
 
   const handleSendMessage = (message: string) => {
@@ -176,13 +221,20 @@ export function PremiumSurveyConciergePanel({
 
     nextMessageNumberRef.current += 2;
     setIsAssistantResponding(true);
+    pendingAssistantResponseRef.current = {
+      assistantMessageId: createAssistantMessageId(assistantMessageNumber),
+      stopState: conversationState,
+    };
     setMessages((currentMessages) => [
       ...clearSuggestedReplies(currentMessages),
       createUserMessage(trimmedMessage, userMessageNumber),
       createThinkingAssistantMessage(assistantMessageNumber),
     ]);
     setComposerDraft("");
-    queueAssistantTurn(assistantTurn, assistantMessageNumber);
+    streamAssistantTurn(
+      assistantTurn,
+      createAssistantMessageId(assistantMessageNumber),
+    );
   };
 
   const handleSelectSuggestedReply = (
@@ -374,123 +426,3 @@ function PremiumSurveyExampleResponsesCard({
 }
 
 function noop() {}
-
-function clearPendingAssistantResponse(
-  responseTimeoutRef: MutableRefObject<number | null>,
-) {
-  if (responseTimeoutRef.current === null) {
-    return;
-  }
-
-  window.clearTimeout(responseTimeoutRef.current);
-  responseTimeoutRef.current = null;
-}
-
-function clearSuggestedReplies(
-  currentMessages: AiConciergeMessage[],
-): AiConciergeMessage[] {
-  return currentMessages.map((message) =>
-    message.suggestedReplies
-      ? { ...message, suggestedReplies: undefined }
-      : message,
-  );
-}
-
-function createAssistantMessageFromTurn(
-  assistantTurn: AiConciergeAssistantTurn,
-  messageNumber: number,
-): AiConciergeMessage {
-  return {
-    id: createAssistantMessageId(messageNumber),
-    role: "assistant",
-    artifact: assistantTurn.artifact,
-    body: assistantTurn.body,
-    openingSupport: assistantTurn.openingSupport,
-    status: "complete",
-    suggestedReplies: assistantTurn.suggestedReplies,
-    suggestedReplyDisplay: assistantTurn.suggestedReplyDisplay,
-  };
-}
-
-function createThinkingAssistantMessage(
-  messageNumber: number,
-): AiConciergeMessage {
-  return {
-    id: createAssistantMessageId(messageNumber),
-    role: "assistant",
-    body: "",
-    status: "thinking",
-  };
-}
-
-function createUserMessage(
-  body: string,
-  messageNumber: number,
-): AiConciergeMessage {
-  return {
-    id: `user-message-${messageNumber}`,
-    role: "user",
-    body,
-  };
-}
-
-function createAssistantMessageId(messageNumber: number) {
-  return `assistant-message-${messageNumber}`;
-}
-
-function getComposerSuggestedReplies(
-  messages: AiConciergeMessage[],
-  isAssistantResponding: boolean,
-) {
-  if (isAssistantResponding) {
-    return [];
-  }
-
-  const latestMessage = messages[messages.length - 1];
-
-  if (
-    !latestMessage ||
-    latestMessage.role !== "assistant" ||
-    latestMessage.status !== "complete" ||
-    !latestMessage.suggestedReplies?.length ||
-    latestMessage.id === "assistant-message-1" ||
-    latestMessage.suggestedReplyDisplay === "inline"
-  ) {
-    return [];
-  }
-
-  return latestMessage.suggestedReplies;
-}
-
-function getComposerInteractionKey(
-  messages: AiConciergeMessage[],
-  isAssistantResponding: boolean,
-) {
-  if (isAssistantResponding) {
-    return "assistant-responding";
-  }
-
-  const latestMessage = messages[messages.length - 1];
-
-  if (
-    !latestMessage ||
-    latestMessage.role !== "assistant" ||
-    latestMessage.status !== "complete"
-  ) {
-    return "composer-idle";
-  }
-
-  return `composer-${latestMessage.id}`;
-}
-
-function getThinkingDelay(body: string) {
-  if (body.length > 220) {
-    return 900;
-  }
-
-  if (body.length > 120) {
-    return 700;
-  }
-
-  return 500;
-}

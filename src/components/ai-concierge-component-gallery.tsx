@@ -211,7 +211,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Premium-specific concierge panel that reuses the shared chat UI language while keeping recommendation behavior separate from the sales lead qualification prototype."
+              description="Premium-specific concierge panel that reuses the shared chat UI language and assistant playback behavior while keeping recommendation behavior separate from the sales lead qualification prototype."
               states={["Premium survey prototype"]}
               title="PremiumSurveyConciergePanel"
             >
@@ -224,9 +224,9 @@ export function AiConciergeComponentGallery() {
                     Premium survey prototype
                   </Link>
                   <p className="ai-type-body-sm max-w-[28rem] text-ai-text-meta">
-                    This route keeps the same panel styling, but its behavior is
-                    fully self-serve and limited to plan and product
-                    recommendations.
+                    This route keeps the same panel styling, loading rhythm, and
+                    message streaming feel, but its behavior is fully self-serve
+                    and limited to plan and product recommendations.
                   </p>
                 </div>
               </PreviewSurface>
