@@ -1,5 +1,6 @@
 "use client";
 
+import { BackArrowIcon } from "@/components/back-arrow-icon";
 import { Button } from "@/components/button";
 import { Tag } from "@/components/tag";
 import type { PremiumPlanId } from "@/lib/ai-concierge-types";
@@ -33,7 +34,7 @@ export function AiConciergePremiumPlanPanel({
           onClick={onBackToChat}
           className="ai-type-heading-sm inline-flex items-center gap-2 text-ai-text-meta transition-colors hover:text-ai-text-secondary"
         >
-          <BackArrowIcon />
+          <BackArrowIcon className="h-4 w-4" />
           Back to chat
         </button>
       </div>
@@ -143,17 +144,6 @@ export function AiConciergePremiumPlanPanel({
         </div>
       </div>
     </div>
-  );
-}
-
-function BackArrowIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M6.85333 3.14667L2 8L6.85333 12.8533L7.8 11.9L4.57333 8.66667H14V7.33333H4.57333L7.8 4.1L6.85333 3.14667Z"
-        fill="currentColor"
-      />
-    </svg>
   );
 }
 

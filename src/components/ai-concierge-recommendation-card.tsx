@@ -1,4 +1,5 @@
 import { Button } from "@/components/button";
+import { Tag } from "@/components/tag";
 import type { AiConciergeRecommendationArtifact } from "@/lib/ai-concierge-types";
 
 type AiConciergeRecommendationCardProps = {
@@ -25,12 +26,19 @@ export function AiConciergeRecommendationCard({
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
+          {artifact.tagText ? (
+            <Tag className="w-fit" tone="supportive5">
+              {artifact.tagText}
+            </Tag>
+          ) : null}
           <h3 className="ai-type-heading-md text-ai-text-primary">
             {artifact.titleText}
           </h3>
-          <p className="ai-type-body-sm text-ai-text-meta">
-            {artifact.bodyText}
-          </p>
+          {artifact.bodyText ? (
+            <p className="ai-type-body-sm text-ai-text-meta">
+              {artifact.bodyText}
+            </p>
+          ) : null}
         </div>
         <Button
           onClick={onPrimaryAction}

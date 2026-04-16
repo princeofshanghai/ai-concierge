@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { AVATAR_FALLBACK_SOURCES, Avatar } from "@/components/avatar";
+import { BackArrowIcon } from "@/components/back-arrow-icon";
 import { Button } from "@/components/button";
 import { ChoicePill } from "@/components/choice-pill";
 import { FormTextField } from "@/components/form-fields";
@@ -155,7 +155,7 @@ export function AiConciergeNextStepPanel({
           onClick={onBackToChat}
           className="ai-type-heading-sm inline-flex items-center gap-2 text-ai-text-meta transition-colors hover:text-ai-text-secondary"
         >
-          <BackArrowIcon />
+          <BackArrowIcon className="h-5 w-5" />
           Back to chat
         </button>
       </div>
@@ -375,19 +375,6 @@ function BookingSection({
       <p className="ai-type-body-sm-bold text-ai-text-secondary">{title}</p>
       {children}
     </div>
-  );
-}
-
-function BackArrowIcon() {
-  return (
-    <Image
-      src="/figma/chat/arrow-left.svg"
-      alt=""
-      width={24}
-      height={24}
-      aria-hidden="true"
-      className="h-5 w-5 shrink-0"
-    />
   );
 }
 

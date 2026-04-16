@@ -28,11 +28,20 @@ const TEXTAREA_LINE_HEIGHT = 24;
 
 function MicIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
-        d="M8 12V6C8 3.8 9.8 2 12 2C14.2 2 16 3.8 16 6V12C16 14.2 14.2 16 12 16C9.8 16 8 14.2 8 12ZM17 10V12C17 14.8 14.8 17 12 17C9.2 17 7 14.8 7 12V10H6V12C6 15 8.2 17.4 11 17.9V20H8V22H16V20H13V17.9C15.8 17.4 18 15 18 12V10H17Z"
+        d="M10.1213 9.12132C9.55871 9.68393 8.79565 10 8 10C7.20435 10 6.44129 9.68393 5.87868 9.12132C5.31607 8.55871 5 7.79565 5 7V4C5 3.20435 5.31607 2.44129 5.87868 1.87868C6.44129 1.31607 7.20435 1 8 1C8.79565 1 9.55871 1.31607 10.1213 1.87868C10.6839 2.44129 11 3.20435 11 4V7C11 7.79565 10.6839 8.55871 10.1213 9.12132Z"
         fill="currentColor"
-        fillOpacity="0.75"
+      />
+      <path
+        d="M12 7V6H13V7C13.0002 8.15265 12.6022 9.26999 11.8733 10.1629C11.1444 11.0558 10.1294 11.6695 9 11.9V13H11V15H5V13H7V11.9C5.87064 11.6695 4.8556 11.0558 4.12669 10.1629C3.39778 9.26999 2.99977 8.15265 3 7V6H4V7C4 8.06087 4.42143 9.07828 5.17157 9.82843C5.92172 10.5786 6.93913 11 8 11C9.06087 11 10.0783 10.5786 10.8284 9.82843C11.5786 9.07828 12 8.06087 12 7Z"
+        fill="currentColor"
       />
     </svg>
   );
@@ -144,48 +153,41 @@ function ComposerSendButton({
 
 function VoiceWaveIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <svg
+      viewBox="0 0 12 18"
+      fill="none"
+      aria-hidden="true"
+      className="h-full w-full"
+    >
       <path
-        d="M2 10V13"
+        d="M1.5 8V10"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M6 6V17"
+        d="M3.75 6.25V11.75"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M10 3V21"
+        d="M6 4.5V13.5"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M14 8V15"
+        d="M8.25 6.25V11.75"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M18 5V18"
+        d="M10.5 8V10"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M22 10V13"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
@@ -255,7 +257,7 @@ function ComposerPrimaryActionButton({
         onClick={onStartVoiceMode}
         size="small"
         variant="primary"
-        iconClassName="h-[18px] w-[18px]"
+        iconClassName="h-5 w-[13px]"
       >
         <VoiceWaveIcon />
       </IconButton>
@@ -440,7 +442,7 @@ export function AiConciergeComposer({
                   }
                   aria-label="Message"
                   className={[
-                    "ai-type-body-md-open w-full resize-none bg-transparent text-ai-text-primary outline-none",
+                    "ai-type-body-md-open w-full resize-none bg-transparent pl-1 text-ai-text-primary outline-none",
                     disabled
                       ? "cursor-not-allowed placeholder:text-ai-text-placeholder"
                       : "placeholder:text-ai-text-disabled",

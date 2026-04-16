@@ -19,7 +19,6 @@ import { AiConciergeNextStepPanel } from "@/components/ai-concierge-next-step-pa
 import { AiConciergePremiumPlanPanel } from "@/components/ai-concierge-premium-plan-panel";
 import { AiConciergeRepresentativeReadyBanner } from "@/components/ai-concierge-representative-booking";
 import { AiConciergeOnboarding } from "@/components/ai-concierge-onboarding";
-import { CloseIcon } from "@/components/close-icon";
 import {
   getAiConciergeEntryIdentityKey,
   readStoredAiConciergeEntrySession,
@@ -44,7 +43,7 @@ import {
   createUserMessage,
   getComposerInteractionKey,
   getComposerSuggestedReplies,
-  getStreamingInterval,
+  getStreamingChunkDelay,
   getThinkingDelay,
   streamAssistantTurnPlayback,
 } from "@/lib/ai-concierge-assistant-playback";
@@ -116,8 +115,9 @@ type PendingAssistantResponse = {
 
 const PANEL_EXIT_DURATION_MS = 220;
 const VOICE_ENTRY_SWEEP_DURATION_MS = 980;
-const VOICE_COMPOSER_MORPH_DURATION_MS = 520;
+const VOICE_COMPOSER_MORPH_DURATION_MS = 820;
 const VOICE_ENTRY_ACTIVATION_DELAY_MS = VOICE_COMPOSER_MORPH_DURATION_MS;
+const VOICE_DOCK_CONTROLS_REVEAL_DELAY_MS = 240;
 const VOICE_ENTRY_SOUND_SRC = "/audio/voice-entry-piano-ascending.wav";
 const VOICE_EXIT_SOUND_SRC = "/audio/voice-exit-piano-descending.wav";
 const VOICE_TRANSITION_SOUND_VOLUME = 0.14;
@@ -175,34 +175,23 @@ function ComposerToVoiceTransitionShell({
           isPanelExpanded ? "max-w-[720px]" : "max-w-full",
         ].join(" ")}
       >
-        <div className="relative h-14 w-full max-w-full animate-[ai-concierge-composer-to-voice-shell_520ms_cubic-bezier(0.22,1,0.36,1)_both] will-change-[width]">
-          <div className="absolute inset-0 rounded-full border border-ai-border-faint bg-ai-surface-base shadow-[0_0_0_1px_rgba(140,140,140,0.04),0_4px_12px_rgba(140,140,140,0.16)] animate-[ai-concierge-composer-to-voice-neutral-frame_520ms_ease-out_both]" />
-          <div className="absolute inset-0 rounded-full border border-ai-blue-primary opacity-0 animate-[ai-concierge-composer-to-voice-gradient-frame_520ms_cubic-bezier(0.22,1,0.36,1)_both]" />
-          <div className="absolute inset-0 flex items-center justify-between gap-4 px-3 opacity-100 animate-[ai-concierge-composer-to-voice-content_520ms_cubic-bezier(0.22,1,0.36,1)_both]">
-            <span className="ai-type-body-md-open max-w-[220px] truncate text-ai-text-disabled">
+        <div className="relative h-14 w-full max-w-full overflow-hidden animate-[ai-concierge-composer-to-voice-shell_820ms_cubic-bezier(0.16,1,0.3,1)_both] will-change-[width]">
+          <div className="absolute inset-0 rounded-full border border-ai-border-faint bg-ai-surface-base shadow-[0_0_0_1px_rgba(140,140,140,0.04),0_4px_12px_rgba(140,140,140,0.16)] animate-[ai-concierge-composer-to-voice-neutral-frame_820ms_ease-out_both]" />
+          <div className="absolute inset-0 rounded-full border border-ai-blue-primary opacity-0 animate-[ai-concierge-composer-to-voice-gradient-frame_820ms_cubic-bezier(0.16,1,0.3,1)_both]" />
+          <div className="absolute inset-0 flex items-center justify-between gap-4 px-3 animate-[ai-concierge-composer-to-voice-content_820ms_cubic-bezier(0.16,1,0.3,1)_both]">
+            <span className="ai-type-body-md-open max-w-[220px] truncate pl-1 text-ai-text-disabled">
               Type your message
             </span>
-            <div className="flex items-center gap-1">
+            <span className="flex items-center gap-1">
               <span className="flex h-8 w-8 items-center justify-center rounded-full text-ai-text-secondary">
                 <TransitionMicIcon />
               </span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ai-blue-primary text-ai-text-inverse shadow-[0_8px_18px_rgba(10,102,194,0.22)]">
-                <TransitionVoiceWaveIcon className="h-[18px] w-[18px]" />
-              </span>
-            </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 animate-[ai-concierge-composer-to-voice-center-stage_520ms_cubic-bezier(0.22,1,0.36,1)_both]">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ai-blue-primary text-ai-text-inverse shadow-[0_12px_24px_rgba(10,102,194,0.18)]">
-              <TransitionVoiceWaveIcon className="h-5 w-5" />
-            </span>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-between px-[3px] opacity-0 animate-[ai-concierge-composer-to-voice-side-controls_520ms_cubic-bezier(0.22,1,0.36,1)_both]">
-            <span className="flex h-12 w-12 items-center justify-center">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full text-ai-text-secondary">
-                <CloseIcon className="h-5 w-5" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ai-blue-primary text-ai-text-inverse">
+                <span className="h-5 w-[13px]">
+                  <TransitionVoiceWaveIcon className="h-full w-full" />
+                </span>
               </span>
             </span>
-            <span aria-hidden="true" className="block h-12 w-12" />
           </div>
         </div>
       </div>
@@ -212,11 +201,20 @@ function ComposerToVoiceTransitionShell({
 
 function TransitionMicIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
-        d="M8 12V6C8 3.8 9.8 2 12 2C14.2 2 16 3.8 16 6V12C16 14.2 14.2 16 12 16C9.8 16 8 14.2 8 12ZM17 10V12C17 14.8 14.8 17 12 17C9.2 17 7 14.8 7 12V10H6V12C6 15 8.2 17.4 11 17.9V20H8V22H16V20H13V17.9C15.8 17.4 18 15 18 12V10H17Z"
+        d="M10.1213 9.12132C9.55871 9.68393 8.79565 10 8 10C7.20435 10 6.44129 9.68393 5.87868 9.12132C5.31607 8.55871 5 7.79565 5 7V4C5 3.20435 5.31607 2.44129 5.87868 1.87868C6.44129 1.31607 7.20435 1 8 1C8.79565 1 9.55871 1.31607 10.1213 1.87868C10.6839 2.44129 11 3.20435 11 4V7C11 7.79565 10.6839 8.55871 10.1213 9.12132Z"
         fill="currentColor"
-        fillOpacity="0.75"
+      />
+      <path
+        d="M12 7V6H13V7C13.0002 8.15265 12.6022 9.26999 11.8733 10.1629C11.1444 11.0558 10.1294 11.6695 9 11.9V13H11V15H5V13H7V11.9C5.87064 11.6695 4.8556 11.0558 4.12669 10.1629C3.39778 9.26999 2.99977 8.15265 3 7V6H4V7C4 8.06087 4.42143 9.07828 5.17157 9.82843C5.92172 10.5786 6.93913 11 8 11C9.06087 11 10.0783 10.5786 10.8284 9.82843C11.5786 9.07828 12 8.06087 12 7Z"
+        fill="currentColor"
       />
     </svg>
   );
@@ -229,53 +227,40 @@ function TransitionVoiceWaveIcon({
 }) {
   return (
     <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
+      viewBox="0 0 12 18"
       fill="none"
+      aria-hidden="true"
       className={className}
     >
       <path
-        d="M2 10V13"
+        d="M1.5 8V10"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M6 6V17"
+        d="M3.75 6.25V11.75"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M10 3V21"
+        d="M6 4.5V13.5"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M14 8V15"
+        d="M8.25 6.25V11.75"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M18 5V18"
+        d="M10.5 8V10"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M22 10V13"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
@@ -349,6 +334,7 @@ export function AiConciergePanel({
   const [isAssistantResponding, setIsAssistantResponding] = useState(
     shouldResumeConversationFromStoredEntry,
   );
+  const [showVoiceDockControls, setShowVoiceDockControls] = useState(true);
   const [isVoiceComposerTransitioning, setIsVoiceComposerTransitioning] =
     useState(false);
   const [isVoiceEntryAnimating, setIsVoiceEntryAnimating] = useState(false);
@@ -366,6 +352,7 @@ export function AiConciergePanel({
   );
   const thinkingTimerRef = useRef<number | null>(null);
   const streamingTimerRef = useRef<number | null>(null);
+  const voiceDockControlsTimerRef = useRef<number | null>(null);
   const voiceComposerTransitionTimerRef = useRef<number | null>(null);
   const voiceEntryAnimationTimerRef = useRef<number | null>(null);
   const voiceEntryActivationTimerRef = useRef<number | null>(null);
@@ -471,39 +458,51 @@ export function AiConciergePanel({
           ),
         );
 
-        streamingTimerRef.current = window.setInterval(() => {
-          chunkIndex += 1;
-          const nextChunks = streamingChunks.slice(0, chunkIndex);
-          const nextBody = nextChunks.join("");
-          const isComplete = chunkIndex >= streamingChunks.length;
-
-          setMessages((currentMessages) =>
-            currentMessages.map((message) =>
-              message.id === messageId && message.role === "assistant"
-                ? {
-                    ...message,
-                    body: nextBody,
-                    openingSupport: isComplete ? openingSupport : undefined,
-                    status: isComplete ? "complete" : "streaming",
-                    streamedChunks: nextChunks,
-                    suggestedReplies: isComplete ? suggestedReplies : undefined,
-                    suggestedReplyDisplay: isComplete
-                      ? suggestedReplyDisplay
-                      : undefined,
-                  }
-                : message,
-            ),
+        const revealNextChunk = () => {
+          const chunkDelay = getStreamingChunkDelay(
+            streamingChunks[chunkIndex] ?? "",
+            chunkIndex,
+            streamingChunks.length,
+            "voice",
           );
 
-          if (!isComplete) {
-            return;
-          }
+          streamingTimerRef.current = window.setTimeout(() => {
+            chunkIndex += 1;
+            const nextChunks = streamingChunks.slice(0, chunkIndex);
+            const nextBody = nextChunks.join("");
+            const isComplete = chunkIndex >= streamingChunks.length;
 
-          clearResponseTimers(thinkingTimerRef, streamingTimerRef);
-          pendingAssistantResponseRef.current = null;
-          setConversationState(conversationState);
-          setIsAssistantResponding(false);
-        }, getStreamingInterval(trimmedBody, "voice"));
+            setMessages((currentMessages) =>
+              currentMessages.map((message) =>
+                message.id === messageId && message.role === "assistant"
+                  ? {
+                      ...message,
+                      body: nextBody,
+                      openingSupport: isComplete ? openingSupport : undefined,
+                      status: isComplete ? "complete" : "streaming",
+                      streamedChunks: nextChunks,
+                      suggestedReplies: isComplete ? suggestedReplies : undefined,
+                      suggestedReplyDisplay: isComplete
+                        ? suggestedReplyDisplay
+                        : undefined,
+                    }
+                  : message,
+              ),
+            );
+
+            if (!isComplete) {
+              revealNextChunk();
+              return;
+            }
+
+            clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+            pendingAssistantResponseRef.current = null;
+            setConversationState(conversationState);
+            setIsAssistantResponding(false);
+          }, chunkDelay);
+        };
+
+        revealNextChunk();
       }, getThinkingDelay(trimmedBody, "voice"));
 
       return messageId;
@@ -570,6 +569,36 @@ export function AiConciergePanel({
     [messages, queuePlainVoiceAssistantMessage],
   );
 
+  const interruptPendingAssistantResponse = useCallback(() => {
+    const pendingAssistantResponse = pendingAssistantResponseRef.current;
+    if (!pendingAssistantResponse) {
+      return null;
+    }
+
+    clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+    pendingAssistantResponseRef.current = null;
+    setIsAssistantResponding(false);
+    setConversationState(pendingAssistantResponse.stopState);
+    setMessages((currentMessages) =>
+      currentMessages.flatMap((message) => {
+        if (
+          message.id !== pendingAssistantResponse.assistantMessageId ||
+          message.role !== "assistant"
+        ) {
+          return [message];
+        }
+
+        if (!message.body.trim().length) {
+          return [];
+        }
+
+        return [{ ...message, status: "complete" as const }];
+      }),
+    );
+
+    return pendingAssistantResponse.assistantMessageId;
+  }, []);
+
   const replaceAssistantArtifact = useCallback(
     (messageId: string, artifact: AiConciergeMessage["artifact"]) => {
       setMessages((currentMessages) =>
@@ -628,6 +657,7 @@ export function AiConciergePanel({
     appendVoiceAssistantMessage,
     composerDraft,
     getShouldShowNextStepSurface: () => shouldShowNextStepSurfaceRef.current,
+    interruptAssistantReply: interruptPendingAssistantResponse,
     isAssistantResponding,
     liveSalesChatStatus,
     messages,
@@ -1133,7 +1163,12 @@ export function AiConciergePanel({
   );
 
   const sendMessage = useCallback(
-    (body: string) => {
+    (
+      body: string,
+      options?: {
+        includeAssistantBody?: boolean;
+      },
+    ) => {
       const trimmedBody = body.trim();
       if (
         !trimmedBody ||
@@ -1141,7 +1176,10 @@ export function AiConciergePanel({
         isLiveAgentReplyPending ||
         isLiveSalesChatConnecting
       ) {
-        return null;
+        return {
+          assistantBody: null,
+          assistantMessageId: null,
+        };
       }
 
       stopDictationRecognition();
@@ -1153,11 +1191,17 @@ export function AiConciergePanel({
           createUserMessage(trimmedBody, currentMessages.length + 1),
         ]);
         queueLiveSalesReply(trimmedBody);
-        return `agent-message-${Date.now()}`;
+        return {
+          assistantBody: null,
+          assistantMessageId: `agent-message-${Date.now()}`,
+        };
       }
 
       if (!conversationState) {
-        return null;
+        return {
+          assistantBody: null,
+          assistantMessageId: null,
+        };
       }
 
       const assistantTurn = (customGetAssistantTurn ?? getAssistantTurn)({
@@ -1194,7 +1238,10 @@ export function AiConciergePanel({
         assistantMessageId,
         isVoiceModeActive ? "voice" : "text",
       );
-      return assistantMessageId;
+      return {
+        assistantBody: options?.includeAssistantBody ? assistantTurn.body : null,
+        assistantMessageId,
+      };
     },
     [
       clearDictateStatusMessage,
@@ -1214,44 +1261,23 @@ export function AiConciergePanel({
   );
 
   useEffect(() => {
-    registerVoiceMessageSender(sendMessage);
+    registerVoiceMessageSender((body) =>
+      sendMessage(body, {
+        includeAssistantBody: true,
+      }),
+    );
   }, [registerVoiceMessageSender, sendMessage]);
 
   const handleStopAssistantResponse = useCallback(() => {
-    const pendingAssistantResponse = pendingAssistantResponseRef.current;
-    if (!pendingAssistantResponse) {
-      return;
+    const interruptedAssistantMessageId = interruptPendingAssistantResponse();
+
+    if (interruptedAssistantMessageId) {
+      clearAwaitedVoiceAssistantMessage(interruptedAssistantMessageId);
     }
-
-    clearResponseTimers(thinkingTimerRef, streamingTimerRef);
-    pendingAssistantResponseRef.current = null;
-
-    clearAwaitedVoiceAssistantMessage(
-      pendingAssistantResponse.assistantMessageId,
-    );
-
-    setIsAssistantResponding(false);
-    setConversationState(pendingAssistantResponse.stopState);
-    setMessages((currentMessages) =>
-      currentMessages.flatMap((message) => {
-        if (
-          message.id !== pendingAssistantResponse.assistantMessageId ||
-          message.role !== "assistant"
-        ) {
-          return [message];
-        }
-
-        if (!message.body.trim().length) {
-          return [];
-        }
-
-        return [{ ...message, status: "complete" as const }];
-      }),
-    );
-  }, [clearAwaitedVoiceAssistantMessage]);
+  }, [clearAwaitedVoiceAssistantMessage, interruptPendingAssistantResponse]);
 
   const handleSendMessage = (body: string) => {
-    if (!sendMessage(body)) {
+    if (!sendMessage(body).assistantMessageId) {
       return;
     }
 
@@ -1460,6 +1486,28 @@ export function AiConciergePanel({
     signedInContactDetails,
   ]);
 
+  const openRecommendationLink = useCallback(
+    (messageId: string) => {
+      const recommendationArtifact = messages.find((message) => {
+        return (
+          message.id === messageId && message.artifact?.type === "recommendation"
+        );
+      })?.artifact;
+
+      if (
+        !recommendationArtifact ||
+        recommendationArtifact.type !== "recommendation" ||
+        !recommendationArtifact.ctaHref
+      ) {
+        return false;
+      }
+
+      window.open(recommendationArtifact.ctaHref, "_blank", "noopener,noreferrer");
+      return true;
+    },
+    [messages],
+  );
+
   const handleStartConversation = () => {
     if (pendingIdentityAction !== null) {
       if (!isContactDetailsValid) {
@@ -1474,6 +1522,10 @@ export function AiConciergePanel({
       persistConfirmedEntryDetails(contactDetails);
 
       if (nextAction.type === "recommendation-card") {
+        if (openRecommendationLink(nextAction.messageId)) {
+          return;
+        }
+
         handleRecommendationPrimaryAction(nextAction.messageId);
         return;
       }
@@ -1499,6 +1551,10 @@ export function AiConciergePanel({
 
   const handleRecommendationPrimaryActionWithIdentityGate = useCallback(
     (messageId: string) => {
+      if (openRecommendationLink(messageId)) {
+        return;
+      }
+
       if (!isContactDetailsValid) {
         openRepresentativeIdentityGate({
           messageId,
@@ -1512,6 +1568,7 @@ export function AiConciergePanel({
     [
       handleRecommendationPrimaryAction,
       isContactDetailsValid,
+      openRecommendationLink,
       openRepresentativeIdentityGate,
     ],
   );
@@ -1588,6 +1645,18 @@ export function AiConciergePanel({
     voiceEntryActivationTimerRef.current = null;
   }, []);
 
+  const clearVoiceDockControlsTimer = useCallback(() => {
+    if (
+      typeof window === "undefined" ||
+      voiceDockControlsTimerRef.current === null
+    ) {
+      return;
+    }
+
+    window.clearTimeout(voiceDockControlsTimerRef.current);
+    voiceDockControlsTimerRef.current = null;
+  }, []);
+
   const clearVoiceComposerTransitionTimer = useCallback(() => {
     if (
       typeof window === "undefined" ||
@@ -1613,11 +1682,13 @@ export function AiConciergePanel({
   }, [clearVoiceComposerTransitionTimer]);
 
   const clearPendingVoiceEntryTransitions = useCallback(() => {
+    clearVoiceDockControlsTimer();
     clearVoiceComposerTransitionTimer();
     clearVoiceEntryAnimationTimer();
     clearVoiceEntryActivationTimer();
     stopVoiceTransitionSounds();
   }, [
+    clearVoiceDockControlsTimer,
     clearVoiceComposerTransitionTimer,
     clearVoiceEntryActivationTimer,
     clearVoiceEntryAnimationTimer,
@@ -1628,6 +1699,7 @@ export function AiConciergePanel({
     clearPendingVoiceEntryTransitions();
     setIsVoiceComposerTransitioning(false);
     setIsVoiceEntryAnimating(false);
+    setShowVoiceDockControls(true);
   }, [clearPendingVoiceEntryTransitions]);
 
   const triggerVoiceEntryAnimation = useCallback(() => {
@@ -1663,10 +1735,12 @@ export function AiConciergePanel({
     }
 
     if (prefersReducedMotion) {
+      setShowVoiceDockControls(true);
       handleStartVoiceMode();
       return;
     }
 
+    setShowVoiceDockControls(false);
     triggerVoiceEntryAnimation();
     triggerVoiceComposerTransition();
     playVoiceEntrySound();
@@ -1690,6 +1764,38 @@ export function AiConciergePanel({
     shouldShowNextStepSurface,
     triggerVoiceComposerTransition,
     triggerVoiceEntryAnimation,
+  ]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      prefersReducedMotion ||
+      !isVoiceModeActive ||
+      isVoiceComposerTransitioning ||
+      showVoiceDockControls
+    ) {
+      return;
+    }
+
+    const revealDelayMs =
+      voiceModeStatus === "speaking" ? 0 : VOICE_DOCK_CONTROLS_REVEAL_DELAY_MS;
+
+    clearVoiceDockControlsTimer();
+    voiceDockControlsTimerRef.current = window.setTimeout(() => {
+      setShowVoiceDockControls(true);
+      voiceDockControlsTimerRef.current = null;
+    }, revealDelayMs);
+
+    return () => {
+      clearVoiceDockControlsTimer();
+    };
+  }, [
+    clearVoiceDockControlsTimer,
+    isVoiceComposerTransitioning,
+    isVoiceModeActive,
+    prefersReducedMotion,
+    showVoiceDockControls,
+    voiceModeStatus,
   ]);
 
   const handleBookAgain = useCallback(() => {
@@ -2043,10 +2149,12 @@ export function AiConciergePanel({
                     onDoneListening={handleFinishVoiceTurn}
                     onRetry={handleRetryVoiceMode}
                     onStopSpeaking={handleStopAssistantPlayback}
+                    showControls={showVoiceDockControls}
                     status={voiceModeStatus}
                     userName={`${contactDetails.firstName} ${contactDetails.lastName}`.trim()}
                   />
-                ) : !shouldShowNextStepSurface ? (
+                ) : !shouldShowNextStepSurface &&
+                  !isVoiceComposerTransitioning ? (
                   <AiConciergeComposer
                     key={composerKey}
                     disabled={

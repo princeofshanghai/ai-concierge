@@ -1,60 +1,58 @@
-import Image from "next/image";
+import { useEffect, useState } from "react";
 
 type ChatAssistantMessageProps = {
   body: string;
   className?: string;
   isActiveVoiceTurn?: boolean;
   isPanelExpanded?: boolean;
-  showArrivalAnimation?: boolean;
   status?: "complete" | "streaming" | "thinking";
   streamedChunks?: string[];
 };
 
-function ThinkingIndicator({
-  showArrivalAnimation = false,
-}: {
-  showArrivalAnimation?: boolean;
-}) {
+function StreamedMessageChunk({ chunk }: { chunk: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
+  return (
+    <span
+      className={[
+        "inline transition-[opacity,color] duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+        isVisible
+          ? "opacity-100 text-ai-text-primary"
+          : "opacity-0 text-ai-text-meta motion-reduce:opacity-100 motion-reduce:text-ai-text-primary",
+      ].join(" ")}
+    >
+      {chunk}
+    </span>
+  );
+}
+
+function ThinkingIndicator() {
   return (
     <div
       aria-label="Assistant is thinking"
-      className="flex items-center gap-2 py-1"
+      aria-atomic="true"
+      className="py-1"
       role="status"
     >
-      <span
-        aria-hidden="true"
-        className={[
-          "relative flex shrink-0 items-center justify-center",
-          showArrivalAnimation ? "h-10 w-10" : "h-5 w-5",
-        ].join(" ")}
-      >
-        {showArrivalAnimation ? (
-          <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(10,102,194,0.18),rgba(10,102,194,0.08)_40%,rgba(10,102,194,0)_74%)] animate-[ai-concierge-opening-icon-halo_460ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none" />
-        ) : null}
-        <Image
-          src="/figma/chat/ai-concierge-icon.svg"
-          alt=""
-          width={20}
-          height={20}
+      <span className="ai-type-body-xs relative inline-block whitespace-nowrap text-ai-text-secondary">
+        <span>Thinking</span>
+        <span
           aria-hidden="true"
-          className={[
-            "relative h-5 w-5",
-            showArrivalAnimation
-              ? "animate-[ai-concierge-opening-icon-settle_380ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none"
-              : "",
-          ].join(" ")}
-        />
+          className="ai-concierge-thinking-sweep pointer-events-none absolute inset-0 text-ai-background-strong motion-reduce:hidden"
+        >
+          Thinking
+        </span>
       </span>
-      <div className="flex items-center gap-1 py-1">
-        {[0, 1, 2].map((index) => (
-          <span
-            key={index}
-            aria-hidden="true"
-            className="assistant-thinking-dot h-[7px] w-[7px] rounded-full bg-ai-text-disabled"
-            style={{ animationDelay: `${index * 0.16}s` }}
-          />
-        ))}
-      </div>
     </div>
   );
 }
@@ -64,7 +62,6 @@ export function ChatAssistantMessage({
   className = "",
   isActiveVoiceTurn = false,
   isPanelExpanded = false,
-  showArrivalAnimation = false,
   status = "complete",
   streamedChunks,
 }: ChatAssistantMessageProps) {
@@ -76,7 +73,7 @@ export function ChatAssistantMessage({
     return (
       <div className={["w-full", className].join(" ")}>
         <div className={widthClassName}>
-          <ThinkingIndicator showArrivalAnimation={showArrivalAnimation} />
+          <ThinkingIndicator />
         </div>
       </div>
     );
@@ -91,12 +88,7 @@ export function ChatAssistantMessage({
         <p className="ai-type-body-sm-open whitespace-pre-wrap break-words text-ai-text-primary">
           {streamedChunks?.length
             ? streamedChunks.map((chunk, index) => (
-                <span
-                  key={`${index}-${chunk}`}
-                  className="inline animate-[ai-concierge-message-chunk-in_220ms_ease-out_both] motion-reduce:animate-none"
-                >
-                  {chunk}
-                </span>
+                <StreamedMessageChunk key={`${index}-${chunk}`} chunk={chunk} />
               ))
             : body}
         </p>

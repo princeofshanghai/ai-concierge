@@ -186,6 +186,8 @@ const LIVE_HANDOFF_BRIDGE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "book-meeting", label: "Schedule a call" },
 ];
 
+const LOWER_TOUCH_PLANS_CTA_HREF = "https://example.com";
+
 const DEFAULT_STATE: AiConciergeConversationState = {
   stage: "opening",
   startingSituation: "unknown",
@@ -581,6 +583,20 @@ function createUrgencyResponse(
     };
   }
 
+  if (state.likelySolution === "lighter_touch") {
+    return {
+      artifact: createLighterTouchRecommendationArtifact(),
+      body: "From what you've shared, I'd start here. Since your hiring sounds more occasional than ongoing, looking at the plan options is probably the best next step.",
+      nextState: {
+        ...state,
+        stage: "awaiting_next_step",
+        urgency,
+      },
+      suggestedReplies: createNextStepSuggestions(state.likelySolution),
+      suggestedReplyDisplay: "composer",
+    };
+  }
+
   return {
     body: `${recommendation}\n\n${createNextStepQuestion(contactDetails.company, state.likelySolution)}`,
     nextState: {
@@ -869,6 +885,16 @@ function createRepresentativeRecommendationArtifact(): AiConciergeMessageArtifac
     bodyText: "First I'll match you with the right one",
     ctaLabel: "Find my rep",
     titleText: "Talk to a sales rep",
+    type: "recommendation",
+  };
+}
+
+function createLighterTouchRecommendationArtifact(): AiConciergeMessageArtifact {
+  return {
+    ctaHref: LOWER_TOUCH_PLANS_CTA_HREF,
+    ctaLabel: "Browse plans",
+    tagText: "Best for occasional hiring",
+    titleText: "Explore what fits",
     type: "recommendation",
   };
 }

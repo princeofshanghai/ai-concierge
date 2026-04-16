@@ -13,9 +13,11 @@ export type PremiumPlanId =
   | "recruiter-lite";
 
 export type AiConciergeRecommendationArtifact = {
-  bodyText: string;
+  bodyText?: string;
+  ctaHref?: string;
   ctaLabel: string;
   metaText?: string;
+  tagText?: string;
   titleText: string;
   type: "recommendation";
 };

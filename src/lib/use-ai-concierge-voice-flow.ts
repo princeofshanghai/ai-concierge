@@ -15,6 +15,11 @@ type LiveSalesChatStatus = "active" | "connecting" | "idle";
 type PanelState = "chat" | "manual" | "prefill" | "welcome";
 type AwaitedVoiceAssistantMessageKind = "guidance" | "intro" | "reply";
 
+type VoiceMessageSendResult = {
+  assistantBody: string | null;
+  assistantMessageId: string | null;
+};
+
 type BrowserSpeechRecognitionAlternativeLike = {
   transcript: string;
 };
@@ -63,6 +68,7 @@ type UseVoiceFlowParams = {
   composerDraft: string;
   ensureVoiceIntroMessage: (body: string) => string | null;
   getShouldShowNextStepSurface: () => boolean;
+  interruptAssistantReply: () => string | null;
   isAssistantResponding: boolean;
   liveSalesChatStatus: LiveSalesChatStatus;
   messages: AiConciergeMessage[];
@@ -76,6 +82,7 @@ export function useVoiceFlow({
   composerDraft,
   ensureVoiceIntroMessage,
   getShouldShowNextStepSurface,
+  interruptAssistantReply,
   isAssistantResponding,
   liveSalesChatStatus,
   messages,
@@ -114,6 +121,7 @@ export function useVoiceFlow({
   const isVoiceModeActiveRef = useRef(false);
   const isVoicePlaybackMutedRef = useRef(false);
   const awaitedVoiceAssistantMessageIdRef = useRef<string | null>(null);
+  const awaitedVoiceAssistantBodyRef = useRef<string | null>(null);
   const awaitedVoiceAssistantMessageKindRef =
     useRef<AwaitedVoiceAssistantMessageKind | null>(null);
   const hasPlayedVoiceIntroRef = useRef(false);
@@ -127,9 +135,8 @@ export function useVoiceFlow({
       Promise.resolve(),
     );
   const shouldShowNextStepSurfaceRef = useRef(getShouldShowNextStepSurface);
-  const voiceMessageSenderRef = useRef<((body: string) => string | null) | null>(
-    null,
-  );
+  const voiceMessageSenderRef =
+    useRef<((body: string) => VoiceMessageSendResult) | null>(null);
 
   const clearDictateStatusMessage = useCallback(() => {
     setDictateStatusMessage(null);
@@ -263,8 +270,10 @@ export function useVoiceFlow({
 
   const closeVoiceMode = useCallback(
     (clearCaptions = true) => {
+      const retainedTranscript = normalizeVoiceTranscript(voiceTranscriptRef.current);
       isVoiceModeActiveRef.current = false;
       awaitedVoiceAssistantMessageIdRef.current = null;
+      awaitedVoiceAssistantBodyRef.current = null;
       awaitedVoiceAssistantMessageKindRef.current = null;
       voiceTranscriptRef.current = "";
       clearVoiceTransitionTimer();
@@ -275,11 +284,26 @@ export function useVoiceFlow({
       stopAssistantSpeech();
 
       if (clearCaptions) {
+        if (retainedTranscript) {
+          const nextComposerDraft = mergeDraftWithTranscript(
+            composerDraftRef.current,
+            retainedTranscript,
+          );
+
+          composerDraftRef.current = nextComposerDraft;
+          setComposerDraft(nextComposerDraft);
+        }
+
         setVoiceUserCaption("");
         setVoiceAssistantCaption("");
       }
     },
-    [clearVoiceTransitionTimer, stopAssistantSpeech, stopVoiceRecognition],
+    [
+      clearVoiceTransitionTimer,
+      setComposerDraft,
+      stopAssistantSpeech,
+      stopVoiceRecognition,
+    ],
   );
 
   const handleBlockedMicrophoneInVoiceMode = useCallback(() => {
@@ -311,6 +335,7 @@ export function useVoiceFlow({
 
   const resetVoiceFlowState = useCallback(() => {
     awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantBodyRef.current = null;
     awaitedVoiceAssistantMessageKindRef.current = null;
     dictateBaseDraftRef.current = "";
     dictateTranscriptRef.current = "";
@@ -336,7 +361,7 @@ export function useVoiceFlow({
   }, [clearVoiceFlowSideEffects, resetVoiceFlowState]);
 
   const registerVoiceMessageSender = useCallback(
-    (sendMessage: (body: string) => string | null) => {
+    (sendMessage: (body: string) => VoiceMessageSendResult) => {
       voiceMessageSenderRef.current = sendMessage;
     },
     [],
@@ -350,13 +375,24 @@ export function useVoiceFlow({
         return;
       }
 
-      voiceTransitionTimerRef.current = window.setTimeout(() => {
-        voiceTransitionTimerRef.current = null;
+      const queueListeningAttempt = (nextDelayMs: number) => {
+        voiceTransitionTimerRef.current = window.setTimeout(() => {
+          voiceTransitionTimerRef.current = null;
 
-        if (isVoiceModeActiveRef.current) {
+          if (!isVoiceModeActiveRef.current) {
+            return;
+          }
+
+          if (isAssistantRespondingRef.current) {
+            queueListeningAttempt(90);
+            return;
+          }
+
           void startListeningRef.current();
-        }
-      }, delayMs);
+        }, nextDelayMs);
+      };
+
+      queueListeningAttempt(delayMs);
     },
     [clearVoiceTransitionTimer],
   );
@@ -404,8 +440,14 @@ export function useVoiceFlow({
           return;
         }
 
+        hasPlayedVoiceIntroRef.current = true;
         clearVoiceTransitionTimer();
+        awaitedVoiceAssistantMessageIdRef.current = null;
+        awaitedVoiceAssistantBodyRef.current = null;
+        awaitedVoiceAssistantMessageKindRef.current = null;
+        isAssistantRespondingRef.current = false;
         stopAssistantSpeech();
+        interruptAssistantReply();
         setVoiceAssistantCaption("");
         setVoiceErrorMessage(null);
         void startListeningRef.current({
@@ -444,7 +486,12 @@ export function useVoiceFlow({
         }
       }
     },
-    [clearVoiceTransitionTimer, stopAssistantSpeech, stopBargeInRecognition],
+    [
+      clearVoiceTransitionTimer,
+      interruptAssistantReply,
+      stopAssistantSpeech,
+      stopBargeInRecognition,
+    ],
   );
 
   const playAssistantCaption = useCallback(
@@ -512,7 +559,7 @@ export function useVoiceFlow({
 
         activeAssistantCaptionRef.current = normalizeVoiceComparisonText(caption);
         startBargeInMonitoring(caption);
-        utterance.rate = 0.96;
+        utterance.rate = 1.03;
         utterance.pitch = 1;
         utterance.onend = () => {
           speechUtteranceRef.current = null;
@@ -568,6 +615,7 @@ export function useVoiceFlow({
       }
 
       awaitedVoiceAssistantMessageIdRef.current = assistantMessageId;
+      awaitedVoiceAssistantBodyRef.current = fallbackMessage;
       awaitedVoiceAssistantMessageKindRef.current = "guidance";
       return;
     }
@@ -578,8 +626,12 @@ export function useVoiceFlow({
     setVoiceErrorMessage(null);
     setVoiceModeStatus("thinking");
 
-    const assistantMessageId =
-      voiceMessageSenderRef.current?.(normalizedTranscript) ?? null;
+    const voiceReply =
+      voiceMessageSenderRef.current?.(normalizedTranscript) ?? {
+        assistantBody: null,
+        assistantMessageId: null,
+      };
+    const assistantMessageId = voiceReply.assistantMessageId;
 
     if (!assistantMessageId) {
       setVoiceModeStatus("error");
@@ -591,6 +643,7 @@ export function useVoiceFlow({
 
     setVoiceUserCaption("");
     awaitedVoiceAssistantMessageIdRef.current = assistantMessageId;
+    awaitedVoiceAssistantBodyRef.current = voiceReply.assistantBody;
     awaitedVoiceAssistantMessageKindRef.current = "reply";
   }, [appendVoiceAssistantMessage]);
 
@@ -621,6 +674,7 @@ export function useVoiceFlow({
     }
 
     awaitedVoiceAssistantMessageIdRef.current = assistantMessageId;
+    awaitedVoiceAssistantBodyRef.current = normalizedBody;
     awaitedVoiceAssistantMessageKindRef.current = "guidance";
 
     return assistantMessageId;
@@ -951,6 +1005,7 @@ export function useVoiceFlow({
     setVoiceAssistantCaption("");
     voiceTranscriptRef.current = "";
     awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantBodyRef.current = null;
     awaitedVoiceAssistantMessageKindRef.current = null;
 
     if (!hasPlayedVoiceIntroRef.current) {
@@ -963,6 +1018,7 @@ export function useVoiceFlow({
 
       setVoiceModeStatus("thinking");
       awaitedVoiceAssistantMessageIdRef.current = introMessageId;
+      awaitedVoiceAssistantBodyRef.current = voiceIntroMessage.trim();
       awaitedVoiceAssistantMessageKindRef.current = "intro";
       return;
     }
@@ -1007,12 +1063,22 @@ export function useVoiceFlow({
     }
 
     hasPlayedVoiceIntroRef.current = true;
+    awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantBodyRef.current = null;
+    awaitedVoiceAssistantMessageKindRef.current = null;
+    isAssistantRespondingRef.current = false;
     clearVoiceTransitionTimer();
     stopAssistantSpeech();
+    interruptAssistantReply();
     setVoiceErrorMessage(null);
     setVoiceModeStatus("listening");
     scheduleVoiceListening(0);
-  }, [clearVoiceTransitionTimer, scheduleVoiceListening, stopAssistantSpeech]);
+  }, [
+    clearVoiceTransitionTimer,
+    interruptAssistantReply,
+    scheduleVoiceListening,
+    stopAssistantSpeech,
+  ]);
 
   const handleToggleVoicePlayback = useCallback(() => {
     setIsVoicePlaybackMuted((currentValue) => {
@@ -1038,6 +1104,7 @@ export function useVoiceFlow({
     (assistantMessageId: string) => {
       if (awaitedVoiceAssistantMessageIdRef.current === assistantMessageId) {
         awaitedVoiceAssistantMessageIdRef.current = null;
+        awaitedVoiceAssistantBodyRef.current = null;
         awaitedVoiceAssistantMessageKindRef.current = null;
       }
     },
@@ -1078,45 +1145,63 @@ export function useVoiceFlow({
       return;
     }
 
-    const completedAssistantMessage = messages.find(
+    const visibleAssistantMessage = messages.find(
       (message) =>
         message.id === awaitedMessageId &&
         message.role === "assistant" &&
-        message.status === "complete",
+        message.status !== "thinking" &&
+        message.body.trim().length > 0,
     );
 
-    if (!completedAssistantMessage) {
+    if (!visibleAssistantMessage) {
       return;
     }
 
     const awaitedMessageKind = awaitedVoiceAssistantMessageKindRef.current;
+    const awaitedAssistantBody = awaitedVoiceAssistantBodyRef.current?.trim();
+    const assistantCaption =
+      awaitedAssistantBody ||
+      (visibleAssistantMessage.status === "complete"
+        ? visibleAssistantMessage.body.trim()
+        : "");
+
+    if (!assistantCaption) {
+      return;
+    }
 
     awaitedVoiceAssistantMessageIdRef.current = null;
+    awaitedVoiceAssistantBodyRef.current = null;
     awaitedVoiceAssistantMessageKindRef.current = null;
-    playAssistantCaption(completedAssistantMessage.body, {
-      assistantMessageId: completedAssistantMessage.id,
-      onComplete: () => {
-        if (awaitedMessageKind === "intro") {
-          hasPlayedVoiceIntroRef.current = true;
-        }
+    const playbackFrameId = window.requestAnimationFrame(() => {
+      playAssistantCaption(assistantCaption, {
+        assistantMessageId: visibleAssistantMessage.id,
+        onComplete: () => {
+          if (awaitedMessageKind === "intro") {
+            hasPlayedVoiceIntroRef.current = true;
+          }
 
-        scheduleVoiceListening();
-      },
-      onError: () => {
-        if (awaitedMessageKind === "reply") {
-          showVoiceSystemNotice(
-            "I showed the reply in text, but audio playback was unavailable.",
-          );
-          return;
-        }
+          scheduleVoiceListening();
+        },
+        onError: () => {
+          if (awaitedMessageKind === "reply") {
+            showVoiceSystemNotice(
+              "I showed the reply in text, but audio playback was unavailable.",
+            );
+            return;
+          }
 
-        if (awaitedMessageKind === "intro") {
-          hasPlayedVoiceIntroRef.current = true;
-        }
+          if (awaitedMessageKind === "intro") {
+            hasPlayedVoiceIntroRef.current = true;
+          }
 
-        scheduleVoiceListening();
-      },
+          scheduleVoiceListening();
+        },
+      });
     });
+
+    return () => {
+      window.cancelAnimationFrame(playbackFrameId);
+    };
   }, [
     isVoiceModeActive,
     messages,

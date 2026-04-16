@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { Avatar } from "@/components/avatar";
+import { BackArrowIcon } from "@/components/back-arrow-icon";
 import { Button } from "@/components/button";
 import {
   FormSelectField,
@@ -133,14 +133,7 @@ function OnboardingDetailsForm({
               onClick={onBack}
               className="ai-type-heading-sm mb-5 inline-flex items-center gap-2 text-ai-text-meta transition-colors hover:text-ai-text-primary"
             >
-              <Image
-                src="/figma/chat/arrow-left.svg"
-                alt=""
-                width={24}
-                height={24}
-                aria-hidden="true"
-                className="h-6 w-6"
-              />
+              <BackArrowIcon className="h-4 w-4" />
               Back
             </button>
           ) : null}

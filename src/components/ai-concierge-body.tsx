@@ -214,21 +214,15 @@ export function AiConciergeBody({
               message.role === "assistant" ? (
                 <div
                   key={message.id}
-                  className="flex flex-col gap-3 animate-[ai-concierge-message-in_240ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none"
+                  className="flex flex-col gap-3 animate-[ai-concierge-message-in_320ms_cubic-bezier(0.16,1,0.3,1)_both] motion-reduce:animate-none"
                 >
                   {message.status === "thinking" || message.body.trim().length > 0 ? (
                     <ChatAssistantMessage
                       body={message.body}
                       isActiveVoiceTurn={
-                        message.status === "complete" &&
                         message.id === activeVoiceAssistantMessageId
                       }
                       isPanelExpanded={isPanelExpanded}
-                      showArrivalAnimation={
-                        messages.length === 1 &&
-                        message.id === "assistant-message-1" &&
-                        message.status === "thinking"
-                      }
                       status={message.status}
                       streamedChunks={message.streamedChunks}
                     />
@@ -287,7 +281,7 @@ export function AiConciergeBody({
                   message.suggestedReplies?.length &&
                   message.suggestedReplyDisplay === "inline" &&
                   (!isVoiceModeActive || shouldShowVoiceOpeningSupport) ? (
-                    <div className="flex flex-wrap gap-2 animate-[ai-concierge-suggested-replies-in_220ms_ease-out_both] motion-reduce:animate-none">
+                    <div className="flex flex-wrap gap-2 animate-[ai-concierge-suggested-replies-in_280ms_cubic-bezier(0.16,1,0.3,1)_both] motion-reduce:animate-none">
                       {message.suggestedReplies.map((suggestedReply) => (
                         <SuggestedActionPrompt
                           key={suggestedReply.id}
@@ -302,7 +296,7 @@ export function AiConciergeBody({
               ) : message.role === "agent" ? (
                 <div
                   key={message.id}
-                  className="animate-[ai-concierge-message-in_240ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none"
+                  className="animate-[ai-concierge-message-in_320ms_cubic-bezier(0.16,1,0.3,1)_both] motion-reduce:animate-none"
                 >
                   <ChatLiveAgentMessage
                     body={message.body}
@@ -314,7 +308,7 @@ export function AiConciergeBody({
               ) : message.role === "system" ? (
                 <p
                   key={message.id}
-                  className="ai-type-body-xs animate-[ai-concierge-message-in_240ms_cubic-bezier(0.22,1,0.36,1)_both] text-center text-ai-text-meta motion-reduce:animate-none"
+                  className="ai-type-body-xs animate-[ai-concierge-message-in_320ms_cubic-bezier(0.16,1,0.3,1)_both] text-center text-ai-text-meta motion-reduce:animate-none"
                 >
                   {message.body}
                 </p>

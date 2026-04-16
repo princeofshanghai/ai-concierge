@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { Avatar } from "@/components/avatar";
+import { AiConciergeSignalIcon } from "@/components/ai-concierge-signal-icon";
 import { CloseIcon } from "@/components/close-icon";
 import { IconButton } from "@/components/icon-button";
 import { Tooltip } from "@/components/tooltip";
@@ -21,6 +21,7 @@ type AiConciergeVoiceDockProps = {
   onDoneListening: () => void;
   onRetry: () => void;
   onStopSpeaking: () => void;
+  showControls?: boolean;
   status: VoiceModeStatus;
   userName?: string;
 };
@@ -41,6 +42,7 @@ export function AiConciergeVoiceDock({
   onDoneListening,
   onRetry,
   onStopSpeaking,
+  showControls = true,
   status,
   userName,
 }: AiConciergeVoiceDockProps) {
@@ -49,6 +51,7 @@ export function AiConciergeVoiceDock({
     status,
   });
   const isLiveTurn = status === "listening" || status === "speaking";
+  const shouldShowLiveTurnPulse = isLiveTurn && showControls;
   const primaryAction = getPrimaryAction({
     onDoneListening,
     onRetry,
@@ -63,7 +66,7 @@ export function AiConciergeVoiceDock({
           "relative mx-auto w-fit max-w-full",
         ].join(" ")}
       >
-        {isLiveTurn ? (
+        {shouldShowLiveTurnPulse ? (
           <span
             aria-hidden="true"
             className="ai-premium-gradient-pill-pulse pointer-events-none absolute -inset-[6px] rounded-full animate-[ai-concierge-voice-shell-pulse_1.9s_cubic-bezier(0.33,0,0.2,1)_infinite] motion-reduce:animate-none motion-reduce:opacity-45"
@@ -84,8 +87,12 @@ export function AiConciergeVoiceDock({
               {statusAnnouncement}
             </p>
             <div
+              aria-hidden={!showControls}
               className={[
-                "grid min-h-12 items-center gap-0",
+                "grid min-h-12 items-center gap-0 transition-[opacity,transform] duration-420 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[opacity,transform] motion-reduce:translate-y-0 motion-reduce:transition-none",
+                showControls
+                  ? "translate-y-0 opacity-100"
+                  : "pointer-events-none translate-y-[5px] opacity-0 motion-reduce:opacity-100",
                 isPanelExpanded
                   ? "grid-cols-[48px_60px_48px]"
                   : "grid-cols-[48px_56px_48px]",
@@ -96,11 +103,13 @@ export function AiConciergeVoiceDock({
                   <IconButton
                     onClick={onClose}
                     ariaLabel="Exit voice mode"
+                    disabled={!showControls}
                     emphasis={false}
                     variant="tertiary"
                     className="rounded-full"
                     iconClassName="h-5 w-5"
                     size="medium"
+                    tabIndex={showControls ? undefined : -1}
                   >
                     <CloseIcon className="h-full w-full" />
                   </IconButton>
@@ -114,17 +123,19 @@ export function AiConciergeVoiceDock({
                   <Tooltip content={primaryAction.tooltip}>
                     <IconButton
                       onClick={primaryAction.onClick}
-                    ariaLabel={primaryAction.tooltip}
-                    emphasis={false}
-                    variant="tertiary"
-                    className="rounded-full"
-                    iconClassName="h-[22px] w-[22px]"
-                    size="medium"
-                  >
-                    {primaryAction.icon}
-                  </IconButton>
-                </Tooltip>
-              ) : (
+                      ariaLabel={primaryAction.tooltip}
+                      disabled={!showControls}
+                      emphasis={false}
+                      variant="tertiary"
+                      className="rounded-full"
+                      iconClassName="h-[22px] w-[22px]"
+                      size="medium"
+                      tabIndex={showControls ? undefined : -1}
+                    >
+                      {primaryAction.icon}
+                    </IconButton>
+                  </Tooltip>
+                ) : (
                   <span aria-hidden="true" className="block h-12 w-12" />
                 )}
               </div>
@@ -169,13 +180,11 @@ function VoiceStageBadge({
         <span
           className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/75 bg-[#f1f4f8] shadow-[0_4px_10px_rgba(15,23,42,0.05),inset_0_0_0_1px_var(--ai-divider)]"
         >
-          <Image
-            src="/figma/chat/ai-concierge-icon.svg"
-            alt=""
-            width={isAssistantSpeaking ? 20 : 16}
-            height={isAssistantSpeaking ? 20 : 16}
-            aria-hidden="true"
-            className={isAssistantSpeaking ? "h-5 w-5" : "h-4 w-4"}
+          <AiConciergeSignalIcon
+            className={[
+              isAssistantSpeaking ? "h-5 w-5" : "h-4 w-4",
+              "text-ai-blue-primary",
+            ].join(" ")}
           />
         </span>
       )}

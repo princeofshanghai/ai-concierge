@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { AiConciergeSignalIcon } from "@/components/ai-concierge-signal-icon";
 import { Avatar, AVATAR_FALLBACK_SOURCES } from "@/components/avatar";
-import { CloseIcon } from "@/components/close-icon";
 import { PhoneCallIcon } from "@/components/phone-call-icon";
 import { Tooltip } from "@/components/tooltip";
 
@@ -104,13 +104,7 @@ export function AiConciergeHeader({
       ].join(" ")}
     >
       <div className="flex min-w-0 flex-1 items-center">
-        <Image
-          src="/figma/chat/ai-concierge-icon.svg"
-          alt=""
-          width={24}
-          height={24}
-          aria-hidden="true"
-        />
+        <AiConciergeSignalIcon className="h-6 w-6 text-ai-blue-primary" />
         {liveAgentName ? (
           <div className="ml-4 flex min-w-0 items-center gap-3">
             <Avatar
@@ -142,7 +136,7 @@ export function AiConciergeHeader({
         {onToggleExpand ? (
           <HeaderIconButton
             ariaLabel={isExpanded ? "Collapse panel" : "Maximize panel"}
-            className="hidden sm:flex"
+            className="hidden text-ai-icon-active sm:flex"
             height={14}
             icon={
               isExpanded ? (
@@ -160,8 +154,8 @@ export function AiConciergeHeader({
         <HeaderIconButton
           ariaLabel="Close chat"
           height={12}
-          className="text-ai-text-primary"
-          icon={<CloseIcon className="h-4 w-4" />}
+          className="text-ai-icon-active"
+          icon={<HeaderCloseIcon className="h-4 w-4" />}
           onClick={onClose}
           width={12}
         />
@@ -173,13 +167,13 @@ export function AiConciergeHeader({
 function MinimizePanelIcon({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox="0 0 16 16"
       fill="none"
       aria-hidden="true"
-      className={className}
+      className={["shrink-0", className].filter(Boolean).join(" ")}
     >
       <path
-        d="M22 20.6L20.6 22L15 16.4V21H13V13H21V15H16.4L22 20.6ZM9 7.6L3.4 2L2 3.4L7.6 9H3V11H11V3H9V7.6Z"
+        d="M5 1H7V7H1V5H3.6L0 1.4L1.4 0L5 3.6V1ZM12.4 11H15V9H9V15H11V12.4L14.6 16L16 14.6L12.4 11Z"
         fill="currentColor"
       />
     </svg>
@@ -189,13 +183,29 @@ function MinimizePanelIcon({ className = "" }: { className?: string }) {
 function MaximizePanelIcon({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox="0 0 16 16"
       fill="none"
       aria-hidden="true"
-      className={className}
+      className={["shrink-0", className].filter(Boolean).join(" ")}
     >
       <path
-        d="M21 13V21H13V19H17.6L12 13.4L13.4 12L19 17.6V13H21ZM6.4 5H11V3H3V11H5V6.4L10.6 12L12 10.6L6.4 5Z"
+        d="M8 6.6L6.6 8L3 4.4V7H1V1H7V3H4.4L8 6.6ZM13 9V11.6L9.4 8L8 9.4L11.6 13H9V15H15V9H13Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function HeaderCloseIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+      className={["shrink-0", className].filter(Boolean).join(" ")}
+    >
+      <path
+        d="M12.6 2L8 6.6L3.4 2L2 3.4L6.6 8L2 12.6L3.4 14L8 9.4L12.6 14L14 12.6L9.4 8L14 3.4L12.6 2Z"
         fill="currentColor"
       />
     </svg>

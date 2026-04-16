@@ -54,6 +54,14 @@ const SAMPLE_RECOMMENDATION_ARTIFACT = {
   type: "recommendation" as const,
 };
 
+const SAMPLE_LOWER_TOUCH_RECOMMENDATION_ARTIFACT = {
+  ctaHref: "https://example.com",
+  ctaLabel: "Browse plans",
+  tagText: "Best for occasional hiring",
+  titleText: "Explore what fits",
+  type: "recommendation" as const,
+};
+
 const SAMPLE_PREMIUM_RECOMMENDATIONS_ARTIFACT = {
   primaryRecommendation: {
     bodyText:
@@ -190,7 +198,7 @@ export function AiConciergeComponentGallery() {
 
           <GallerySection id="full-surfaces" title="Full Surfaces">
             <ComponentRow
-              description="Top-level panel that assembles onboarding, conversation, voice, and handoff surfaces."
+              description="Top-level panel that assembles onboarding, conversation, voice, and handoff surfaces, including a gentle composer-content fade-out before the pill morphs, a slightly delayed softer dock-control reveal, voice replies that begin speaking once the first phrase is visible, reliable talk-over interruption, and a voice-to-text handoff that preserves unfinished speech in the composer."
               states={["Main prototype"]}
               title="AiConciergePanel"
             >
@@ -233,7 +241,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Entry flow for LinkedIn connection and contact-detail confirmation, including the lighter signed-in review state, 14px regular darker-neutral edit-mode helper copy, denser read-only summary rows, and the manual intro copy."
+              description="Entry flow for LinkedIn connection and contact-detail confirmation, including the lighter signed-in review state, the updated cleaner back-arrow style with a 16x16 contact-details arrow, 14px regular darker-neutral edit-mode helper copy, denser read-only summary rows, and the manual intro copy."
               states={[
                 "Signed out",
                 "Signed in",
@@ -391,7 +399,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Scheduling surface for format choice, slot selection, and contact details."
+              description="Scheduling surface for format choice, slot selection, contact details, and the updated back-arrow style."
               states={["Scheduling"]}
               title="AiConciergeNextStepPanel"
             >
@@ -421,7 +429,7 @@ export function AiConciergeComponentGallery() {
 
           <GallerySection id="conversation-system" title="Conversation System">
             <ComponentRow
-              description="Header bar for close and expand controls. The phone action is parked for MVP and hidden in the live prototype."
+              description="Header bar with a flatter 24x24 primary-blue AI mark and updated close/expand controls, preserving the current control sizing with a cleaner full-opacity active icon treatment. The phone action is parked for MVP and hidden in the live prototype."
               states={["Prototype default", "Phone action parked"]}
               title="AiConciergeHeader"
             >
@@ -501,7 +509,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Input composer for typing, sending, dictation, and the primary-blue voice entry action."
+              description="Input composer with a 16px text inset on the left, 12px shell padding on the top-right-bottom, the updated full-opacity filled microphone glyph, and the primary-blue voice entry action using the slightly larger equalizer-style icon."
               states={["Default", "Chat-only", "Responding"]}
               title="AiConciergeComposer"
             >
@@ -608,11 +616,24 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Compact live voice stage that keeps turn-taking visible near the composer."
-              states={["Assistant speaking", "User speaking"]}
+              description="Compact live voice stage that can enter as a shell first, pause briefly, then softly fade in controls once the dock settles, while revealing the stop action immediately if the assistant starts speaking and supporting interruption on every spoken turn."
+              states={["Entry shell", "Assistant speaking", "User speaking"]}
               title="AiConciergeVoiceDock"
             >
               <div className="flex flex-col gap-6">
+                <StatePreview label="Entry shell">
+                  <PreviewSurface className="pt-6" padded={false}>
+                    <AiConciergeVoiceDock
+                      onClose={() => {}}
+                      onDoneListening={() => {}}
+                      onRetry={() => {}}
+                      onStopSpeaking={() => {}}
+                      showControls={false}
+                      status="thinking"
+                      userName={`${PREFILLED_CONTACT_DETAILS.firstName} ${PREFILLED_CONTACT_DETAILS.lastName}`}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
                 <StatePreview label="Assistant speaking">
                   <PreviewSurface className="pt-6" padded={false}>
                     <AiConciergeVoiceDock
@@ -685,16 +706,17 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Primary assistant message treatment used in the conversation, with a slightly narrower reading width instead of full-bleed copy."
+              description="Primary assistant message treatment used in the conversation, with a slightly narrower reading width instead of full-bleed copy, a text-based Thinking shimmer with a brief center dwell, a calmer phrase-based streaming rhythm, faster voice-mode chunking, and a soft fade-in on each streamed phrase."
               states={[
                 "Default",
                 "Expanded panel",
-                "Streaming",
+                "Thinking",
+                "Cinematic stream",
                 "Voice speaking",
               ]}
               title="ChatAssistantMessage"
             >
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
                 <StatePreview label="Default">
                   <PreviewSurface>
                     <ChatAssistantMessage body="Based on what you shared, talking to a sales rep looks like the right next step." />
@@ -708,15 +730,21 @@ export function AiConciergeComponentGallery() {
                     />
                   </PreviewSurface>
                 </StatePreview>
-                <StatePreview label="Streaming fade">
+                <StatePreview label="Thinking">
+                  <PreviewSurface>
+                    <ChatAssistantMessage body="" status="thinking" />
+                  </PreviewSurface>
+                </StatePreview>
+                <StatePreview label="Cinematic stream">
                   <PreviewSurface>
                     <ChatAssistantMessage
                       body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health and point you in the right direction from there."
                       status="streaming"
                       streamedChunks={[
-                        "Hi Jamie, glad you're here. ",
+                        "Hi Jamie, ",
+                        "glad you're here. ",
                         "I can help you explore hiring solutions ",
-                        "for Northstar Health ",
+                        "for Northstar Health, ",
                         "and point you in the right direction from there.",
                       ]}
                     />
@@ -734,7 +762,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="User message styling inside the conversation thread."
+              description="User message styling inside the conversation thread, using the official soft blue background token."
               states={["Standard", "Live draft"]}
               title="ChatUserMessage"
             >
@@ -775,18 +803,28 @@ export function AiConciergeComponentGallery() {
 
           <GallerySection id="handoff" title="Handoff">
             <ComponentRow
-              description="Recommendation card that turns a suggestion into a clear next action."
-              states={["Default"]}
+              description="Recommendation card that turns a suggestion into a clear next action, with optional fit-tag support for lower-touch routes."
+              states={["Default", "With fit tag"]}
               title="AiConciergeRecommendationCard"
             >
-              <PreviewSurface label="Default">
-                <ChatCardPreview>
-                  <AiConciergeRecommendationCard
-                    artifact={SAMPLE_RECOMMENDATION_ARTIFACT}
-                    onPrimaryAction={() => {}}
-                  />
-                </ChatCardPreview>
-              </PreviewSurface>
+              <div className="grid gap-6 md:grid-cols-2">
+                <PreviewSurface label="Default">
+                  <ChatCardPreview>
+                    <AiConciergeRecommendationCard
+                      artifact={SAMPLE_RECOMMENDATION_ARTIFACT}
+                      onPrimaryAction={() => {}}
+                    />
+                  </ChatCardPreview>
+                </PreviewSurface>
+                <PreviewSurface label="With fit tag">
+                  <ChatCardPreview>
+                    <AiConciergeRecommendationCard
+                      artifact={SAMPLE_LOWER_TOUCH_RECOMMENDATION_ARTIFACT}
+                      onPrimaryAction={() => {}}
+                    />
+                  </ChatCardPreview>
+                </PreviewSurface>
+              </div>
             </ComponentRow>
 
             <ComponentRow
@@ -805,7 +843,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Plan-detail panel shown beside chat after a recommendation is selected."
+              description="Plan-detail panel shown beside chat after a recommendation is selected, with the updated back-arrow style."
               states={["Plan details"]}
               title="AiConciergePremiumPlanPanel"
             >
@@ -823,7 +861,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Thread-level status card for matching, ready, booked, and canceled states."
+              description="Thread-level status card for matching, ready, booked, and canceled states, using the official blue card border."
               states={["Matching", "Connecting", "Ready", "Booked", "Canceled"]}
               title="AiConciergeRepresentativeMatchCard"
             >

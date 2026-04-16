@@ -6,6 +6,9 @@ import type {
 
 export type AssistantStreamMode = "text" | "voice";
 
+const STRONG_STREAM_BREAK_PATTERN = /(?:[.!?…]["')\]]*|\n)\s*$/;
+const SOFT_STREAM_BREAK_PATTERN = /[,;:]["')\]]*\s*$/;
+
 type TimerRef = {
   current: number | null;
 };
@@ -144,43 +147,96 @@ export function getThinkingDelay(
   streamMode: AssistantStreamMode = "text",
 ) {
   const baseDelay =
-    body.length > 220 ? 900 : body.length > 120 ? 700 : 500;
+    body.length > 220 ? 940 : body.length > 120 ? 820 : 760;
 
-  return streamMode === "voice" ? baseDelay + 220 : baseDelay;
+  return streamMode === "voice" ? Math.max(560, baseDelay - 180) : baseDelay;
 }
 
-export function getStreamingInterval(
-  body: string,
+export function getStreamingChunkDelay(
+  chunk: string,
+  chunkIndex: number,
+  totalChunks: number,
   streamMode: AssistantStreamMode = "text",
 ) {
-  if (streamMode === "voice") {
-    return body.length > 180 ? 150 : 130;
-  }
+  const wordCount = chunk.match(/\S+/g)?.length ?? 1;
+  const baseDelay =
+    streamMode === "voice"
+      ? totalChunks > 6
+        ? 96
+        : 110
+      : totalChunks > 6
+        ? 118
+        : 136;
+  const introDelay = chunkIndex === 0 ? (streamMode === "voice" ? 24 : 36) : 0;
+  const wordDelay = Math.min(
+    wordCount * (streamMode === "voice" ? 8 : 13),
+    streamMode === "voice" ? 32 : 60,
+  );
+  // Let punctuation create the breathing room that makes the stream feel paced.
+  const punctuationDelay = STRONG_STREAM_BREAK_PATTERN.test(chunk)
+    ? streamMode === "voice"
+      ? 56
+      : 108
+    : SOFT_STREAM_BREAK_PATTERN.test(chunk)
+      ? streamMode === "voice"
+        ? 26
+        : 62
+      : 0;
 
-  return body.length > 180 ? 115 : 95;
+  return baseDelay + introDelay + wordDelay + punctuationDelay;
 }
 
 export function createStreamingChunks(
   body: string,
   streamMode: AssistantStreamMode = "text",
 ) {
-  const tokens = body.match(/\S+\s*/g) ?? [body];
-  const chunkSize =
-    streamMode === "voice"
-      ? tokens.length > 36
-        ? 4
-        : tokens.length > 20
-          ? 3
-          : 2
-      : tokens.length > 30
-        ? 4
-        : tokens.length > 16
-          ? 3
-          : 2;
-  const chunks: string[] = [];
+  const tokens = body.match(/\S+\s*/g) ?? [];
 
-  for (let index = 0; index < tokens.length; index += chunkSize) {
-    chunks.push(tokens.slice(index, index + chunkSize).join(""));
+  if (tokens.length === 0) {
+    return body ? [body] : [];
+  }
+
+  const baseChunkSize =
+    streamMode === "voice"
+      ? tokens.length > 28
+        ? 5
+        : tokens.length > 16
+          ? 4
+          : 3
+      : tokens.length > 36
+        ? 5
+        : tokens.length > 20
+          ? 4
+          : 3;
+  const chunks: string[] = [];
+  let currentChunk = "";
+  let currentWordCount = 0;
+
+  // Break on phrase-like boundaries so replies feel composed instead of metronomic.
+  for (const token of tokens) {
+    currentChunk += token;
+    currentWordCount += 1;
+
+    const chunkSize =
+      chunks.length === 0 ? Math.max(2, baseChunkSize - 1) : baseChunkSize;
+    const endsWithStrongBreak = STRONG_STREAM_BREAK_PATTERN.test(currentChunk);
+    const endsWithSoftBreak = SOFT_STREAM_BREAK_PATTERN.test(currentChunk);
+    const shouldBreakOnStrong = endsWithStrongBreak && currentWordCount >= 2;
+    const shouldBreakOnSoft =
+      endsWithSoftBreak && currentWordCount >= Math.max(2, chunkSize - 1);
+    const reachedChunkTarget = currentWordCount >= chunkSize;
+
+    if (!shouldBreakOnStrong && !shouldBreakOnSoft && !reachedChunkTarget) {
+      continue;
+    }
+
+    chunks.push(currentChunk);
+    currentChunk = "";
+    currentWordCount = 0;
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
   }
 
   return chunks;
@@ -196,7 +252,7 @@ export function clearResponseTimers(
   }
 
   if (streamingTimerRef.current !== null) {
-    window.clearInterval(streamingTimerRef.current);
+    window.clearTimeout(streamingTimerRef.current);
     streamingTimerRef.current = null;
   }
 }
@@ -225,41 +281,53 @@ export function streamAssistantTurnPlayback({
       ),
     );
 
-    streamingTimerRef.current = window.setInterval(() => {
-      chunkIndex += 1;
-      const nextChunks = streamingChunks.slice(0, chunkIndex);
-      const nextBody = nextChunks.join("");
-      const isComplete = chunkIndex >= streamingChunks.length;
-
-      setMessages((currentMessages) =>
-        currentMessages.map((message) =>
-          message.id === assistantMessageId
-            ? {
-                ...message,
-                body: nextBody,
-                artifact: isComplete ? assistantTurn.artifact : undefined,
-                openingSupport: isComplete
-                  ? assistantTurn.openingSupport
-                  : undefined,
-                status: isComplete ? "complete" : "streaming",
-                streamedChunks: nextChunks,
-                suggestedReplies: isComplete
-                  ? assistantTurn.suggestedReplies
-                  : undefined,
-                suggestedReplyDisplay: isComplete
-                  ? assistantTurn.suggestedReplyDisplay
-                  : undefined,
-              }
-            : message,
-        ),
+    const revealNextChunk = () => {
+      const chunkDelay = getStreamingChunkDelay(
+        streamingChunks[chunkIndex] ?? "",
+        chunkIndex,
+        streamingChunks.length,
+        streamMode,
       );
 
-      if (!isComplete) {
-        return;
-      }
+      streamingTimerRef.current = window.setTimeout(() => {
+        chunkIndex += 1;
+        const nextChunks = streamingChunks.slice(0, chunkIndex);
+        const nextBody = nextChunks.join("");
+        const isComplete = chunkIndex >= streamingChunks.length;
 
-      clearResponseTimers(thinkingTimerRef, streamingTimerRef);
-      onComplete();
-    }, getStreamingInterval(assistantTurn.body, streamMode));
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  body: nextBody,
+                  artifact: isComplete ? assistantTurn.artifact : undefined,
+                  openingSupport: isComplete
+                    ? assistantTurn.openingSupport
+                    : undefined,
+                  status: isComplete ? "complete" : "streaming",
+                  streamedChunks: nextChunks,
+                  suggestedReplies: isComplete
+                    ? assistantTurn.suggestedReplies
+                    : undefined,
+                  suggestedReplyDisplay: isComplete
+                    ? assistantTurn.suggestedReplyDisplay
+                    : undefined,
+                }
+              : message,
+          ),
+        );
+
+        if (!isComplete) {
+          revealNextChunk();
+          return;
+        }
+
+        clearResponseTimers(thinkingTimerRef, streamingTimerRef);
+        onComplete();
+      }, chunkDelay);
+    };
+
+    revealNextChunk();
   }, thinkingDelay);
 }
