@@ -198,7 +198,7 @@ export function AiConciergeComponentGallery() {
 
           <GallerySection id="full-surfaces" title="Full Surfaces">
             <ComponentRow
-              description="Top-level panel that assembles onboarding, conversation, voice, and handoff surfaces, including a gentle composer-content fade-out before the pill morphs, a slightly delayed softer dock-control reveal, voice replies that begin speaking once the first phrase is visible, reliable talk-over interruption, and a voice-to-text handoff that preserves unfinished speech in the composer."
+              description="Top-level panel that assembles onboarding, conversation, voice, and handoff surfaces, including a gentle composer-content fade-out before the pill morphs, a slightly delayed softer dock-control reveal, voice replies that begin speaking once the first phrase is visible, reliable talk-over interruption, a voice-to-text handoff that preserves unfinished speech in the composer, and close/reopen behavior that always returns to the welcome screen instead of resuming the prior chat."
               states={["Main prototype"]}
               title="AiConciergePanel"
             >

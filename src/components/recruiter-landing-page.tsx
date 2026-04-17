@@ -67,10 +67,14 @@ export function RecruiterLandingPage({
   );
 
   const openChat = () => {
+    if (!isChatOpen) {
+      setScenarioResetVersion((currentValue) => currentValue + 1);
+    }
     setIsChatMounted(true);
     setIsChatOpen(true);
   };
   const closeChat = () => {
+    clearStoredAiConciergeEntrySession();
     setIsChatExpanded(false);
     setIsChatOpen(false);
   };
@@ -212,8 +216,8 @@ export function RecruiterLandingPage({
         {isChatMounted ? (
           <AiConciergePanel
             authReturnNonce={authReturnNonce}
-            // Preserve in-flow panel state (for example, LinkedIn prefill) unless
-            // an explicit scenario reset was requested from the prototype controls.
+            // Remount the panel for each open so close/reopen returns to the
+            // welcome step, while still letting prototype controls force a reset.
             key={scenarioResetVersion}
             disablePhoneCall
             isOpen={isChatOpen}

@@ -41,7 +41,7 @@ export function getPrototypeScenarioAuthGroupLabel() {
 }
 
 export function getPrototypeScenarioAuthHelperText() {
-  return "Changes whether the welcome shows Sign in with LinkedIn or Continue as Jamie.";
+  return "Changes whether the welcome shows Sign in to LinkedIn or Continue as Jamie.";
 }
 
 export function getPrototypeScenarioEntryLabel(

@@ -366,7 +366,7 @@ function ManualLinkedInPrompt({
         onClick={onContinueWithLinkedIn}
         leadingVisual={<LinkedInLogoIcon />}
       >
-        Sign in with LinkedIn
+        Sign in to LinkedIn
       </Button>
     </div>
   );
@@ -540,7 +540,7 @@ export function AiConciergeOnboarding({
                   onClick={onContinueWithLinkedIn}
                   leadingVisual={<LinkedInLogoIcon />}
                 >
-                  Sign in with LinkedIn
+                  Sign in to LinkedIn
                 </Button>
                 <Button
                   variant="tertiary"
