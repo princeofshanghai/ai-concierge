@@ -30,6 +30,17 @@ This user may be:
 - a director of talent acquisition
 - a talent leader who is exploring tools on behalf of a broader hiring organization
 
+## Primary JTBD
+The job-to-be-done for this user, stated from their perspective:
+
+> As a talent leader under pressure to hire faster, I want to quickly understand which LinkedIn hiring solution fits my team's situation, so I can take the right next step with confidence, whether that means exploring on my own or talking to a rep who already knows my context.
+
+### Why this JTBD is scoped this way
+- It is problem-led, not product-led. Jamie is not starting with "I want LinkedIn Recruiter." She is starting with "my team is behind on hiring."
+- It keeps multiple outcomes valid. Self-serve exploration and talking to a representative are both legitimate next steps, which maps to the full routing model.
+- It reframes the sales conversation as valuable, not as friction. The concierge is not helping users avoid reps. It is helping reps walk into warmer, more qualified conversations.
+- It stays focused on the target user. Wrong-intent visitors are handled by the routing model, not by stretching the JTBD.
+
 ## Primary demo persona
 
 ### Snapshot
@@ -37,15 +48,17 @@ This user may be:
 - Role: Director of Talent Acquisition
 - Company: Northstar Health
 - Company type: Healthcare software / digital health
-- Company size: About 1,200 employees
+- Company size: About 1,500 employees
+- Stage: Recently closed a new funding round, actively scaling
 - Team: Leads a team of 8 recruiters
 - Region: United States
 
 ### Hiring context
-- Northstar Health is planning to hire roughly 25 to 35 roles over the next 2 quarters.
+- Northstar Health is planning to hire about 40 roles over the next 2 quarters, driven by the new funding round.
+- The hiring plan is already slipping. The team is behind, and the pressure is real.
 - The team is hiring across engineering, product, sales, and customer success.
 - Jamie's team already uses LinkedIn Jobs, referrals, and an ATS.
-- The biggest pain point is proactive sourcing for harder-to-fill roles, especially specialized roles.
+- The biggest pain point is proactive sourcing for harder-to-fill roles, especially specialized ones like ML engineering, clinical informatics, and enterprise sales.
 
 ### Buying context
 - Jamie is senior enough to evaluate solutions and recommend a direction.
@@ -83,9 +96,10 @@ Jamie is trying to understand:
 Jamie is:
 - high intent, but not fully decided
 - open to learning
-- somewhat time-constrained
+- under real time pressure, with a hiring plan that is already slipping
 - willing to answer a few questions if they clearly improve the recommendation
 - likely skeptical of anything that feels like a disguised lead form
+- not trying to avoid sales, but not ready to sit through a discovery call before knowing if the product fits
 
 ## Example opening questions Jamie might ask
 - What is LinkedIn Recruiter?
@@ -119,9 +133,11 @@ When walking through the prototype, we should frame the story like this:
 ## Working decisions
 - Use Jamie Chen as the default walkthrough persona.
 - Keep Northstar Health as the default company.
-- Frame Northstar Health as a healthcare software or digital health company.
+- Frame Northstar Health as a healthcare software or digital health company at about 1,500 employees.
+- Anchor the demo story in a recent funding round, a ~40-role hiring plan, and a team that is already behind.
 - Treat Jamie as a buyer-influencer rather than the final decision maker.
 - Use this persona as the reference point for the first conversation blueprint and demo flow.
+- Use the JTBD statement above as the single-sentence framing for executive walkthroughs.
 
 ## Open questions
 - Do we want a second alternate persona later for a lower-intent or wrong-intent path?
