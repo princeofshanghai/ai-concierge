@@ -13,10 +13,8 @@ This plan is written for a design-led workflow, where the goal is to build in ch
 
 ## Related documents
 - [project-overview.md](project-overview.md)
-- [mvp-spec.md](mvp-spec.md)
-- [conversation-strategy.md](conversation-strategy.md)
-- [persona.md](persona.md)
 - [conversation-blueprint.md](conversation-blueprint.md)
+- [persona.md](persona.md)
 
 ## Current status
 We are past the first implementation pass of **Phase 2**.

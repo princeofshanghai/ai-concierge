@@ -140,7 +140,7 @@ const SAMPLE_VOICE_OPENING_MESSAGES: AiConciergeMessage[] = [
   {
     id: "assistant-message-1",
     role: "assistant",
-    body: "Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health, answer your questions, and point you in the right direction from there. When you're ready, you can start talking or use what's on screen to get started.",
+    body: "Hi Jamie, glad you're here. I'm your AI hiring expert from LinkedIn, here to help with Northstar Health's hiring needs. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing. When you're ready, you can start talking or use what's on screen to get started.",
     openingSupport: {
       type: "topic-picker",
       helperText: "",
@@ -725,7 +725,7 @@ export function AiConciergeComponentGallery() {
                 <StatePreview label="Expanded panel">
                   <PreviewSurface>
                     <ChatAssistantMessage
-                      body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health, answer your questions, and point you in the right direction from there without making the thread feel like a wall of copy."
+                      body="Hi Jamie, I'm your AI hiring expert from LinkedIn, here to help with Northstar Health's hiring needs. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing."
                       isPanelExpanded
                     />
                   </PreviewSurface>
@@ -738,14 +738,15 @@ export function AiConciergeComponentGallery() {
                 <StatePreview label="Cinematic stream">
                   <PreviewSurface>
                     <ChatAssistantMessage
-                      body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health and point you in the right direction from there."
+                      body="Hi Jamie, I'm your AI hiring expert from LinkedIn, here to help with Northstar Health's hiring needs. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing."
                       status="streaming"
                       streamedChunks={[
                         "Hi Jamie, ",
-                        "glad you're here. ",
-                        "I can help you explore hiring solutions ",
-                        "for Northstar Health, ",
-                        "and point you in the right direction from there.",
+                        "I'm your AI hiring expert from LinkedIn, ",
+                        "here to help with Northstar Health's hiring needs. ",
+                        "Feel free to ask me anything, ",
+                        "but my main goal is to understand your hiring needs ",
+                        "and help tackle whatever challenges you're facing.",
                       ]}
                     />
                   </PreviewSurface>
@@ -753,7 +754,7 @@ export function AiConciergeComponentGallery() {
                 <StatePreview label="Voice speaking">
                   <PreviewSurface>
                     <ChatAssistantMessage
-                      body="Hi Jamie, glad you're here. I can help you explore hiring solutions for Northstar Health, answer your questions, and point you in the right direction from there. When you're ready, you can start talking or use what's on screen to get started."
+                      body="Hi Jamie, glad you're here. I'm your AI hiring expert from LinkedIn, here to help with Northstar Health's hiring needs. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing. When you're ready, you can start talking or use what's on screen to get started."
                       isActiveVoiceTurn
                     />
                   </PreviewSurface>
@@ -1073,17 +1074,22 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Prompt chip used to help users start or continue the conversation."
-              states={["Default"]}
+              states={["Neutral outlined / small"]}
               title="SuggestedActionPrompt"
             >
               <PreviewSurface label="Default">
-                <div className="flex flex-wrap gap-2">
-                  <SuggestedActionPrompt>
-                    We&apos;re not sure which hiring solution fits
-                  </SuggestedActionPrompt>
-                  <SuggestedActionPrompt>
-                    Talk to a sales rep
-                  </SuggestedActionPrompt>
+                <div className="max-w-[360px]">
+                  <div className="flex flex-wrap gap-2">
+                    <SuggestedActionPrompt>
+                      We&apos;re not sure which hiring solution fits
+                    </SuggestedActionPrompt>
+                    <SuggestedActionPrompt>
+                      Talk to a sales rep
+                    </SuggestedActionPrompt>
+                    <SuggestedActionPrompt>
+                      Show me pricing
+                    </SuggestedActionPrompt>
+                  </div>
                 </div>
               </PreviewSurface>
             </ComponentRow>

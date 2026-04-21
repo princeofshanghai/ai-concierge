@@ -17,9 +17,9 @@ export type AiConciergeOpeningSupport =
     };
 
 export const OPENING_HELPER_EXAMPLES = [
-  "What would pricing depend on for a team like ours?",
-  "How do teams usually decide which option fits best?",
   "We need help with harder-to-fill roles. Where should we start?",
+  "How do teams usually figure out which option fits?",
+  "We're hiring across a few teams and not sure what we need.",
 ] as const;
 
 export const OPENING_PROMPT_TOPICS: AiConciergeOpeningPromptTopic[] = [
@@ -28,8 +28,13 @@ export const OPENING_PROMPT_TOPICS: AiConciergeOpeningPromptTopic[] = [
     label: "Finding the right fit",
     prompts: [
       "We're not sure which hiring solution fits",
-      "Which hiring solution seems right for us?",
-      "When is Recruiter worth it?",
+    ],
+  },
+  {
+    id: "harder-to-fill-roles",
+    label: "Harder-to-fill roles",
+    prompts: [
+      "We need help with harder-to-fill roles",
     ],
   },
   {
@@ -37,26 +42,13 @@ export const OPENING_PROMPT_TOPICS: AiConciergeOpeningPromptTopic[] = [
     label: "Pricing",
     prompts: [
       "We have questions about pricing",
-      "What would pricing depend on for a team like ours?",
-      "How is pricing structured?",
     ],
   },
   {
-    id: "team-needs",
-    label: "Team needs",
+    id: "just-getting-started",
+    label: "Just getting started",
     prompts: [
-      "We hire consistently across teams",
-      "We need help with harder-to-fill roles",
-      "We're still figuring out what we need",
-    ],
-  },
-  {
-    id: "compare-options",
-    label: "Compare options",
-    prompts: [
-      "How is it different from LinkedIn Jobs?",
-      "What is LinkedIn Recruiter?",
-      "Which option seems closest for us?",
+      "I'm just getting started",
     ],
   },
 ];

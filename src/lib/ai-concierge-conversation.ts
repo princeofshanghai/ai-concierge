@@ -93,6 +93,10 @@ const OPENING_SUGGESTIONS: AiConciergeSuggestedReply[] = [
     id: "pricing-guidance",
     label: "We have questions about pricing",
   },
+  {
+    id: "just-getting-started",
+    label: "I'm just getting started",
+  },
 ];
 
 const HIRING_MOTION_SUGGESTIONS: AiConciergeSuggestedReply[] = [
@@ -147,24 +151,15 @@ const URGENCY_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "urgency-still-exploring", label: "Still exploring" },
 ];
 
-const RECRUITER_NEXT_STEP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+const NEXT_STEP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "talk-hiring-representative", label: "Talk to a rep" },
   { id: "keep-exploring", label: "Keep exploring" },
-  { id: "pricing-details", label: "How is pricing structured?" },
-  {
-    id: "talk-recruiter-representative",
-    label: "Talk to a sales rep",
-  },
-];
-
-const GENERAL_NEXT_STEP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  { id: "keep-exploring", label: "Keep exploring" },
-  { id: "pricing-details", label: "How is pricing structured?" },
-  { id: "talk-hiring-representative", label: "Talk to a sales rep" },
+  { id: "pricing-details", label: "Tell me about pricing" },
 ];
 
 const RECRUITER_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  { id: "compare-jobs", label: "How is it different from LinkedIn Jobs?" },
-  { id: "worth-it", label: "When is Recruiter worth it?" },
+  { id: "compare-hiring-pro", label: "How is Recruiter different from Hiring Pro?" },
+  { id: "biggest-shift", label: "What's changed in our hiring landscape?" },
   {
     id: "talk-recruiter-representative",
     label: "Talk to a sales rep",
@@ -172,18 +167,24 @@ const RECRUITER_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
 ];
 
 const GENERAL_EXPLORE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  { id: "compare-options", label: "Which option seems closest?" },
-  { id: "pricing-details", label: "How is pricing structured?" },
+  { id: "compare-options", label: "Which option seems closest for us?" },
+  { id: "fix-one-thing", label: "What would make the biggest difference?" },
   { id: "talk-hiring-representative", label: "Talk to a sales rep" },
 ];
 
 const HANDOFF_BRIDGE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  { id: "book-meeting", label: "Schedule a call" },
+  { id: "book-meeting", label: "Book a meeting" },
+  { id: "keep-exploring", label: "Keep exploring" },
 ];
 
 const LIVE_HANDOFF_BRIDGE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "chat-live-now", label: "Chat live now" },
-  { id: "book-meeting", label: "Schedule a call" },
+  { id: "book-meeting", label: "Schedule for later" },
+];
+
+const LIGHTER_TOUCH_NEXT_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "talk-hiring-representative", label: "Talk to a rep anyway" },
+  { id: "keep-exploring", label: "Keep exploring" },
 ];
 
 const LOWER_TOUCH_PLANS_CTA_HREF = "https://example.com";
@@ -207,14 +208,26 @@ function getCompanyReference(company: string) {
   return trimmedCompany.length > 0 ? trimmedCompany : "your team";
 }
 
-function createOpeningCoreBody(contactDetails: ConciergeContactDetails) {
-  const trimmedCompany = contactDetails.company.trim();
+function getCompanyHiringNeedsReference(company: string) {
+  const trimmedCompany = company.trim();
 
-  if (trimmedCompany.length > 0) {
-    return `I can help you explore hiring solutions for ${trimmedCompany}, answer your questions, and point you in the right direction from there.`;
+  if (trimmedCompany.length === 0) {
+    return "your hiring needs";
   }
 
-  return "I can help you explore hiring solutions, answer your questions, and point you in the right direction from there.";
+  const possessiveSuffix = trimmedCompany.toLowerCase().endsWith("s")
+    ? "'"
+    : "'s";
+
+  return `${trimmedCompany}${possessiveSuffix} hiring needs`;
+}
+
+function createOpeningCoreBody(contactDetails: ConciergeContactDetails) {
+  const companyNeedsReference = getCompanyHiringNeedsReference(
+    contactDetails.company,
+  );
+
+  return `I'm your AI hiring expert from LinkedIn, here to help with ${companyNeedsReference}. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing.`;
 }
 
 function createOpeningBody(contactDetails: ConciergeContactDetails) {
@@ -301,7 +314,7 @@ export function createReturnToChatTurn({
 
   if (state.likelySolution === "lighter_touch") {
     return {
-      body: `No problem. I can keep helping you compare which hiring option could fit ${companyReference} best, and we can revisit the sales rep option anytime.`,
+      body: `No problem! I can keep helping you compare options for ${companyReference}. We can always revisit the rep option later.`,
       nextState,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
@@ -309,7 +322,7 @@ export function createReturnToChatTurn({
   }
 
   return {
-    body: `No problem. I can keep helping you understand where Recruiter could fit for ${companyReference}, and we can revisit the sales rep option anytime.`,
+    body: `No problem! I can keep helping you figure out where Recruiter fits for ${companyReference}. We can always revisit the rep option later.`,
     nextState,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -370,33 +383,33 @@ function createOpeningResponse(input: string): AiConciergeAssistantTurn {
 
   if (isPricingIntent(normalized)) {
     return {
-      body: "I can help with that. Pricing usually depends on how a team plans to use the product, including hiring volume, role complexity, and the level of support needed. At a high level, it tends to make the most sense for teams with ongoing or harder-to-fill hiring needs rather than one-off hiring.\n\nTo make this more useful, is this for broader ongoing hiring or for a smaller number of roles?",
+      body: "Great question. Pricing really depends on your specific situation, so a specialist would be the best person to walk you through what fits. To make sure I connect you with the right one, can you tell me a bit about your hiring?\n\nIs it more ongoing or more occasional?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_hiring_motion",
         startingSituation: "pricing_guidance",
       },
       suggestedReplies: PRICING_SCOPE_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
+      suggestedReplyDisplay: "inline",
     };
   }
 
   if (isSolutionFitIntent(normalized)) {
     return {
-      body: "I can help with that. The right fit usually depends on whether your team is hiring consistently across teams, needs more proactive sourcing for harder-to-fill roles, or is looking for a lighter-touch option.\n\nWhich is closer to your situation right now?",
+      body: "Totally, let's figure that out. It usually comes down to how your team hires. Which is closer to your situation right now?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_hiring_motion",
         startingSituation: "solution_fit",
       },
       suggestedReplies: HIRING_MOTION_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
+      suggestedReplyDisplay: "inline",
     };
   }
 
   if (isConsistentHiringIntent(normalized)) {
     return {
-      body: "That helps. Teams hiring consistently across multiple functions usually need a more structured, proactive approach than teams hiring occasionally.\n\nWhich teams or roles are most affected right now?",
+      body: "Got it. Teams hiring consistently usually need a more structured, proactive approach. Which teams or roles are feeling the most pressure right now?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_fit_context",
@@ -410,7 +423,7 @@ function createOpeningResponse(input: string): AiConciergeAssistantTurn {
 
   if (isHardToFillIntent(normalized)) {
     return {
-      body: "That helps. When teams are struggling with harder-to-fill roles, they often need a more proactive sourcing approach instead of relying only on inbound applicants.\n\nWhat kinds of roles are most affected right now?",
+      body: "That's a common challenge. When roles are hard to fill, teams usually need a more proactive sourcing approach instead of relying on inbound applicants. What kinds of roles are giving you the most trouble?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_fit_context",
@@ -422,41 +435,54 @@ function createOpeningResponse(input: string): AiConciergeAssistantTurn {
     };
   }
 
+  if (isJustGettingStartedIntent(normalized)) {
+    return {
+      body: "No problem! A good place to start is understanding the kind of hiring your team is dealing with. That usually points us in the right direction. Which of these sounds closest?",
+      nextState: {
+        ...DEFAULT_STATE,
+        stage: "awaiting_hiring_motion",
+        startingSituation: "solution_fit",
+      },
+      suggestedReplies: HIRING_MOTION_SUGGESTIONS,
+      suggestedReplyDisplay: "inline",
+    };
+  }
+
   if (isDifferenceQuestion(normalized)) {
     return {
-      body: "LinkedIn Jobs helps bring in inbound interest. Recruiter is better when a team needs to proactively search for talent, narrow to the right candidates, and reach out directly. To point you in the right direction, is your team hiring consistently across teams, working on harder-to-fill roles, or mostly exploring options right now?",
+      body: "Good question. Hiring Pro is great for bringing in inbound interest. Recruiter is better when your team needs to proactively search and reach out to candidates directly. To point you in the right direction, how does your team typically hire?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_hiring_motion",
         startingSituation: "product_question",
       },
       suggestedReplies: HIRING_MOTION_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
+      suggestedReplyDisplay: "inline",
     };
   }
 
   if (isRecruiterQuestion(normalized)) {
     return {
-      body: "LinkedIn Recruiter is most useful when a team needs to proactively find and reach candidates instead of waiting only for inbound applications. It helps recruiters search for talent, narrow to the right people, and reach out directly.\n\nTo point you in the right direction, is your team hiring consistently across teams, working on harder-to-fill roles, or mostly exploring options right now?",
+      body: "Recruiter is most useful when your team needs to proactively find and reach candidates instead of waiting for inbound applications. It helps you search, narrow down, and reach out directly. To point you the right way, how does your team typically hire?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_hiring_motion",
         startingSituation: "product_question",
       },
       suggestedReplies: HIRING_MOTION_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
+      suggestedReplyDisplay: "inline",
     };
   }
 
   return {
-    body: "I can help with that. The right fit usually depends on the kind of hiring motion your team is dealing with and how proactive the process needs to be.\n\nWhich is closer to your situation right now?",
+    body: "I can help with that! It usually comes down to how your team hires and how proactive the process needs to be. Which is closer to your situation?",
     nextState: {
       ...DEFAULT_STATE,
       stage: "awaiting_hiring_motion",
       startingSituation: "unknown",
     },
     suggestedReplies: HIRING_MOTION_SUGGESTIONS,
-    suggestedReplyDisplay: "composer",
+    suggestedReplyDisplay: "inline",
   };
 }
 
@@ -473,7 +499,7 @@ function createHiringMotionResponse(
   switch (hiringMotion) {
     case "hard_to_fill":
       return {
-        body: "That helps. When teams are struggling with harder-to-fill roles, they often need a more proactive sourcing approach instead of relying only on inbound applicants.\n\nWhat kinds of roles are most affected right now?",
+        body: "That makes sense. When roles are hard to fill, a more proactive sourcing approach usually helps. What kinds of roles are giving you the most trouble?",
         nextState: {
           ...state,
           stage: "awaiting_fit_context",
@@ -485,7 +511,7 @@ function createHiringMotionResponse(
     case "consistent_hiring":
     case "broader_ongoing":
       return {
-        body: "That helps. Teams hiring consistently across multiple functions usually need a more structured, proactive approach than teams hiring occasionally.\n\nWhich teams or roles are most affected right now?",
+        body: "Got it. Teams hiring consistently usually need a more structured approach than teams hiring occasionally. Which teams or roles are feeling the most pressure?",
         nextState: {
           ...state,
           stage: "awaiting_fit_context",
@@ -497,7 +523,7 @@ function createHiringMotionResponse(
     case "occasional_hiring":
     case "smaller_scope":
       return {
-        body: "That helps. When hiring is more occasional or limited to a smaller number of roles, a lighter-touch option can make more sense than a full proactive sourcing workflow.\n\nWhat kinds of roles usually come up when the need appears?",
+        body: "Makes sense. When hiring is more occasional, a lighter-touch option can work better than a full sourcing workflow. What kinds of roles usually come up?",
         nextState: {
           ...state,
           stage: "awaiting_fit_context",
@@ -508,7 +534,7 @@ function createHiringMotionResponse(
       };
     case "still_figuring_it_out":
       return {
-        body: "That's okay. A good way to narrow it down is to look at where the hiring pressure is strongest.\n\nWhich teams or roles are most affected right now?",
+        body: "Totally fine. A good way to narrow it down is to look at where the hiring pressure is strongest. Which teams or roles are most affected?",
         nextState: {
           ...state,
           stage: "awaiting_fit_context",
@@ -519,7 +545,7 @@ function createHiringMotionResponse(
       };
     case "unknown":
       return {
-        body: "A good way to narrow this down is to look at where the hiring pressure is strongest.\n\nWhich teams or roles are most affected right now?",
+        body: "A good place to start is where the hiring pressure is strongest. Which teams or roles are most affected?",
         nextState: {
           ...state,
           stage: "awaiting_fit_context",
@@ -542,8 +568,10 @@ function createFitContextResponse(
     hiringUseCase: roleContext.hiringUseCase,
   });
 
+  const reflection = `Got it, ${roleContext.summary}.`;
+
   return {
-    body: "That gives me a better sense of the hiring pattern.\n\nHow soon do you need to make progress on this?",
+    body: `${reflection} How soon do you need to make progress on this?`,
     nextState: {
       ...state,
       stage: "awaiting_urgency",
@@ -572,11 +600,10 @@ function createUrgencyResponse(
 
   if (state.likelySolution === "recruiter") {
     return {
-      body: `${recommendation}\n\nBased on what you shared, talking to a sales rep looks like the right next step.`,
+      body: `${recommendation} A quick conversation with someone on our team could help you figure out the right setup.`,
       nextState: {
         ...state,
         stage: "awaiting_handoff_choice",
-        nextStepMode: null,
         readiness: "representative",
         urgency,
       },
@@ -586,14 +613,14 @@ function createUrgencyResponse(
   if (state.likelySolution === "lighter_touch") {
     return {
       artifact: createLighterTouchRecommendationArtifact(),
-      body: "From what you've shared, I'd start here. Since your hiring sounds more occasional than ongoing, looking at the plan options is probably the best next step.",
+      body: `${recommendation} Here's what I'd recommend.`,
       nextState: {
         ...state,
-        stage: "awaiting_next_step",
+        stage: "awaiting_handoff_choice",
         urgency,
       },
-      suggestedReplies: createNextStepSuggestions(state.likelySolution),
-      suggestedReplyDisplay: "composer",
+      suggestedReplies: LIGHTER_TOUCH_NEXT_SUGGESTIONS,
+      suggestedReplyDisplay: "inline",
     };
   }
 
@@ -605,7 +632,7 @@ function createUrgencyResponse(
       urgency,
     },
     suggestedReplies: createNextStepSuggestions(state.likelySolution),
-    suggestedReplyDisplay: "composer",
+    suggestedReplyDisplay: "inline",
   };
 }
 
@@ -622,44 +649,25 @@ function createNextStepResponse(
   if (
     normalized.includes("talk to a") ||
     normalized.includes("specialist") ||
-    normalized.includes("representative")
+    normalized.includes("representative") ||
+    isGetConnectedIntent(normalized)
   ) {
-    const shouldUseRecommendationCard = state.likelySolution === "recruiter";
-
     return {
-      body:
-        state.likelySolution === "lighter_touch"
-          ? `That makes sense. If you'd like, I can connect you with a sales rep here in chat now, or help you book time.`
-          : state.likelySolution === "recruiter"
-          ? "Based on what you shared, talking to a sales rep looks like the right next step."
-          : `That makes sense. A short conversation with a sales rep could help narrow the right option for ${companyReference}.\n\nI can help you book a meeting.`,
+      body: `Great idea. Let me connect you with someone who can help ${companyReference}.`,
       nextState: {
         ...state,
         stage: "awaiting_handoff_choice",
         readiness: "representative",
         nextStepMode: null,
       },
-      suggestedReplies:
-        state.likelySolution === "lighter_touch"
-          ? LIVE_HANDOFF_BRIDGE_SUGGESTIONS
-          : shouldUseRecommendationCard
-            ? undefined
-            : HANDOFF_BRIDGE_SUGGESTIONS,
-      suggestedReplyDisplay:
-        state.likelySolution === "lighter_touch"
-          ? "inline"
-          : shouldUseRecommendationCard
-            ? undefined
-            : "inline",
+      suggestedReplies: HANDOFF_BRIDGE_SUGGESTIONS,
+      suggestedReplyDisplay: "inline",
     };
   }
 
   if (normalized.includes("pricing")) {
     return {
-      body:
-        state.likelySolution === "recruiter"
-          ? "Pricing usually depends on hiring volume, role complexity, and the level of support your team needs. For teams with broader ongoing or harder-to-fill hiring needs, that is usually where Recruiter becomes easier to justify. If helpful, I can keep helping you gauge fit or connect you with a sales rep for specifics."
-          : "Pricing usually depends on hiring volume, role complexity, and how much ongoing support the team needs. If your hiring is more occasional, it may make sense to compare a lighter-touch option before jumping into a full proactive sourcing workflow.",
+      body: `Pricing really depends on your specific setup, so a specialist would be the best person to walk through the details. I can connect you with one, or we can keep exploring what fits ${companyReference} first.`,
       nextState: {
         ...state,
         stage: "awaiting_next_step",
@@ -675,8 +683,8 @@ function createNextStepResponse(
     return {
       body:
         state.likelySolution === "recruiter"
-          ? `Got it. For teams hiring for ${roleClause}, Recruiter is often strongest when recruiters need to search, narrow, and reach out to targeted candidates instead of relying only on inbound applicants.`
-          : `Got it. For teams hiring for ${roleClause}, it may be worth comparing a lighter-touch option with a more proactive sourcing workflow so you can see how much structure and outreach your team actually needs.`,
+          ? `Sure thing. For teams hiring for ${roleClause}, Recruiter really shines when you need to proactively search and reach out to candidates instead of waiting for applicants.`
+          : `Sure thing. For teams hiring for ${roleClause}, it's worth comparing a lighter-touch option with a more proactive approach to see what your team actually needs.`,
       nextState: {
         ...state,
         stage: "explore",
@@ -688,18 +696,26 @@ function createNextStepResponse(
     };
   }
 
-  if (normalized.includes("worth it")) {
+  if (
+    normalized.includes("biggest") ||
+    normalized.includes("changed") ||
+    normalized.includes("shift") ||
+    normalized.includes("difference")
+  ) {
     return {
-      body: `Recruiter tends to be worth it when a team has ongoing hiring needs, harder-to-fill roles, or a need to proactively reach candidates instead of relying only on inbound applicants. For ${roleClause}, that's usually where the value becomes most visible.`,
+      body:
+        state.likelySolution === "recruiter"
+          ? `For teams hiring for ${roleClause}, the biggest difference usually comes from being able to proactively reach the right candidates instead of waiting for them to apply. That's where Recruiter tends to have the most impact.`
+          : `For teams hiring for ${roleClause}, the biggest difference usually comes from finding the right balance between proactive outreach and a simpler, lighter-touch approach.`,
       nextState: state,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
     };
   }
 
-  if (normalized.includes("different") || normalized.includes("jobs")) {
+  if (normalized.includes("different") || normalized.includes("hiring pro")) {
     return {
-      body: "LinkedIn Jobs helps teams generate inbound interest. Recruiter is better when your team needs to proactively search for talent, narrow to the right candidates, and reach out directly. They can work together, but they solve different parts of the hiring motion.",
+      body: "Hiring Pro is great for generating inbound interest. Recruiter is better when your team needs to proactively search and reach out to candidates directly. They solve different parts of the hiring motion, and they can work together.",
       nextState: state,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
@@ -710,8 +726,23 @@ function createNextStepResponse(
     return {
       body:
         state.likelySolution === "lighter_touch"
-          ? "Based on what you've shared so far, a lighter-touch option looks more aligned than a full proactive sourcing workflow. If your hiring becomes broader or more specialized, that's when Recruiter becomes more relevant."
-          : "Based on what you've shared so far, Recruiter looks more aligned because your team has a more ongoing or specialized hiring motion than a lightweight option usually supports.",
+          ? "Based on what you've shared, a lighter-touch option looks like the better fit right now. If your hiring grows or gets more specialized, that's when Recruiter becomes more relevant."
+          : "Based on what you've shared, Recruiter looks like the stronger fit since your hiring is more ongoing or specialized.",
+      nextState: state,
+      suggestedReplies: createExploreSuggestions(state.likelySolution),
+      suggestedReplyDisplay: "composer",
+    };
+  }
+
+  if (
+    normalized.includes("fix one thing") ||
+    normalized.includes("make the biggest")
+  ) {
+    return {
+      body:
+        state.likelySolution === "recruiter"
+          ? `For ${roleClause}, the biggest unlock is usually getting in front of the right candidates proactively instead of waiting for them to find you.`
+          : `For ${roleClause}, the biggest unlock is usually figuring out whether you need proactive outreach or if a simpler approach covers what your team needs.`,
       nextState: state,
       suggestedReplies: createExploreSuggestions(state.likelySolution),
       suggestedReplyDisplay: "composer",
@@ -719,7 +750,7 @@ function createNextStepResponse(
   }
 
   return {
-    body: `I can keep helping you understand what could fit ${companyReference}, or, if helpful, connect you with a ${representativeLabel}.`,
+    body: `I can keep helping you figure out what fits ${companyReference}, or connect you with a rep if that would be more useful.`,
     nextState: state,
     suggestedReplies: createExploreSuggestions(state.likelySolution),
     suggestedReplyDisplay: "composer",
@@ -740,7 +771,7 @@ function createHandoffChoiceResponse(
     });
   }
 
-  if (isBookMeetingIntent(normalized)) {
+  if (isBookMeetingIntent(normalized) || isGetConnectedIntent(normalized)) {
     return createRepresentativeMatchingTurn(state);
   }
 
@@ -749,11 +780,21 @@ function createHandoffChoiceResponse(
   }
 
   if (normalized.includes("phone") || normalized.includes("call")) {
+    return createRepresentativeMatchingTurn(state);
+  }
+
+  if (
+    normalized.includes("talk to a") ||
+    normalized.includes("rep anyway") ||
+    normalized.includes("representative")
+  ) {
     return {
-      body: "I can help you schedule a call here in chat.",
-      nextState: state,
-      suggestedReplies: HANDOFF_BRIDGE_SUGGESTIONS,
-      suggestedReplyDisplay: "inline",
+      body: "Absolutely. Let me connect you with someone who can help.",
+      nextState: {
+        ...state,
+        stage: "awaiting_handoff_choice",
+        readiness: "representative",
+      },
     };
   }
 
@@ -830,33 +871,29 @@ function createRecommendationMessage({
   const companyReference = getCompanyReference(company);
 
   if (likelySolution === "lighter_touch") {
-    return `It sounds like ${companyReference} is hiring for ${summary}, and ${urgencyPhrase}. Because the hiring need sounds more occasional or limited in scope, a lighter-touch hiring option may be worth comparing before jumping into a full proactive sourcing workflow.`;
+    return `It sounds like ${companyReference} is hiring for ${summary}, and ${urgencyPhrase}. Since it's more occasional, a lighter-touch option might be worth looking at first.`;
   }
 
   if (summary === "harder-to-fill roles") {
-    return `It sounds like the biggest pressure is around harder-to-fill roles, and ${urgencyPhrase}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
+    return `It sounds like the biggest pressure is around harder-to-fill roles, and ${urgencyPhrase}. That's where a proactive sourcing approach like Recruiter tends to make the biggest difference.`;
   }
 
-  return `It sounds like ${companyReference} is hiring for ${summary}, and ${urgencyPhrase}. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.`;
+  return `It sounds like ${companyReference} is hiring for ${summary}, and ${urgencyPhrase}. That's where a proactive sourcing approach like Recruiter tends to make the biggest difference.`;
 }
 
 function createNextStepQuestion(
   company: string,
-  likelySolution: LikelySolution,
+  _likelySolution: LikelySolution,
 ) {
+  void _likelySolution;
   const companyReference = getCompanyReference(company);
 
-  if (likelySolution === "lighter_touch") {
-    return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about which option could fit ${companyReference} best?`;
-  }
-
-  return `Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative about what this could look like for ${companyReference}?`;
+  return `Would it help to talk with a rep about what this could look like for ${companyReference}, or do you want to keep exploring?`;
 }
 
-function createNextStepSuggestions(likelySolution: LikelySolution) {
-  return likelySolution === "lighter_touch"
-    ? GENERAL_NEXT_STEP_SUGGESTIONS
-    : RECRUITER_NEXT_STEP_SUGGESTIONS;
+function createNextStepSuggestions(_likelySolution: LikelySolution) {
+  void _likelySolution;
+  return NEXT_STEP_SUGGESTIONS;
 }
 
 function createExploreSuggestions(likelySolution: LikelySolution) {
@@ -876,25 +913,27 @@ function shouldShowRepresentativeRecommendationCard({
     !assistantTurn.artifact &&
     assistantTurn.nextState.stage === "awaiting_handoff_choice" &&
     assistantTurn.nextState.likelySolution === "recruiter" &&
-    state.likelySolution === "recruiter"
+    (state.likelySolution === "recruiter" || state.stage === "awaiting_urgency")
   );
 }
 
 function createRepresentativeRecommendationArtifact(): AiConciergeMessageArtifact {
   return {
-    bodyText: "First I'll match you with the right one",
-    ctaLabel: "Find my rep",
-    titleText: "Talk to a sales rep",
+    bodyText: "I'll connect you with someone who specializes in this",
+    ctaLabel: "Get connected",
+    titleText: "Talk to a hiring specialist",
     type: "recommendation",
   };
 }
 
 function createLighterTouchRecommendationArtifact(): AiConciergeMessageArtifact {
   return {
+    bodyText:
+      "Best for occasional hiring and attracting inbound candidates",
     ctaHref: LOWER_TOUCH_PLANS_CTA_HREF,
-    ctaLabel: "Browse plans",
-    tagText: "Best for occasional hiring",
-    titleText: "Explore what fits",
+    ctaLabel: "Learn more",
+    tagText: "Recommended for you",
+    titleText: "Hiring Pro",
     type: "recommendation",
   };
 }
@@ -902,8 +941,8 @@ function createLighterTouchRecommendationArtifact(): AiConciergeMessageArtifact 
 function createRepresentativeMatchingArtifact(): AiConciergeMessageArtifact {
   return {
     bodyText:
-      "This may take up to 3 minutes. You can keep chatting in the meantime.",
-    titleText: "Matching you now...",
+      "This usually takes a minute or two. You can keep chatting in the meantime.",
+    titleText: "Connecting you with the right person",
     type: "representative-match",
     status: "matching",
   };
@@ -1192,8 +1231,22 @@ function isHardToFillIntent(normalized: string) {
   );
 }
 
+function isJustGettingStartedIntent(normalized: string) {
+  return (
+    normalized.includes("just getting started") ||
+    normalized.includes("just exploring") ||
+    normalized.includes("just looking") ||
+    normalized.includes("getting started") ||
+    normalized.includes("browsing")
+  );
+}
+
 function isDifferenceQuestion(normalized: string) {
-  return normalized.includes("different") || normalized.includes("jobs");
+  return (
+    normalized.includes("different") ||
+    normalized.includes("jobs") ||
+    normalized.includes("hiring pro")
+  );
 }
 
 function isRecruiterQuestion(normalized: string) {
@@ -1213,6 +1266,16 @@ function isBookMeetingIntent(normalized: string) {
     normalized.includes("book a meeting") ||
     (normalized.includes("book") && normalized.includes("meeting")) ||
     normalized.includes("available times")
+  );
+}
+
+function isGetConnectedIntent(normalized: string) {
+  return (
+    normalized.includes("get connected") ||
+    normalized.includes("connect me") ||
+    normalized.includes("set it up") ||
+    normalized.includes("let's do it") ||
+    normalized.includes("sounds good")
   );
 }
 

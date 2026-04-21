@@ -9,19 +9,13 @@ Instead of sending visitors straight to a static `Contact sales` form, the exper
 - share enough context for lead qualification in the background
 - get routed to the right next step
 
-This is no longer just a Recruiter-only microsite concept. It is grounded in the real `/hire` experience:
+This is grounded in the real `/hire` experience:
 - [business.linkedin.com/hire](https://business.linkedin.com/hire)
 
 That page spans multiple hiring products, including:
 - Recruiter + Hiring Assistant for consistent hiring
 - Hiring Pro for occasional hiring
 - Career Pages for awareness and employer brand
-
-Related docs:
-- [conversation-strategy.md](conversation-strategy.md)
-- [conversation-blueprint.md](conversation-blueprint.md)
-- [persona.md](persona.md)
-- [implementation-plan.md](implementation-plan.md)
 
 ## Why this project exists
 - The current `Contact sales` flow is too form-heavy and slow.
@@ -45,19 +39,6 @@ Short version:
 
 ## Primary goal
 Create a faster, more helpful path from hiring interest to the right next step, while qualifying the lead in the background.
-
-That next step may be:
-- a representative handoff
-- an SDR handoff
-- a lower-touch purchase path
-- a redirect to another destination
-
-## MVP goals
-- Help users understand which LinkedIn hiring solution may fit their situation.
-- Reduce friction compared with a static `Contact sales` flow.
-- Capture enough context to understand intent and likely lead value.
-- Demonstrate that helpful AI guidance and lead qualification can happen at the same time.
-- Route users toward an appropriate next step rather than treating every conversation as the same sales path.
 
 ## Audiences
 
@@ -89,36 +70,75 @@ What happens in the background:
 This separation is important. The experience should feel helpful and human on the surface, without exposing the sales logic too directly.
 
 ## How BANT fits
-BANT is still useful for the business side of the system, but it should not become the visible conversation script.
+BANT is useful for the business side of the system, but it should not become the visible conversation script.
 
-The cleaner model for this project is:
+The model:
 - visible conversation: guidance, diagnosis, recommendation, next step
 - hidden interpretation: BANT-like signals plus product-fit and hiring-motion signals
 
 In practice:
-- `Need` is the strongest and most important signal in this MVP
-- `Authority` is usually inferred from onboarding context
-- `Timeline` is usually inferred from urgency and next-step behavior
-- `Budget` should stay soft and should not drive the visible flow
+- `Need` is the strongest and most important signal in this MVP. Captured through starting situation, hiring motion, use case, and complexity.
+- `Authority` is usually inferred from onboarding context like role, company, and seniority.
+- `Timeline` is inferred from urgency language and next-step behavior.
+- `Budget` stays soft through pricing interest and is never asked directly.
 
-This is why the experience should not feel like a BANT questionnaire. The assistant should gather useful signals naturally while helping the user understand which hiring solution may fit.
+The assistant should never try to visibly "complete BANT." Two strong signals are usually enough to route well.
 
 ## Target routing model
-The broader model for AI Concierge is a multi-outcome routing system, not just `book a meeting` or `do nothing`.
+The broader model is a multi-outcome routing system, not just `book a meeting` or `do nothing`.
 
-The target 5-endings model is:
-1. `High value, high confidence`
-   Route directly to AE and book with AE.
-2. `Medium value, SDR online`
-   Hand off live to a human SDR.
-3. `Medium value, SDR offline`
-   Book time with SDR.
-4. `Low value, high confidence`
-   Route to a direct purchase or lower-touch path.
-5. `No value`
-   Redirect to a better-fit destination or end the sales path.
+The 5-endings model:
+1. `AE booking` (high value, high confidence): route directly to AE and book.
+2. `SDR live handoff` (medium value, SDR online): hand off live to a human SDR in-thread.
+3. `SDR booking` (medium value, SDR offline): book time with SDR.
+4. `Lower-touch / direct purchase` (low value, high confidence): route to a direct purchase or lower-touch path.
+5. `Redirect / no-sales` (no value): redirect to a better-fit destination or end the sales path.
 
-This routing model should stay mostly hidden from the user. The visible conversation should still feel like guidance, not scoring.
+This routing model stays hidden from the user. The visible conversation should feel like guidance, not scoring. Users should not see `AE` or `SDR`. `Representative` is the user-facing umbrella term.
+
+## MVP scope
+
+### What we are trying to prove
+Instead of sending a high-intent visitor straight to a static `Contact sales` form, LinkedIn could use AI Concierge to provide helpful guidance first, qualify the lead in the background, and route the user to the right next step.
+
+### In scope
+- A `/hire` landing-page context with AI Concierge entry from sales CTAs
+- A lightweight onboarding / prefill step before chat
+- A guide-first chat experience that can:
+  - greet the user with known context
+  - help the user get oriented
+  - answer common fit and product questions
+  - ask a small number of lightweight follow-up questions
+  - narrow toward the likely-fit product
+  - suggest a representative when that feels earned
+- Representative handoff flows (AE booking, SDR booking, SDR live)
+- A lower-touch / direct purchase recommendation path
+- A believable booking flow
+- Alternate branches for curious-but-not-ready, pricing interest, and wrong intent
+
+### Out of scope
+- Real production AI behavior
+- Real authentication or CRM integration
+- Real lead scoring or calendar integration
+- Real SDR / AE availability systems
+- Full regional / market complexity
+- Omni-channel follow-up
+
+### What should feel real
+- The landing page and chat entry
+- The onboarding / prefill step
+- The first few chat turns
+- The sense that the assistant understands the user's situation
+- The representative recommendation
+- The booking transition and confirmation
+
+### What can be faked
+- Identity and prefill
+- Lead classification
+- Representative availability
+- Booking inventory
+- Routing logic
+- Sales operational systems
 
 ## Core experience flow
 1. A user lands on LinkedIn Hire.
@@ -128,38 +148,6 @@ This routing model should stay mostly hidden from the user. The visible conversa
 5. The assistant helps identify the user's challenge, hiring motion, and likely fit.
 6. The system classifies the lead in the background.
 7. The user is routed to the best next step.
-
-## Key product capabilities
-- Guide users across the broader LinkedIn Hire product landscape
-- Answer product and fit questions
-- Capture lightweight qualification signals
-- Classify leads in the background
-- Route users to AE, SDR, lower-touch, or redirect outcomes
-- Support a human handoff when it adds value
-
-## Current prototype scope
-The current prototype is narrower than the full target model.
-
-Today it focuses on:
-- the `/hire` landing-page context
-- an AI chat panel triggered from sales CTAs
-- a guide-first conversation
-- a simplified happy path that narrows toward Recruiter-oriented guidance
-- a representative-handoff flow
-
-It does not yet fully implement all 5 routing endings. Those should be treated as the target model the prototype is building toward.
-
-## Post-MVP direction
-The broader PRD points to a larger experience beyond the current prototype.
-
-Post-MVP directions include:
-- multi-channel entry and handoff, such as chat, voice, and phone call
-- region-dependent channel behavior
-- SDR availability-aware routing, such as SDR online vs offline
-- state persistence across follow-up channels
-- omni-channel re-engagement after incomplete qualification
-
-These are important to the long-term vision, but they should not be confused with the narrower scope of the current prototype.
 
 ## UX implications
 - The conversation should feel helpful, not like a form in disguise.
@@ -181,9 +169,19 @@ These are important to the long-term vision, but they should not be confused wit
 - Qualification feels natural instead of extractive.
 - High-intent users reach stronger handoff outcomes.
 - The experience improves both user experience and routing quality.
+- The prototype is realistic enough for stakeholders to critique and discuss trust, usefulness, and routing quality.
 
-## Open questions
-- How much of the 5-endings model should be visible in the first prototype?
-- When should the experience move from guide mode into handoff mode?
-- Which lower-touch or direct-purchase path is most realistic to demonstrate?
-- Which parts of the post-MVP channel model should remain implicit versus visible in future versions?
+## Post-MVP direction
+Important longer-term ideas not required for the current prototype:
+- multi-channel entry and handoff (chat, voice, phone call)
+- region-dependent channel behavior
+- SDR availability-aware routing
+- state persistence across follow-up channels
+- omni-channel re-engagement after incomplete qualification
+
+## Related docs
+- [conversation-blueprint.md](conversation-blueprint.md): how the conversation works and why
+- [conversation-system-prompt.md](conversation-system-prompt.md): external production AI spec (reference only)
+- [persona.md](persona.md): default demo persona
+- [routing-outcomes-worksheet.md](routing-outcomes-worksheet.md): detailed routing design
+- [implementation-plan.md](implementation-plan.md): build phases and status

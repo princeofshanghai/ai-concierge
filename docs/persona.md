@@ -5,9 +5,7 @@ This document captures the current target user framing and the primary demo pers
 
 It complements:
 - [project-overview.md](project-overview.md), which explains the overall product concept
-- [mvp-spec.md](mvp-spec.md), which defines the prototype scope
-- [conversation-strategy.md](conversation-strategy.md), which defines how the assistant should behave in conversation
-- [conversation-blueprint.md](conversation-blueprint.md), which defines the concrete MVP chat flow for this persona
+- [conversation-blueprint.md](conversation-blueprint.md), which defines how the conversation works and why
 
 This document is meant to give the team a concrete person to design around and a believable story to use when walking through the experience for feedback.
 

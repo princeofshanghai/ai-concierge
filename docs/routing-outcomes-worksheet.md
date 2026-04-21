@@ -15,7 +15,6 @@ It is a shared starting point for product and UX design.
 
 Related docs:
 - [project-overview.md](project-overview.md)
-- [conversation-strategy.md](conversation-strategy.md)
 - [conversation-blueprint.md](conversation-blueprint.md)
 - [implementation-plan.md](implementation-plan.md)
 
