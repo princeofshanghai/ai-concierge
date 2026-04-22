@@ -239,6 +239,12 @@ export function AiConciergeBody({
                   ) : null}
                   {message.status === "complete" &&
                   message.openingSupport &&
+                  // The topic-picker variant renders as a docked strip above
+                  // the composer (see `AiConciergeOpeningSupportDock` in the
+                  // panel). Only the helper-examples variant still renders
+                  // inline here because its vertical bullet shape doesn't
+                  // translate to a horizontal docked row.
+                  message.openingSupport.type !== "topic-picker" &&
                   (!isVoiceModeActive || shouldShowVoiceOpeningSupport) ? (
                     <AiConciergeOpeningSupportView
                       onInsertPrompt={onInsertOpeningPrompt}
@@ -335,7 +341,7 @@ export function AiConciergeBody({
                   <ChatLiveAgentMessage
                     body={message.body}
                     isPanelExpanded={isPanelExpanded}
-                    name={message.agentName ?? "Sales rep"}
+                    name={message.agentName ?? "Hiring specialist"}
                     timestampLabel={message.timestampLabel ?? ""}
                   />
                 </div>

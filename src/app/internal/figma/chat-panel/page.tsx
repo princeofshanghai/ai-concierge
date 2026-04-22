@@ -44,7 +44,7 @@ export default function ChatPanelCapturePage() {
           />
           <AiConciergeComposer
             draft=""
-            idlePlaceholder="Type your message"
+            idlePlaceholder="Send a message"
             onDraftChange={() => {}}
             onSend={() => {}}
             onStopResponse={() => {}}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type UIEvent } from "react";
 import { AVATAR_FALLBACK_SOURCES, Avatar } from "@/components/avatar";
 import { BackArrowIcon } from "@/components/back-arrow-icon";
 import { Button } from "@/components/button";
@@ -38,27 +38,27 @@ const DATE_OPTIONS: BookingDateOption[] = [
   {
     id: "apr-7",
     label: "Tue, Apr 7",
-    slots: ["9:30 AM", "10:00 AM", "1:30 PM", "3:00 PM", "4:30 PM"],
+    slots: ["9:15 AM", "10:00 AM", "1:30 PM", "3:00 PM", "4:45 PM"],
   },
   {
     id: "apr-8",
     label: "Wed, Apr 8",
-    slots: ["9:00 AM", "11:30 AM", "12:30 PM", "2:30 PM", "4:00 PM"],
+    slots: ["9:00 AM", "11:15 AM", "12:45 PM", "2:30 PM", "4:00 PM"],
   },
   {
     id: "apr-9",
     label: "Thu, Apr 9",
-    slots: ["10:30 AM", "11:00 AM", "2:00 PM", "3:30 PM", "4:30 PM"],
+    slots: ["10:15 AM", "11:00 AM", "2:00 PM", "3:45 PM", "4:30 PM"],
   },
   {
     id: "apr-10",
     label: "Fri, Apr 10",
-    slots: ["9:00 AM", "10:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"],
+    slots: ["9:00 AM", "10:45 AM", "1:00 PM", "2:15 PM", "4:00 PM"],
   },
   {
     id: "apr-13",
     label: "Mon, Apr 13",
-    slots: ["9:30 AM", "11:00 AM", "1:30 PM", "3:00 PM", "4:30 PM"],
+    slots: ["9:30 AM", "11:15 AM", "1:45 PM", "3:00 PM", "4:30 PM"],
   },
 ];
 
@@ -97,6 +97,14 @@ export function AiConciergeNextStepPanel({
   );
   const [isContactDestinationEditing, setIsContactDestinationEditing] =
     useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const nextIsScrolled = event.currentTarget.scrollTop > 0;
+    setIsScrolled((current) =>
+      current === nextIsScrolled ? current : nextIsScrolled,
+    );
+  };
 
   const selectedDate =
     DATE_OPTIONS.find((option) => option.id === selectedDateId) ?? null;
@@ -149,7 +157,12 @@ export function AiConciergeNextStepPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-ai-surface-panel-subtle sm:animate-[ai-concierge-next-step-in_320ms_cubic-bezier(0.22,1,0.36,1)]">
-      <div className="px-6 pt-6 sm:px-8 sm:pt-8">
+      <div
+        className={[
+          "relative z-10 px-6 pb-3 pt-3 transition-shadow duration-200 sm:px-8 sm:pb-4 sm:pt-4",
+          isScrolled ? "shadow-[0_1px_0_0_rgba(0,0,0,0.08)]" : "shadow-none",
+        ].join(" ")}
+      >
         <button
           type="button"
           onClick={onBackToChat}
@@ -160,144 +173,156 @@ export function AiConciergeNextStepPanel({
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto px-6 pt-6 sm:px-8 sm:pt-7">
-        <div className="mx-auto flex h-full min-h-full w-full max-w-[592px] flex-col gap-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="ai-type-heading-lg text-ai-text-primary">
-                  {bookingMode === "manage" ? "Manage booking" : "Schedule a call"}
-                </h3>
-                <Tag size="small" tone="supportive1" className="w-fit">
-                  <span className="inline-flex items-center gap-1">
-                    <ClockIcon />
-                    30 minutes
-                  </span>
-                </Tag>
-              </div>
-              <div className="flex items-center gap-3">
-                <RepresentativeAvatar />
-                <div className="min-w-0">
-                  <p className="ai-type-body-md-bold text-ai-text-primary">
-                    {DEFAULT_REPRESENTATIVE_NAME}
-                  </p>
-                  <p className="ai-type-body-sm-open mt-1 text-ai-text-meta">
-                    Sales rep
-                  </p>
-                </div>
+      <div
+        className="flex flex-1 flex-col overflow-y-auto px-6 pt-6 sm:px-8 sm:pt-7"
+        onScroll={handleScroll}
+      >
+        <div className="mx-auto flex h-full min-h-full w-full max-w-[592px] flex-col gap-12">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="ai-type-heading-xl text-ai-text-primary">
+                {bookingMode === "manage" ? "Manage booking" : "Schedule a call"}
+              </h3>
+              <Tag size="small" tone="supportive1" className="w-fit">
+                <span className="inline-flex items-center gap-1">
+                  <ClockIcon />
+                  15 min
+                </span>
+              </Tag>
+            </div>
+            <div className="flex w-fit items-center gap-3 rounded-[16px] border border-ai-border-faint bg-ai-surface-base pl-5 pr-6 py-4">
+              <RepresentativeAvatar />
+              <div className="min-w-0">
+                <p className="ai-type-body-md-bold text-ai-text-primary">
+                  {DEFAULT_REPRESENTATIVE_NAME}
+                </p>
+                <p className="ai-type-body-sm-open mt-1 text-ai-text-meta">
+                  Hiring specialist
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col gap-8">
-            <BookingSection title="Meeting format">
-              <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-                {BOOKING_FORMAT_OPTIONS.map((option) => (
-                  <ChoicePill
-                    key={option.id}
-                    selected={option.id === selectedFormatId}
-                    onClick={() => handleFormatSelect(option.id)}
-                  >
-                    {option.label}
-                  </ChoicePill>
-                ))}
-              </div>
-              {selectedFormatId ? (
-                <div className="flex flex-col items-start gap-2">
-                  <p
-                    className={[
-                      "ai-type-body-sm",
-                      hasSelectedContactValue
-                        ? "text-ai-text-meta"
-                        : "text-ai-text-secondary",
-                    ].join(" ")}
-                  >
-                    {getBookingContactDestinationCopy({
-                      formatId: selectedFormatId,
-                      value: trimmedSelectedContactValue,
-                    })}
-                  </p>
-                  <Button
-                    size="compact"
-                    variant="tertiary"
-                    onClick={() =>
-                      setIsContactDestinationEditing((current) => !current)
-                    }
-                    leadingVisual={<EditIcon className="h-3.5 w-3.5" />}
-                    className="!h-7 !px-2 shrink-0"
-                  >
-                    <span className="ai-type-label-xs">
-                      {selectedContactChannel === "email"
-                        ? "Change email"
-                        : "Change number"}
-                    </span>
-                  </Button>
-                </div>
-              ) : null}
-              {isContactDestinationEditing && selectedContactChannel ? (
-                <FormTextField
-                  autoComplete={selectedContactChannel === "email" ? "email" : "tel"}
-                  autoFocus
-                  helperText="Only used for this meeting."
-                  label={
-                    selectedContactChannel === "email"
-                      ? "Email for this meeting"
-                      : "Phone number for this meeting"
-                  }
-                  placeholder={
-                    selectedContactChannel === "email"
-                      ? "name@company.com"
-                      : "(415) 555-0139"
-                  }
-                  type={selectedContactChannel === "email" ? "email" : "tel"}
-                  value={selectedContactValue}
-                  onValueChange={(value) => {
-                    if (selectedContactChannel === "email") {
-                      setMeetingEmailDraft(value);
-                    } else {
-                      setMeetingPhoneNumberDraft(value);
-                    }
-                  }}
-                />
-              ) : null}
-            </BookingSection>
-
-            <BookingSection title="Date">
-              <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-                {DATE_OPTIONS.map((option) => (
-                  <ChoicePill
-                    key={option.id}
-                    selected={option.id === selectedDateId}
-                    onClick={() => handleDateSelect(option.id)}
-                  >
-                    {option.label}
-                  </ChoicePill>
-                ))}
-              </div>
-            </BookingSection>
-
-            <BookingSection title="Time">
-              {selectedDate ? (
+          <div className="flex flex-1 flex-col gap-12">
+            <div className="flex flex-col gap-8">
+              <BookingSection title="Meeting format">
                 <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-                  {selectedDate.slots.map((slot) => (
+                  {BOOKING_FORMAT_OPTIONS.map((option) => (
                     <ChoicePill
-                      key={slot}
-                      selected={slot === selectedTime}
-                      onClick={() => setSelectedTime(slot)}
+                      key={option.id}
+                      selected={option.id === selectedFormatId}
+                      onClick={() => handleFormatSelect(option.id)}
                     >
-                      {slot}
+                      {option.label}
                     </ChoicePill>
                   ))}
                 </div>
-              ) : (
-                <p className="ai-type-body-sm text-ai-text-meta">
-                  Choose a date to see available times.
-                </p>
-              )}
-            </BookingSection>
+                {selectedContactChannel ? (
+                  hasSelectedContactValue && !isContactDestinationEditing ? (
+                    <div className="flex flex-col items-start gap-2">
+                      <p className="ai-type-body-sm text-ai-text-primary">
+                        {getBookingContactDestinationCopy({
+                          formatId: selectedFormatId,
+                          value: trimmedSelectedContactValue,
+                        })}
+                      </p>
+                      <Button
+                        size="compact"
+                        variant="tertiary"
+                        onClick={() => setIsContactDestinationEditing(true)}
+                        leadingVisual={<EditIcon className="h-3.5 w-3.5" />}
+                        className="!h-7 !px-2 shrink-0"
+                      >
+                        <span className="ai-type-label-xs">
+                          {selectedContactChannel === "email"
+                            ? "Change email"
+                            : "Change number"}
+                        </span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-start gap-2 self-stretch">
+                      {!hasSelectedContactValue ? (
+                        <p className="ai-type-body-sm text-ai-text-secondary">
+                          {getBookingContactDestinationCopy({
+                            formatId: selectedFormatId,
+                            value: "",
+                          })}
+                        </p>
+                      ) : null}
+                      <FormTextField
+                        className="w-full"
+                        autoComplete={
+                          selectedContactChannel === "email" ? "email" : "tel"
+                        }
+                        autoFocus
+                        helperText="Only used for this meeting."
+                        label={
+                          selectedContactChannel === "email"
+                            ? "Email for this meeting"
+                            : "Phone number for this meeting"
+                        }
+                        placeholder={
+                          selectedContactChannel === "email"
+                            ? "name@company.com"
+                            : "(415) 555-0139"
+                        }
+                        type={
+                          selectedContactChannel === "email" ? "email" : "tel"
+                        }
+                        value={selectedContactValue}
+                        onFocus={() => setIsContactDestinationEditing(true)}
+                        onBlur={() => setIsContactDestinationEditing(false)}
+                        onValueChange={(value) => {
+                          if (selectedContactChannel === "email") {
+                            setMeetingEmailDraft(value);
+                          } else {
+                            setMeetingPhoneNumberDraft(value);
+                          }
+                        }}
+                      />
+                    </div>
+                  )
+                ) : null}
+              </BookingSection>
+
+              <BookingSection title="Date">
+                <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                  {DATE_OPTIONS.map((option) => (
+                    <ChoicePill
+                      key={option.id}
+                      selected={option.id === selectedDateId}
+                      onClick={() => handleDateSelect(option.id)}
+                    >
+                      {option.label}
+                    </ChoicePill>
+                  ))}
+                </div>
+              </BookingSection>
+
+              <BookingSection title="Time">
+                {selectedDate ? (
+                  <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                    {selectedDate.slots.map((slot) => (
+                      <ChoicePill
+                        key={slot}
+                        selected={slot === selectedTime}
+                        onClick={() => setSelectedTime(slot)}
+                      >
+                        {slot}
+                      </ChoicePill>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="ai-type-body-sm text-ai-text-meta">
+                    Choose a date to see available times.
+                  </p>
+                )}
+              </BookingSection>
+            </div>
 
             <label className="flex flex-col gap-2">
-              <span className="ai-type-heading-sm text-ai-text-secondary">
+              <span className="ai-type-heading-md text-ai-text-secondary">
                 Anything you&apos;d like {DEFAULT_REPRESENTATIVE_NAME} to know?
               </span>
               <textarea
@@ -312,7 +337,7 @@ export function AiConciergeNextStepPanel({
               <p className="ai-type-body-sm-open text-ai-text-meta">
                 {selectedFormatId && selectedDate && selectedTime
                   ? `${selectedFormatLabel} on ${selectedDate.label} at ${selectedTime}`
-                  : "Choose a format, date, and time to continue."}
+                  : "Choose a format, date, and time."}
               </p>
               <button
                 type="button"
@@ -372,7 +397,7 @@ function BookingSection({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="ai-type-body-sm-bold text-ai-text-secondary">{title}</p>
+      <p className="ai-type-body-md-bold text-ai-text-secondary">{title}</p>
       {children}
     </div>
   );

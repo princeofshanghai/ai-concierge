@@ -28,7 +28,7 @@ The guiding principle: chips reduce cognitive load at decision points; open text
 
 | Moment | Prefer chips | Prefer open text | Why |
 |---|---|---|---|
-| Opening | Yes, topic pills with starter prompts underneath | Still allow typing | Reduces "what do I even say" anxiety |
+| Opening | Yes, 3 flat chips (one tap, submits the label) | Still allow typing | Reduces "what do I even say" anxiety |
 | Pure diagnostic middle ("what kind of roles?" / "what does a usual year look like?") | No | Yes, typed | Routing the user through chips on open diagnostics feels like a form; free typing is what surfaces real signal |
 | Bounded-answer middle (urgency, timeline) | Yes, 3-4 options | Allow typing as escape hatch | Keeps momentum when the answer space is genuinely small |
 | User asks a question | No | Let them type freely | Chips feel dismissive when the user has a real question |
@@ -60,23 +60,31 @@ Keep it short. Most users skim the opening and go straight to the chips.
 
 The exact opening line lives in [conversation-scripts.md](conversation-scripts.md#shared-opening-all-five-routes) and mirrors the production spec in [conversation-system-prompt.md](conversation-system-prompt.md).
 
-### Opening pills: a two-tier pattern
-The opening uses a **two-tier pill + starter-prompt structure**, not a flat row of chips:
+### Opening chips: three flat, one-tap entries
+The opening uses a **flat chip row** — three chips, each of which is both the label and the submitted user message. One tap, no dropdown.
 
-1. **Top tier — topic pills.** A small, stable set of 4 pills (e.g. "Help with hiring", "Find the right fit", "See customer stories", "Get started"). These frame broad entry points. Tapping a pill doesn't submit anything — it reveals a set of starter prompts underneath.
-2. **Second tier — situational starter prompts.** Once a pill is tapped, the visitor sees 2-3 situational prompts in first-person voice (e.g. *"We're hiring a lot right now"*, *"We have hard-to-fill roles"*). Tapping a prompt submits it as the visitor's first message.
+The three chips:
+1. `Discuss my hiring challenges` — routes to Route 1 (high-value AE booking). Pain-led, matches Jamie's persona.
+2. `Find the right solution for me` — routes to Routes 2/3 (medium-value SDR live or booked). Solution-seeking, less urgent.
+3. `Show me success stories` — routes to Route 5 (low-value redirect / nurture off-ramp).
 
-**Why this shape rather than flat situational chips:**
-- Flat situational chips force every situation to share the same visual weight — noisy, and makes low-value routes look just as prominent as high-value ones.
-- Two tiers let us group situations by intent (hiring help vs. fit research vs. exploration) without cluttering the surface.
-- The prompts inside each pill stay first-person and situational — that's where the "sounds like a real person" work happens.
+Each chip is deliberately abstract. The weight of understanding the visitor's actual situation sits on the AI's first clarifying question — which is where BANT signal collection starts. That matches Principle 1 ("Heard, not qualified"): we don't ask the visitor to self-classify before we've listened.
+
+**Why this shape rather than a two-tier topic-picker:**
+- **Less friction.** One tap vs. two (pill → dropdown → prompt). Matches the flat-chip opening pattern on ChatGPT, Claude, and Meta AI.
+- **Fewer forced choices.** Four topic pills with three prompts each forced twelve surface decisions; three flat chips give the visitor an easier first move.
+- **Route 4 (product card) accessed by typed paraphrase.** Keeping the chip set to three prioritizes one-tap clarity on the dominant value tiers; Route 4 remains reachable via typed fit questions and in playback mode.
+
+**Trade-offs to be honest about:**
+- A tapped chip sends the message immediately, with no undo beat. That's standard chatbot behavior and fine for the demo, but worth tracking if this ships to production.
+- The two-tier topic-picker (four pills × three prompts) is preserved as an alternate variant in the shell UI switcher, so stakeholders can still see the richer surface for comparison.
 
 Common mistakes at the opening:
-- Topic pills with **topic prompts underneath** ("Tell me about Recruiter") make the assistant feel like a FAQ rather than a consultant.
-- Too many pills at the top tier dilutes the pattern; 3-5 is the sweet spot.
-- Prompts that are too specific (naming a product or quoting a number) make the visitor feel boxed in.
+- Chips that pre-name a product ("Tell me about Recruiter") make the assistant feel like a FAQ rather than a consultant.
+- Too many chips dilutes the pattern; 3-5 is the sweet spot.
+- Chips that are too specific (naming a number, a role, a pain pattern) make the visitor feel boxed in.
 
-See [conversation-scripts.md](conversation-scripts.md#shared-opening-all-five-routes) for the canonical pill labels and the exact starter prompts under each.
+See [conversation-scripts.md](conversation-scripts.md#shared-opening-all-five-routes) for the canonical chip labels, their route mappings, and the exact openers each chip triggers.
 
 ### Balancing helpfulness with qualification
 Every AI response should do two things:

@@ -607,6 +607,16 @@ button {
   }
 }
 
+/* Hide scrollbar on the opening pill row so horizontal overflow scrolls
+   invisibly (matches native ChatGPT / Meta AI pill-row behavior). The
+   right-edge fade in the React component hints at overflow instead. */
+.ai-concierge-pill-row {
+  scrollbar-width: none;
+}
+.ai-concierge-pill-row::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes ai-concierge-opening-icon-settle {
   0% {
     opacity: 0;

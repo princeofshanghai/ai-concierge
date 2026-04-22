@@ -13,7 +13,7 @@ For the design reasoning behind the flow shape, see [conversation-blueprint.md](
 For product naming, topic boundaries, and the pricing prohibition, see [conversation-language-rules.md](conversation-language-rules.md).
 For the routing model at a product level, see [project-overview.md](project-overview.md).
 
-> **Status note:** All five routes are now locked and canonical (Shared opening + Routes 1-5). Next phase is updating the code (`src/lib/ai-concierge-conversation.ts`, playback helpers, card components) to match this script.
+> **Status note:** All five routes are locked and canonical (Shared opening + Routes 1-5). The shared opening currently defaults to **flat chips** (`inline-prompts` variant); the four-pill topic picker remains available as an alternate variant in the shell UI for comparison.
 
 ## Persona in every script
 All five scripts use Jamie Chen from [persona.md](persona.md):
@@ -62,53 +62,30 @@ This rule does not prevent the assistant from *answering* product questions when
 Every route starts with the same assistant bubble. This matches the production spec in [conversation-system-prompt.md](conversation-system-prompt.md).
 
 **Assistant (opening):**
-> Hi Jamie, I'm your AI hiring expert from LinkedIn, here to help with Northstar Health's hiring needs. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing.
+> Hi Jamie, glad you're here. I'm your AI hiring guide for Northstar Health. Tell me what your team is working through and I'll help you find the right fit.
 
-The opening bubble contains no chips, no "here are a few ways to get started" tail, and no questions. The pill row below is the affordance.
+The opening bubble carries three flat chips inline. No helper tail ("Here are a few ways to get started:" is removed), no questions in the bubble itself. The composer is always open to free typing.
 
-### Topic pills (below the opening bubble)
+### Opening chips (flat, one-tap)
 
-Four pills. Verb-led, short, user-native. Tapping a pill opens a dropdown of starter prompts; tapping a prompt inserts it into the composer. The composer is always open to free typing.
+Three chips, verb-led and user-native. Tapping a chip submits the chip label as the user's first message — no dropdown, no second tap. Each chip deterministically routes to one Phase-A entry point; the AI's first clarifying question is where BANT signal collection begins.
 
-| Pill | What it's for | Dominant routing outcome |
+| Chip | Routes to | Why this wording |
 |---|---|---|
-| **Help with hiring** | Problem-led entry — the visitor is naming a hiring situation | High value (AE booking) |
-| **Find the right fit** | Product-curious — visitor wants to understand what works for them | Medium value (SDR) |
-| **See customer stories** | Proof-seeking — visitor wants peer validation before committing | Exploratory (can route any direction) |
-| **Get started** | Implementation-curious — high-intent signal around setup | Medium/high (depends on signals) |
+| `Discuss my hiring challenges` | Route 1 — AE booking (high value) | Pain-led, urgent framing. Matches Jamie's persona (Series C, 40 roles, hard-to-fill specialized roles). Jamie's canonical demo click. |
+| `Find the right solution for me` | Routes 2/3 — SDR live / SDR booking (medium value) | Solution-seeking but less urgent than a pain-led entry. The live-vs-book split happens later at the two-CTA card. |
+| `Show me success stories` | Route 5 — redirect / nurture off-ramp (low value) | Peer-validation browsing. Matches the exploratory readiness Route 5 is built for. |
 
-Each pill's dropdown contains three starter prompts. The demo click for each route is called out in the route script.
+### Route 4 entry (typed paraphrase only)
+Route 4 (product card / Hiring Pro) is reachable via typed paraphrase (e.g., *"Is this meant for teams my size?"*) or from the playback shell's pre-rendered transcript. Keeping the flat-chip set to three chips prioritizes one-tap clarity on the dominant three value tiers; the `isRoute4FitIntent` classifier still routes typed fit questions correctly.
 
-#### Pill 1 — Help with hiring
-Dropdown:
-- `We're hiring a lot right now`
-- `We have hard-to-fill roles`
-- `We're hiring across teams`
+### Why three flat chips instead of four topic pills
 
-#### Pill 2 — Find the right fit
-Dropdown:
-- `Which hiring solution fits my team?`
-- `How is Recruiter different from Hiring Pro?`
-- `Is this meant for teams my size?`
-
-#### Pill 3 — See customer stories
-Dropdown:
-- `Do companies like mine use this?`
-- `What kinds of results do customers see?`
-- `Any examples from my industry?`
-
-#### Pill 4 — Get started
-Dropdown:
-- `How fast could we get going?`
-- `Does this connect to our ATS?`
-- `What does onboarding look like?`
-
-### Why these four pills
-
-- **User-native, not sales taxonomy.** Each pill is how a visitor might describe their moment, not how LinkedIn describes its products. Matches Principle 1 ("Heard, not qualified").
-- **No "Pricing" or "Talk to sales" pill.** Pricing is handled through conversation if a visitor types about it; a dedicated pill would signal a pricing-led product we aren't. "Talk to sales" as a pill shortcuts the concierge pattern and undermines the demo.
-- **Three pills map to a dominant routing outcome, one is intentionally cross-cutting.** Customer stories is the non-routing pill — it's the one that proves the concierge educates before qualifying.
-- **Jamie's demo click is clear.** "Help with hiring" → "We're hiring a lot right now" is the high-value entry. Short, plain-spoken, and deliberately open — no problem-shape pre-named — so the concierge's diagnostic work (drivers, specialization, timeline) is visible to the exec.
+- **Less friction.** One tap vs. two (pill → dropdown → prompt). Matches the flat-chip opening pattern on ChatGPT, Claude, and Meta AI.
+- **Follow-ups carry the weight.** Each chip is deliberately abstract; the AI's first clarifying question surfaces the specifics. Matches Principle 1 ("Heard, not qualified") — we don't make the visitor self-classify before we've listened.
+- **No "Pricing" or "Talk to sales" chip.** Pricing is handled through conversation if a visitor types about it; a dedicated chip would signal a pricing-led product we aren't. "Talk to sales" as a chip shortcuts the concierge pattern.
+- **Typed paraphrases still route correctly.** Legacy classifiers stay intact, so off-chip phrasings still land on the right route — including Route 4.
+- **Topic-picker pills preserved as an alternate.** The four-pill variant remains selectable in the shell UI for side-by-side comparison during stakeholder reviews.
 
 ---
 
@@ -117,45 +94,58 @@ Dropdown:
 Why this route. Strong fit for LinkedIn Recruiter: scaling hiring across multiple functions, specialized hard-to-fill roles, near-term deadlines tied to milestones. This is Jamie's canonical flow and the demo's Flow 1. Ends with a matched AE and booking surface.
 
 ### Demo click
-Pill **Help with hiring** → starter prompt **`We're hiring a lot right now`**.
+Chip **`Discuss my hiring challenges`**.
 
-The prompt is short and deliberately open — it names the situation (lots of hiring) without pre-naming the problem shape (sourcing capacity, specialization, timeline, driver). The concierge does the diagnostic work through conversation, which is the beat the exec demo is built to show.
+The chip is pain-led and high-intent — a direct match for Jamie's persona (urgent growth, hard-to-fill roles). It signals that the visitor has a real problem without pre-naming the shape (funding, specialization, timeline, driver). The AI's first clarifying question does the diagnostic work, which is the beat the exec demo is built to show.
 
 ### Script
 
-**Assistant (opening):** see "Shared opening" above. Four pills visible: Help with hiring · Find the right fit · See customer stories · Get started.
+**Assistant (opening):** see "Shared opening" above. Three chips visible: `Discuss my hiring challenges` · `Find the right solution for me` · `Show me success stories`.
 
-**User (pill + prompt):** `We're hiring a lot right now` *(from pill "Help with hiring")*
-
----
-
-**Assistant (bubble 1 — acknowledge + pressures/objectives question):**
-> That's a real pressure — especially when expectations outpace capacity. Before we talk about options, what's driving the growth right now? Is it a funding round, a product push, a new market — something else?
-
-*No chips. Composer open for typed reply.*
-
-**User (typed):** `Just closed a funding round. About 40 roles to hire across eng, product, sales, and CS over the next 2 quarters.`
+**User (chip):** `Discuss my hiring challenges`
 
 ---
 
-**Assistant (bubble 2 — acknowledgment-only, no question):**
-> Makes sense — post-funding growth hiring across multiple functions tends to stretch teams fast, especially when the roles don't all look the same.
+**Assistant (bubble 1 — warm, direct challenge probe):**
+> Happy to help. What's been the hardest part of hiring for you lately?
+
+*No chips. Composer open for typed reply. The question is short and warm by design — Jamie's first reply is deliberately vague, which lets the AI's next turn demonstrate warming an unclear input into real context.*
+
+**User (typed):** `too many open roles rn`
+
+*Short, chunky, lowercase — matches how a real visitor types mid-call. The ambiguity is the point: no scope, no driver, just a vibe.*
+
+---
+
+**Assistant (bubble 2 — ack + scope/driver clarifier):**
+> That's a real pressure to be under. What's driving it usually shapes what's worth trying. Is this a recent ramp, or has it been building?
+
+*Single bubble (no priorBubble). The acknowledge is minimal and leads straight into a clarifier because the previous reply was vague. The binary framing ("recent vs. building") invites Jamie to volunteer driver context without making her pick a pre-baked option.*
+
+**User (typed):** `pretty recent. Series C closed in Feb. ~40 roles across eng, clinical, sales, ops over 2 quarters.`
+
+*The detail unlock. Jamie volunteers the funding round, volume, spread, and timeframe — all signals the downstream bubbles need.*
+
+---
+
+**Assistant (bubble 3 — acknowledgment-only, no question):**
+> Makes sense. Post-funding growth hiring across multiple functions tends to stretch teams fast, especially when the roles don't all look the same.
 
 *This is an intentional no-question turn. It demonstrates Principle 1 ("Heard, not qualified") by showing the concierge listening without immediately asking the next thing.*
 
 ---
 
-**Assistant (bubble 3 — one question, specialization probe):**
-> Are any of those roles the kind that are hard to fill — specialized engineering, senior sales, anything niche to healthcare?
+**Assistant (bubble 4 — one question, specialization probe):**
+> In a mix that wide, it's common for a few roles to stay open longer than the rest. Any of the ones you mentioned sitting in that bucket for a while?
 
 *No chips. This is a diagnostic turn — specifics matter more than a bucketed chip answer.*
 
-**User (typed):** `Yeah a few. ML engineers, clinical informatics, couple of senior sales leaders. Been open a while.`
+**User (typed):** `Yeah a few. ML engineers, clinical informatics, couple senior sales leaders. Open a while now.`
 
 ---
 
-**Assistant (bubble 4 — reflect + timeline question):**
-> Those are roles where active search usually works better than waiting on inbound. And with 40 roles over two quarters, you're working on a tight runway. Is the timing tied to specific milestones, or is it more of a general urgency?
+**Assistant (bubble 5 — reflect + timeline question):**
+> Those are roles where active search usually works better than waiting on inbound. And you're working on a tight runway. Is the timing tied to specific milestones, or is it more of a general urgency?
 
 **Chips (composer):**
 - `Specific milestones`
@@ -167,7 +157,7 @@ The prompt is short and deliberately open — it names the situation (lots of hi
 
 ---
 
-**Assistant (bubble 5 — reflect + commit, no permission question):**
+**Assistant (bubble 6 — reflect + commit, no permission question):**
 > Given the scale, the specialized roles, and the timeline, this is exactly the kind of hiring setup a specialist can help with. Here's a quick way to set up time with one.
 
 **Artifact (recommendation card, rep handoff):**
@@ -181,7 +171,7 @@ The prompt is short and deliberately open — it names the situation (lots of hi
 
 ---
 
-**Assistant (bubble 6):**
+**Assistant (bubble 7):**
 > I'm working on that now.
 
 **Artifact (matching):**
@@ -192,16 +182,21 @@ The prompt is short and deliberately open — it names the situation (lots of hi
 **Next-step surface:** matched rep surface opens with a booking form prefilled for Jamie. Internally this rep is an AE.
 
 ### Bubble count and rhythm
-6 assistant bubbles + 3 user turns + 1 card CTA tap before the booking surface opens.
+7 assistant bubbles + 4 user turns + 1 card CTA tap before the booking surface opens.
 
-- Bubble 1: pressures/objectives question → user types
-- Bubble 2: acknowledge-only (no question)
-- Bubble 3: specialization question → user types
-- Bubble 4: reflect + timeline question → user taps chip
-- Bubble 5: reflect + commit + card (single `Find a time` CTA, no chip fork) → user taps CTA on card
-- Bubble 6: "I'm working on that now" + matching → booking surface opens
+- Bubble 1: warm, direct challenge probe → user types (vague)
+- Bubble 2: ack + scope/driver clarifier → user types (detail unlock)
+- Bubble 3: acknowledge-only (no question)
+- Bubble 4: specialization question → user types
+- Bubble 5: reflect + timeline question → user taps chip
+- Bubble 6: reflect + commit + card (single `Find a time` CTA, no chip fork) → user taps CTA on card
+- Bubble 7: "I'm working on that now" + matching → booking surface opens
 
-Rhythm is **acknowledge → answer → ask** with an intentional pause (bubble 2) that is not a question. One gentle follow-up at a time. The card ends the conversational phase — no chip fork, because AE handoffs are always scheduled meetings.
+Rhythm is **acknowledge → answer → ask**, with two intentional pacing moves:
+- **Bubble 2** exists to slow the conversation down and let the AI earn the rich reply instead of receiving it on turn one.
+- **Bubble 3** is the no-question pause that demonstrates Principle 1 ("Heard, not qualified").
+
+One gentle follow-up at a time. The card ends the conversational phase — no chip fork, because AE handoffs are always scheduled meetings.
 
 ### Hidden signals captured (BANT)
 - **Budget (proxy):** 40 roles + post-funding scale → enterprise-tier signal.
@@ -215,8 +210,9 @@ Each signal is harvested inside natural dialogue, never as a form field. The spe
 This visitor is a clear high-value fit: real budget proxy, decision-making seniority, specialized needs, and urgent timeline. The right next step is a scoped conversation with a specialist who can walk through a custom rollout. Live chat isn't the right shape for a conversation this big, and a self-serve product card would undersell the fit. Product recommendation cards live in Route 4 (low-value); live chat is the Route 2 choice (medium-value, immediate SDR).
 
 ### What the exec should see in this flow
-- **Bubble 2 (acknowledge-only)** is the Principle 1 proof moment — the concierge listens without turning every turn into a question.
-- **Bubble 5 (commit + card, no permission question)** is the Principle 2 proof moment — the concierge commits instead of asking "would you like to book?"
+- **Bubble 2 (ack + clarifier)** is the pacing moment — the concierge warms a vague input ("too many open roles rn") into real context by asking a narrow, earnable follow-up instead of accepting the vibe at face value.
+- **Bubble 3 (acknowledge-only)** is the Principle 1 proof moment — the concierge listens without turning every turn into a question.
+- **Bubble 6 (commit + card, no permission question)** is the Principle 2 proof moment — the concierge commits instead of asking "would you like to book?"
 - **The whole flow** is the Flow 1 "Qualifying without a form" deep decision from demo-framing.md — BANT signals harvested through dialogue, not through form fields.
 
 ---
@@ -228,20 +224,20 @@ Why this route. Real hiring pain, narrower than Route 1. A few stuck roles rathe
 For Jamie specifically, this is a stretch context: she's shown here in early-exploration mode asking about a focused pain point (specific hard-to-fill roles) rather than the full 40-role story from Route 1. Presenter narrates that context.
 
 ### Demo click
-Pill **Help with hiring** → starter prompt **`We have hard-to-fill roles`**.
+Chip **`Find the right solution for me`**.
 
-Problem-led entry, focused on a specific pain pattern rather than enterprise-scale volume. Maps cleanly to SDR-appropriate fit.
+Solution-seeking entry. The chip is broad and exploratory; the AI's first clarifying question ("what's been hardest") probes *what kind* of challenge, which surfaces the specific-role / volume / speed signal that separates Routes 2/3 from Route 4.
 
 ### Script
 
-**Assistant (opening):** see "Shared opening" above. Four pills visible.
+**Assistant (opening):** see "Shared opening" above. Three chips visible.
 
-**User (pill + prompt):** `We have hard-to-fill roles` *(from pill "Help with hiring")*
+**User (chip):** `Find the right solution for me`
 
 ---
 
 **Assistant (bubble 1 — acknowledge + diagnostic):**
-> Hard-to-fill roles are where hiring usually feels most stuck. What kinds of roles are you running into that with?
+> Happy to help you figure that out. The right kind of support depends a lot on what's getting in the way. What's been toughest lately?
 
 *No chips. Diagnostic turn — specifics matter.*
 
@@ -250,14 +246,14 @@ Problem-led entry, focused on a specific pain pattern rather than enterprise-sca
 ---
 
 **Assistant (bubble 2 — acknowledge-only, no question):**
-> That tracks — senior nursing and clinical informatics are both narrow talent pools. Waiting on inbound tends to drag those vacancies out.
+> That tracks. Senior nursing and clinical informatics are both narrow talent pools, and waiting on inbound tends to drag those vacancies out.
 
 *Principle 1 proof moment. Listening beat, no question.*
 
 ---
 
 **Assistant (bubble 3 — reflect + timeline question):**
-> Active outreach is usually what moves the needle on roles like this. How soon do you need to see progress?
+> That's the kind of gap where active outreach usually moves the needle faster than waiting on inbound. How soon do you need to see real progress?
 
 **Chips (composer):**
 - `This quarter`
@@ -303,7 +299,7 @@ The matching card resolves to a live chat with a named representative who takes 
 - Bubble 4: reflect + commit + two-CTA card → user taps `Chat live now` on the card
 - Bubble 5: matching → live chat takes over
 
-Tighter than Route 1 (5 vs 6 bubbles). The narrower pain justifies less diagnostic runway — no "driver" probe, since "hard-to-fill roles" is itself the diagnostic entry.
+Tighter than Route 1 (5 vs 7 bubbles). The narrower pain justifies less diagnostic runway — no pacing pause, no separate driver probe, since "hard-to-fill roles" is itself the diagnostic entry.
 
 ### Hidden signals captured
 - **Need:** narrow healthcare talent pool (senior nursing, clinical informatics), long time-to-fill.
@@ -326,7 +322,7 @@ Narrower pain, less-urgent timeline, thinner budget/authority signals, and a han
 Why this route. Same fit profile as Route 2 — narrower hiring pain, exploratory — but the visitor prefers to put time on the calendar instead of chatting live right now.
 
 ### Demo click
-Same as Route 2: Pill **Help with hiring** → starter prompt **`We have hard-to-fill roles`**.
+Same as Route 2: Chip **`Find the right solution for me`**.
 
 ### Script
 
@@ -370,15 +366,15 @@ Why this route. Occasional hiring, not enough signal to justify a human handoff.
 For Jamie specifically, this is a larger stretch than Routes 2/3. Presenter narrates that Jamie is shown earlier in her exploration — before the 40-role conversation — checking whether LinkedIn has something right-sized for her team.
 
 ### Demo click
-Pill **Find the right fit** → starter prompt **`Is this meant for teams my size?`**.
+Typed paraphrase (no chip): **`Is this meant for teams my size?`**.
 
-Why this pill (not Pill 1): none of Pill 1's prompts directly signal low-volume, and using Pill 1 would force the diagnostic to *undo* an implied high-volume framing. Pill 2's prompt is a fit question → naturally leads to a product-fit answer. Demo-wise, this is also the route that proves the pill set handles all value tiers, not just high-value via Pill 1.
+Route 4 isn't bound to a flat chip — its entry is a typed fit question. The `isRoute4FitIntent` classifier matches "is this meant for teams my size," "team size," and similar volume-framed paraphrases. Playback mode remains the reliable demo path for this route.
 
 ### Script
 
-**Assistant (opening):** see "Shared opening" above. Four pills visible.
+**Assistant (opening):** see "Shared opening" above. Three chips visible.
 
-**User (pill + prompt):** `Is this meant for teams my size?` *(from pill "Find the right fit")*
+**User (typed):** `Is this meant for teams my size?`
 
 ---
 
@@ -392,14 +388,14 @@ Why this pill (not Pill 1): none of Pill 1's prompts directly signal low-volume,
 ---
 
 **Assistant (bubble 2 — acknowledge-only, no question):**
-> Got it — lighter cadence, narrow mix. For teams at that volume, a lighter-touch option usually fits better than a full sourcing workflow.
+> Got it. For teams at that volume, a lighter-touch option usually fits better than a full sourcing workflow.
 
 *Principle 1 proof moment. Begins setting up the recommendation shape without naming the product yet.*
 
 ---
 
 **Assistant (bubble 3 — reflect + urgency question):**
-> One more thing — when a role opens up, how fast do you usually need to fill it?
+> One more thing that tends to shape what fits best. When a role opens up, how fast do you usually need to fill it?
 
 **Chips (composer):**
 - `Right away`
@@ -412,7 +408,7 @@ Why this pill (not Pill 1): none of Pill 1's prompts directly signal low-volume,
 ---
 
 **Assistant (bubble 4 — reflect + commit + product card):**
-> For 3-4 hires a year and flexible timelines, there's a lighter-touch option designed exactly for this.
+> For 3-4 hires a year, there's a lighter-touch option designed exactly for this.
 
 **Artifact (product recommendation card):**
 - Tag: `Recommended for you`
@@ -458,20 +454,20 @@ Why this route. Visitor is so early-stage that any product recommendation would 
 For Jamie specifically, this is the biggest stretch of any route. Presenter narrates: "Early exploration — Jamie before Northstar had a hiring plan, or researching for her boss. No concrete hiring need yet."
 
 ### Demo click
-Pill **See customer stories** → starter prompt **`Do companies like mine use this?`**.
+Chip **`Show me success stories`**.
 
-Using Pill 3 here means the demo covers all four pills across the five routes. "Do companies like mine use this?" is inherently exploratory / peer-validation seeking — a natural lead-in for someone who isn't sure they even need a solution yet.
+Peer-validation seeking — a natural lead-in for someone who isn't sure they even need a solution yet. The chip routes directly into Route 5's company-context diagnostic; the typed paraphrase "do companies like mine use this" still routes here too via the legacy `isRoute5CustomerStoriesIntent` classifier.
 
 ### Script
 
-**Assistant (opening):** see "Shared opening" above. Four pills visible.
+**Assistant (opening):** see "Shared opening" above. Three chips visible.
 
-**User (pill + prompt):** `Do companies like mine use this?` *(from pill "See customer stories")*
+**User (chip):** `Show me success stories`
 
 ---
 
 **Assistant (bubble 1 — acknowledge + open diagnostic):**
-> All kinds do, but the answer depends a lot on your situation. What kind of team are we talking about?
+> Plenty of teams use LinkedIn for hiring, and the most relevant examples depend on your setup. What kind of team are we talking about?
 
 *No chips. Open diagnostic.*
 
@@ -480,7 +476,7 @@ Using Pill 3 here means the demo covers all four pills across the five routes. "
 ---
 
 **Assistant (bubble 2 — acknowledge-only, no question):**
-> Totally fair — at that stage, the useful question usually isn't *which tool*, it's what kind of hiring you'll actually need first.
+> Totally fair. At that stage, the useful question usually isn't *which tool*, it's what kind of hiring you'll actually need first.
 
 *Principle 1 proof moment. Sets up the "not ready yet" conclusion without forcing it.*
 
@@ -496,7 +492,7 @@ Using Pill 3 here means the demo covers all four pills across the five routes. "
 ---
 
 **Assistant (bubble 4 — reflect + commit + redirect):**
-> That's a pretty common spot to be in. Here's a good starting point to browse what LinkedIn has for hiring — come back anytime.
+> That's a pretty common spot to be in. Here's a good starting point to browse what LinkedIn has for hiring. Come back anytime.
 
 **Artifact (redirect — minimal styled link):**
 - Single clickable element: `LinkedIn hiring products →`
@@ -515,7 +511,7 @@ Using Pill 3 here means the demo covers all four pills across the five routes. "
 - Bubble 3: gentle context probe → user types
 - Bubble 4: reflect + commit + redirect link
 
-Same length as Route 4, but different shape: zero chips anywhere in the route (Route 4 has chips on Bubble 3). Reinforces "low-structure, exploratory conversation."
+Same length as Route 4, but different shape: zero **visitor-facing** chips anywhere in the route (Route 4 has visitor chips on Bubble 3). Reinforces "low-structure, exploratory conversation." The composer-level sample replies on Bubbles 1 and 3 are presenter scaffolding for live-mode demos (same pattern as Routes 1-4) and don't change the visitor experience.
 
 ### Hidden signals captured
 - **Need:** nascent, undefined (maybe engineering and sales).
@@ -532,19 +528,19 @@ Route 5 is not driving a purchase. Sending a pre-hiring visitor to a Premium pla
 ### What the exec should see in this flow
 - **Bubble 2 acknowledge-only:** same Principle 1 proof as every route.
 - **Bubble 4 actively declines to pitch** ("Here's a good starting point to browse..."): the concierge's most restrained moment. Principle 3's hardest test — willingness to send the visitor away gracefully without a product or a meeting.
-- **Minimal styled link, zero chips, zero product names:** visually proves the concierge is not "every-visitor-is-a-lead."
+- **Minimal styled link, zero visitor-facing chips, zero product names:** visually proves the concierge is not "every-visitor-is-a-lead."
 
 ---
 
 ## Route summary at a glance
 
-| Route | Sales motion | Demo click (pill → prompt) | Bubbles | Terminal artifact | Chips |
+| Route | Sales motion | Demo click (flat chip) | Bubbles | Terminal artifact | Chips |
 |---|---|---|---|---|---|
-| 1 — AE booking | Field Sales | Help with hiring → `We're hiring a lot right now` | 6 | Single-CTA card → booking surface | B4 timeline |
-| 2 — SDR live chat | Field Sales | Help with hiring → `We have hard-to-fill roles` | 5 | Two-CTA card → live chat takeover | B3 timeline |
-| 3 — SDR booking | Field Sales | Help with hiring → `We have hard-to-fill roles` | 5 | Two-CTA card → booking surface | B3 timeline |
-| 4 — Hiring Pro card | Online Sales (Premium) | Find the right fit → `Is this meant for teams my size?` | 4 | Product card, terminal | B3 urgency |
-| 5 — Redirect | Neither (nurture) | See customer stories → `Do companies like mine use this?` | 4 | Minimal styled link, terminal | None |
+| 1 — AE booking | Field Sales | `Discuss my hiring challenges` | 7 | Single-CTA card → booking surface | B5 timeline |
+| 2 — SDR live chat | Field Sales | `Find the right solution for me` | 5 | Two-CTA card → live chat takeover | B3 timeline |
+| 3 — SDR booking | Field Sales | `Find the right solution for me` | 5 | Two-CTA card → booking surface | B3 timeline |
+| 4 — Hiring Pro card | Online Sales (Premium) | Typed paraphrase: `Is this meant for teams my size?` | 4 | Product card, terminal | B3 urgency |
+| 5 — Redirect | Neither (nurture) | `Show me success stories` | 4 | Minimal styled link, terminal | None |
 
 ## Divergences to remember
 - **Routes 2 and 3 share copy through Bubble 4's two-CTA card** and only differ in which CTA the visitor taps (`Chat live now` vs `Schedule for later`) and the handoff bubble that follows.

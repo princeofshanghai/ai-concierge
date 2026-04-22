@@ -9,6 +9,7 @@ import {
 import { AiConciergeBody } from "@/components/ai-concierge-body";
 import { AiConciergeConfettiOverlay } from "@/components/ai-concierge-confetti-overlay";
 import { AiConciergeComposer } from "@/components/ai-concierge-composer";
+import { AiConciergeOpeningSupportView } from "@/components/ai-concierge-opening-support";
 import { AiConciergeMeetingCancelDialog } from "@/components/ai-concierge-meeting-cancel-dialog";
 import { AiConciergeMicrophoneNotice } from "@/components/ai-concierge-microphone-notice";
 import { AiConciergeVoiceDock } from "@/components/ai-concierge-voice-dock";
@@ -190,7 +191,7 @@ function ComposerToVoiceTransitionShell({
           <div className="absolute inset-0 rounded-full border border-ai-blue-primary opacity-0 animate-[ai-concierge-composer-to-voice-gradient-frame_820ms_cubic-bezier(0.16,1,0.3,1)_both]" />
           <div className="absolute inset-0 flex items-center justify-between gap-4 px-3 animate-[ai-concierge-composer-to-voice-content_820ms_cubic-bezier(0.16,1,0.3,1)_both]">
             <span className="ai-type-body-md-open max-w-[220px] truncate pl-1 text-ai-text-disabled">
-              Type your message
+              Send a message
             </span>
             <span className="flex items-center gap-1">
               <span className="flex h-8 w-8 items-center justify-center rounded-full text-ai-text-secondary">
@@ -854,9 +855,39 @@ export function AiConciergePanel({
     !shouldShowNextStepSurface &&
     Boolean(systemNoticeMessage);
   const onboardingCopyVariant = "direct-entry";
+  const isDirectToChatOnboarding =
+    prototypeScenario.onboardingStyle === "direct-to-chat";
+  // In the direct-to-chat flow, the signed-out fallback is a single
+  // "What should I call you?" field. The rep-gate always uses the full
+  // form so we can collect the contact info an action needs.
+  const isQuickNameEntry =
+    isDirectToChatOnboarding &&
+    onboardingFlowIntent === "entry" &&
+    panelState === "manual" &&
+    !isLinkedInConnected &&
+    prototypeScenario.authState !== "linkedin-connected";
+  const onboardingFieldSet: "full" | "first-name-only" = isQuickNameEntry
+    ? "first-name-only"
+    : "full";
+  const isOnboardingValid = isQuickNameEntry
+    ? contactDetails.firstName.trim().length > 0
+    : isContactDetailsValid;
   const onboardingSubmitLabel =
-    pendingIdentityAction !== null ? "Continue to rep" : "Start chat";
+    pendingIdentityAction !== null
+      ? "Continue to rep"
+      : isQuickNameEntry
+        ? "Continue"
+        : "Start chat";
   const shouldShowOnboardingBackButton = true;
+  // Booking panel email/phone start empty in direct-to-chat so the user
+  // fills them at the moment of booking (the booking panel already
+  // exposes per-format email or phone fields with "Only used for this
+  // meeting" helper text). Playback mode always uses prefilled details
+  // so scripted transcripts render consistently.
+  const bookingPanelContactDetails =
+    isDirectToChatOnboarding && !isPlaybackMode
+      ? EMPTY_CONTACT_DETAILS
+      : contactDetails;
 
   useEffect(() => {
     shouldShowNextStepSurfaceRef.current = shouldShowNextStepSurface;
@@ -1476,12 +1507,19 @@ export function AiConciergePanel({
     syncPrototypeScenario({
       authState: "linkedin-connected",
       entryVariant: prototypeScenario.entryVariant,
+      onboardingStyle: prototypeScenario.onboardingStyle,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
       playbackRoute: prototypeScenario.playbackRoute,
     });
     setOnboardingFlowIntent("entry");
     setPendingIdentityAction(null);
     setContactDetails(nextContactDetails);
+    if (isDirectToChatOnboarding && onboardingFlowIntent === "entry") {
+      persistConfirmedEntryDetails(nextContactDetails);
+      restartConversationWithDetails(nextContactDetails);
+      setPanelState("chat");
+      return;
+    }
     setPanelState("prefill");
   };
 
@@ -1493,6 +1531,7 @@ export function AiConciergePanel({
     syncPrototypeScenario({
       authState: "signed-out",
       entryVariant: prototypeScenario.entryVariant,
+      onboardingStyle: prototypeScenario.onboardingStyle,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
       playbackRoute: prototypeScenario.playbackRoute,
     });
@@ -1502,11 +1541,16 @@ export function AiConciergePanel({
   const handleGetStarted = () => {
     setOnboardingFlowIntent("entry");
     setPendingIdentityAction(null);
-    setPanelState(
-      isLinkedInConnected || prototypeScenario.authState === "linkedin-connected"
-        ? "prefill"
-        : "manual",
-    );
+    const isConnected =
+      isLinkedInConnected ||
+      prototypeScenario.authState === "linkedin-connected";
+    if (isDirectToChatOnboarding && isConnected) {
+      persistConfirmedEntryDetails(contactDetails);
+      restartConversationWithDetails(contactDetails);
+      setPanelState("chat");
+      return;
+    }
+    setPanelState(isConnected ? "prefill" : "manual");
   };
 
   const handleBackFromDetails = () => {
@@ -1535,6 +1579,7 @@ export function AiConciergePanel({
     syncPrototypeScenario({
       authState: "signed-out",
       entryVariant: prototypeScenario.entryVariant,
+      onboardingStyle: prototypeScenario.onboardingStyle,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
       playbackRoute: prototypeScenario.playbackRoute,
     });
@@ -1580,12 +1625,21 @@ export function AiConciergePanel({
       setOnboardingFlowIntent("entry");
       setPendingIdentityAction(null);
       setContactDetails(signedInContactDetails);
-      setPanelState("prefill");
+      if (isDirectToChatOnboarding) {
+        persistConfirmedEntryDetails(signedInContactDetails);
+        restartConversationWithDetails(signedInContactDetails);
+        setPanelState("chat");
+      } else {
+        setPanelState("prefill");
+      }
       onAuthReturnHandled?.();
     });
   }, [
     authReturnNonce,
+    isDirectToChatOnboarding,
     onAuthReturnHandled,
+    persistConfirmedEntryDetails,
+    restartConversationWithDetails,
     signedInContactDetails,
   ]);
 
@@ -1647,7 +1701,7 @@ export function AiConciergePanel({
       return;
     }
 
-    if (!isContactDetailsValid) {
+    if (!isOnboardingValid) {
       return;
     }
 
@@ -2202,7 +2256,7 @@ export function AiConciergePanel({
                             ? "manage"
                             : "book"
                         }
-                        contactDetails={contactDetails}
+                        contactDetails={bookingPanelContactDetails}
                         initialSelection={representativeBookingDraft}
                         onBackToChat={handleBackToChat}
                         onCancelMeeting={
@@ -2293,7 +2347,47 @@ export function AiConciergePanel({
                   />
                 ) : !shouldShowNextStepSurface &&
                   !isVoiceComposerTransitioning ? (
-                  <AiConciergeComposer
+                  <>
+                    {(() => {
+                      // Pills dock above the composer as a slim strip during the
+                      // opening state only. Matches the ChatGPT / Meta AI pattern
+                      // where starter prompts live next to the composer rather
+                      // than buried inside an assistant bubble. Hidden once Jamie
+                      // sends her first message, in playback mode (scripted —
+                      // can't be tapped), and in voice mode (the voice dock
+                      // owns that surface).
+                      const hasCommittedUserTurn = messages.some(
+                        (message) => message.role === "user",
+                      );
+                      if (hasCommittedUserTurn || isPlaybackMode) {
+                        return null;
+                      }
+                      const openingMessage = messages.find(
+                        (message) =>
+                          message.role === "assistant" &&
+                          message.openingSupport?.type === "topic-picker",
+                      );
+                      if (!openingMessage?.openingSupport) {
+                        return null;
+                      }
+                      return (
+                        <div className="px-5 pb-3">
+                          <div
+                            className={[
+                              "mx-auto w-full",
+                              isExpanded ? "max-w-[720px]" : "max-w-full",
+                            ].join(" ")}
+                          >
+                            <AiConciergeOpeningSupportView
+                              layout="docked"
+                              onInsertPrompt={handleOpeningPromptInsert}
+                              support={openingMessage.openingSupport}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <AiConciergeComposer
                     key={composerKey}
                     disabled={
                       isAssistantResponding ||
@@ -2315,7 +2409,7 @@ export function AiConciergePanel({
                     idlePlaceholder={
                       isLiveSalesChatActive
                         ? `Message ${DEFAULT_REPRESENTATIVE_NAME}`
-                        : "Type your message"
+                        : "Send a message"
                     }
                     onDraftChange={handleComposerDraftChange}
                     onSend={handleSendMessage}
@@ -2327,15 +2421,17 @@ export function AiConciergePanel({
                       !disableVoiceMode && !isLiveSalesChatActive
                     }
                   />
+                  </>
                 ) : null}
               </div>
             ) : (
               <AiConciergeOnboarding
                 copyVariant={onboardingCopyVariant}
                 details={contactDetails}
+                fieldSet={onboardingFieldSet}
                 isPanelExpanded={isExpanded}
                 isLinkedInConnected={isLinkedInConnected}
-                isValid={isContactDetailsValid}
+                isValid={isOnboardingValid}
                 linkedInIdentity={
                   isLinkedInConnected ? signedInLinkedInIdentity : null
                 }

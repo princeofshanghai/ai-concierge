@@ -273,7 +273,7 @@ export function AiConciergeComposer({
   isDictating = false,
   isPanelExpanded = false,
   isResponding = false,
-  idlePlaceholder = "Type your message",
+  idlePlaceholder = "Send a message",
   onDraftChange,
   onSend,
   onToggleDictation,
@@ -399,12 +399,12 @@ export function AiConciergeComposer({
             className={[
               "border bg-ai-surface-base px-3 py-3 transition-[border-radius,border-color,box-shadow] duration-150",
               isShowingRespondingState
-                ? "rounded-full border-ai-border-faint"
+                ? "rounded-full border-ai-divider-strong"
                 : isComposerExpanded
                   ? "rounded-[24px] border-ai-border-strong"
                   : isComposerFocused
                   ? "rounded-full border-ai-border-focus"
-                  : "rounded-full border-ai-border-faint",
+                  : "rounded-full border-ai-divider-strong",
             ].join(" ")}
           >
             {isShowingRespondingState ? (

@@ -20,8 +20,11 @@ type ConversationStage =
   | "explore"
   | "booking_pending"
   // Route 1 (High value, AE booking) — `docs/conversation-scripts.md`.
-  // This is Jamie's canonical high-value flow: pressures → specialization →
-  // timeline → single-CTA rep card → booking surface.
+  // This is Jamie's canonical high-value flow: pressures (vague) → driver/scope
+  // (funding + volume) → specialization → timeline → single-CTA rep card →
+  // booking surface. The pressures → driver split keeps the conversation
+  // pacing realistic (short first reply, richer second reply after AI probes).
+  | "route_1_awaiting_pressures"
   | "route_1_awaiting_growth_driver"
   | "route_1_awaiting_specialization"
   | "route_1_awaiting_timeline"
@@ -110,22 +113,22 @@ export type AiConciergeAssistantTurn = {
   suggestedReplyDisplay?: "composer" | "inline";
 };
 
+// Flat opening chips (default `inline-prompts` variant). Each label is the
+// exact user message submitted when the chip is tapped, so the matchers at
+// the top of `createOpeningResponse` route them deterministically to the
+// intended Phase-A route. See `docs/conversation-scripts.md` -> Shared opening.
 const OPENING_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   {
-    id: "consistent-hiring",
-    label: "We hire consistently across teams",
+    id: "find-right-solution",
+    label: "Find the right solution for me",
   },
   {
-    id: "hard-to-fill",
-    label: "We need help with harder-to-fill roles",
+    id: "discuss-hiring-challenges",
+    label: "Discuss my hiring challenges",
   },
   {
-    id: "occasional-hiring",
-    label: "We're hiring occasionally",
-  },
-  {
-    id: "just-getting-started",
-    label: "I'm just getting started",
+    id: "show-success-stories",
+    label: "Show me success stories",
   },
 ];
 
@@ -201,11 +204,21 @@ const LIGHTER_TOUCH_NEXT_SUGGESTIONS: AiConciergeSuggestedReply[] = [
 // Route 1 composer-level scaffolding — the "Example responses" presenter
 // clicks to speak as Jamie during the high-value demo. Single-item arrays are
 // intentional: these are canned typed replies, not bounded choices.
+// Jamie's replies are deliberately short + chunky (especially the first one)
+// to mirror how a real visitor types mid-meeting: a phrase, not a paragraph.
+// The AI's follow-up is what adds the context, which is the demo moment.
+const ROUTE_1_PRESSURES_EXAMPLE: AiConciergeSuggestedReply[] = [
+  {
+    id: "route-1-pressures-jamie",
+    label: "too many open roles rn",
+  },
+];
+
 const ROUTE_1_GROWTH_DRIVER_EXAMPLE: AiConciergeSuggestedReply[] = [
   {
     id: "route-1-growth-driver-jamie",
     label:
-      "Just closed a funding round. About 40 roles to hire across eng, product, sales, and CS over the next 2 quarters.",
+      "pretty recent. Series C closed in Feb. ~40 roles across eng, clinical, sales, ops over 2 quarters.",
   },
 ];
 
@@ -213,11 +226,11 @@ const ROUTE_1_SPECIALIZATION_EXAMPLE: AiConciergeSuggestedReply[] = [
   {
     id: "route-1-specialization-jamie",
     label:
-      "Yeah a few. ML engineers, clinical informatics, couple of senior sales leaders. Been open a while.",
+      "Yeah a few. ML engineers, clinical informatics, couple senior sales leaders. Open a while now.",
   },
 ];
 
-// Route 1 B4 — bounded timeline options, surfaced at composer level per the
+// Route 1 B5 — bounded timeline options, surfaced at composer level per the
 // script doc (consistent with the existing `URGENCY_SUGGESTIONS` pattern).
 const ROUTE_1_TIMELINE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "route-1-timeline-milestones", label: "Specific milestones" },
@@ -260,6 +273,26 @@ const ROUTE_4_URGENCY_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "route-4-urgency-flexible", label: "We're flexible" },
 ];
 
+// Route 5 composer-level scaffolding. Both turns surface a single canned
+// typed reply for the presenter to tap during live-mode demos. These are
+// NOT visitor-facing chips — Route 5's visitor experience remains fully
+// open-typed. See the Route 5 script for the full rationale.
+const ROUTE_5_COMPANY_CONTEXT_EXAMPLE: AiConciergeSuggestedReply[] = [
+  {
+    id: "route-5-company-context-jamie",
+    label:
+      "Startup, 15ish people. Haven't really hired much yet, but figuring we might need to soon.",
+  },
+];
+
+const ROUTE_5_ROLE_CONTEXT_EXAMPLE: AiConciergeSuggestedReply[] = [
+  {
+    id: "route-5-role-context-jamie",
+    label:
+      "Honestly still up in the air. Maybe engineering and sales? No concrete plan yet.",
+  },
+];
+
 const LOWER_TOUCH_PLANS_CTA_HREF = "https://example.com";
 
 const DEFAULT_STATE: AiConciergeConversationState = {
@@ -285,18 +318,18 @@ function createOpeningCoreBody(contactDetails: ConciergeContactDetails) {
   const company = contactDetails.company.trim();
   const companyClause = company.length > 0 ? ` for ${company}` : "";
 
-  return `I'm your AI hiring guide${companyClause}.\n\nMy goal is to understand what your team is working through and share how LinkedIn can support you.`;
+  return `I'm your AI hiring guide${companyClause}. Tell me what your team is working through and I'll help you find the right fit.`;
 }
 
 function createOpeningBody(contactDetails: ConciergeContactDetails) {
   const trimmedFirstName = contactDetails.firstName.trim();
   const openingCoreBody = createOpeningCoreBody(contactDetails);
+  const welcomeLead =
+    trimmedFirstName.length > 0
+      ? `Hi ${trimmedFirstName}, glad you're here.`
+      : "Hi, glad you're here.";
 
-  if (trimmedFirstName.length > 0) {
-    return `Hi ${trimmedFirstName}! ${openingCoreBody}`;
-  }
-
-  return openingCoreBody;
+  return `${welcomeLead} ${openingCoreBody}`;
 }
 
 export function createOpeningTurn({
@@ -333,7 +366,7 @@ export function createOpeningTurn({
   }
 
   return {
-    body: `${openingBody}\n\nHere are a few ways to get started:`,
+    body: openingBody,
     nextState: DEFAULT_STATE,
     suggestedReplies: OPENING_SUGGESTIONS,
     suggestedReplyDisplay: "inline",
@@ -424,6 +457,9 @@ export function getAssistantTurn({
         nextState: state,
       };
       break;
+    case "route_1_awaiting_pressures":
+      assistantTurn = createRoute1PressuresAnswerResponse(state);
+      break;
     case "route_1_awaiting_growth_driver":
       assistantTurn = createRoute1GrowthDriverResponse(input, state);
       break;
@@ -484,6 +520,33 @@ export function getAssistantTurn({
 
 function createOpeningResponse(input: string): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
+
+  // --- Flat-chip openings (default `inline-prompts` variant) ----------------
+  // Tapping a flat opening chip submits the chip label verbatim. Matched
+  // first so chip taps are deterministic; typed paraphrases below still
+  // route to the same entry points via the legacy classifiers.
+
+  if (
+    normalized.includes("discuss my hiring challenges") ||
+    normalized.includes("my hiring challenges") ||
+    (normalized.includes("hiring") && normalized.includes("challenges"))
+  ) {
+    return createRoute1PressuresResponse();
+  }
+
+  if (
+    normalized.includes("find the right solution") ||
+    normalized.includes("right solution for me")
+  ) {
+    return createRoute23RolesDiagnosticResponse();
+  }
+
+  if (
+    normalized.includes("show me success") ||
+    normalized.includes("success stories")
+  ) {
+    return createRoute5CompanyContextDiagnosticResponse();
+  }
 
   // --- Canonical Phase-A entries ---------------------------------------------
 
@@ -606,7 +669,7 @@ function createOpeningResponse(input: string): AiConciergeAssistantTurn {
 
   if (isRecruiterQuestion(normalized)) {
     return {
-      body: "Recruiter is most useful when your team needs to proactively find and reach candidates instead of waiting for inbound applications. It helps you search, narrow down, and reach out directly. To point you the right way, how does your team typically hire?",
+      body: "Good question. Recruiter is most useful when your team needs to proactively find and reach candidates instead of waiting for inbound applications. It helps you search, narrow down, and reach out directly. To point you the right way, how does your team typically hire?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_hiring_motion",
@@ -707,7 +770,7 @@ function createHiringMotionResponse(
       };
     case "unknown":
       return {
-        body: "A good place to start is where the hiring pressure is strongest. Which teams or roles are most affected?",
+        body: "No problem. A good place to start is usually where the hiring pressure is strongest. Which teams or roles are most affected?",
         nextState: {
           ...state,
           stage: "awaiting_fit_context",
@@ -999,25 +1062,46 @@ function createHandoffChoiceResponse(
 // canonical script this code implements.
 // ----------------------------------------------------------------------------
 
-// Route 1 B1 — pressures/objectives question (no chips in chat; composer
-// surfaces Jamie's canned reply for presenter scaffolding).
+// Route 1 B1 — warm, direct challenge probe (no chips in chat; composer
+// surfaces Jamie's deliberately vague canned reply for presenter scaffolding).
+// The vague first reply is intentional: it lets the AI's B2 clarifier
+// demonstrate Principle 1 ("Heard, not qualified") — warming an unclear input
+// into something actionable.
 function createRoute1PressuresResponse(): AiConciergeAssistantTurn {
   return {
-    body:
-      "That's a real pressure — especially when expectations outpace capacity. Before we talk about options, what's driving the growth right now? Is it a funding round, a product push, a new market — something else?",
+    body: "Happy to help. What's been the hardest part of hiring for you lately?",
     nextState: {
       ...DEFAULT_STATE,
-      stage: "route_1_awaiting_growth_driver",
+      stage: "route_1_awaiting_pressures",
       startingSituation: "consistent_hiring",
       hiringMotion: "broader_ongoing",
       likelySolution: "recruiter",
+    },
+    suggestedReplies: ROUTE_1_PRESSURES_EXAMPLE,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 1 B2 — ack + scope/driver clarifier. This is the turn that earns the
+// richer follow-up reply from Jamie (funding round + 40 roles). Single bubble,
+// no priorBubble: the acknowledge is short and leads directly into the
+// question, since the user's previous reply was vague.
+function createRoute1PressuresAnswerResponse(
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  return {
+    body:
+      "That's a real pressure to be under. What's driving it usually shapes what's worth trying. Is this a recent ramp, or has it been building?",
+    nextState: {
+      ...state,
+      stage: "route_1_awaiting_growth_driver",
     },
     suggestedReplies: ROUTE_1_GROWTH_DRIVER_EXAMPLE,
     suggestedReplyDisplay: "composer",
   };
 }
 
-// Route 1 B2 + B3 — acknowledge-only bubble (priorBubble) followed by the
+// Route 1 B3 + B4 — acknowledge-only bubble (priorBubble) followed by the
 // specialization probe. The acknowledge beat is the Principle 1 proof moment
 // from the scripts doc: concierge listens without immediately asking again.
 function createRoute1GrowthDriverResponse(
@@ -1032,13 +1116,13 @@ function createRoute1GrowthDriverResponse(
     normalized.includes("closed a round");
 
   const acknowledgeBody = mentionsFunding
-    ? "Makes sense — post-funding growth hiring across multiple functions tends to stretch teams fast, especially when the roles don't all look the same."
-    : "Makes sense — growth like that across multiple functions tends to stretch teams fast, especially when the roles don't all look the same.";
+    ? "Makes sense. Post-funding growth hiring across multiple functions tends to stretch teams fast, especially when the roles don't all look the same."
+    : "Makes sense. Growth like that across multiple functions tends to stretch teams fast, especially when the roles don't all look the same.";
 
   return {
     priorBubble: acknowledgeBody,
     body:
-      "Are any of those roles the kind that are hard to fill — specialized engineering, senior sales, anything niche to healthcare?",
+      "In a mix that wide, it's common for a few roles to stay open longer than the rest. Any of the ones you mentioned sitting in that bucket for a while?",
     nextState: {
       ...state,
       stage: "route_1_awaiting_specialization",
@@ -1049,7 +1133,7 @@ function createRoute1GrowthDriverResponse(
   };
 }
 
-// Route 1 B4 — reflect + timeline question. Three bounded timeline options
+// Route 1 B5 — reflect + timeline question. Three bounded timeline options
 // surface at composer level (matching the existing URGENCY_SUGGESTIONS
 // pattern elsewhere in this file).
 function createRoute1SpecializationResponse(
@@ -1060,7 +1144,7 @@ function createRoute1SpecializationResponse(
 
   return {
     body:
-      "Those are roles where active search usually works better than waiting on inbound. And with 40 roles over two quarters, you're working on a tight runway. Is the timing tied to specific milestones, or is it more of a general urgency?",
+      "Those are roles where active search usually works better than waiting on inbound. And you're working on a tight runway. Is the timing tied to specific milestones, or is it more of a general urgency?",
     nextState: {
       ...state,
       stage: "route_1_awaiting_timeline",
@@ -1073,7 +1157,7 @@ function createRoute1SpecializationResponse(
   };
 }
 
-// Route 1 B5 — reflect + commit + single-CTA rep card. Tapping the card's
+// Route 1 B6 — reflect + commit + single-CTA rep card. Tapping the card's
 // "Find a time" CTA runs through the existing representative-match flow
 // (which transforms the artifact into matching → ready → booking surface).
 function createRoute1TimelineResponse(
@@ -1115,7 +1199,7 @@ function createRoute1RepresentativeRecommendationArtifact(): AiConciergeMessageA
 function createRoute23RolesDiagnosticResponse(): AiConciergeAssistantTurn {
   return {
     body:
-      "Hard-to-fill roles are where hiring usually feels most stuck. What kinds of roles are you running into that with?",
+      "Happy to help you figure that out. The right kind of support depends a lot on what's getting in the way. What's been toughest lately?",
     nextState: {
       ...DEFAULT_STATE,
       stage: "route_23_awaiting_role_diagnostic",
@@ -1144,15 +1228,15 @@ function createRoute23RoleDiagnosticResponse(
     normalized.includes("healthcare");
 
   const acknowledgeBody = mentionsHealthcare
-    ? "That tracks — senior nursing and clinical informatics are both narrow talent pools. Waiting on inbound tends to drag those vacancies out."
-    : "That tracks — those are the kind of narrow talent pools where waiting on inbound tends to drag vacancies out.";
+    ? "That tracks. Senior nursing and clinical informatics are both narrow talent pools, and waiting on inbound tends to drag those vacancies out."
+    : "That tracks. Those are the kind of narrow talent pools where waiting on inbound tends to drag vacancies out.";
 
   const roleContext = summarizeHiringContext(input);
 
   return {
     priorBubble: acknowledgeBody,
     body:
-      "Active outreach is usually what moves the needle on roles like this. How soon do you need to see progress?",
+      "That's the kind of gap where active outreach usually moves the needle faster than waiting on inbound. How soon do you need to see real progress?",
     nextState: {
       ...state,
       stage: "route_23_awaiting_timeline",
@@ -1243,9 +1327,9 @@ function createRoute4VolumeDiagnosticResponse(
 
   return {
     priorBubble:
-      "Got it — lighter cadence, narrow mix. For teams at that volume, a lighter-touch option usually fits better than a full sourcing workflow.",
+      "Got it. For teams at that volume, a lighter-touch option usually fits better than a full sourcing workflow.",
     body:
-      "One more thing — when a role opens up, how fast do you usually need to fill it?",
+      "One more thing that tends to shape what fits best. When a role opens up, how fast do you usually need to fill it?",
     nextState: {
       ...state,
       stage: "route_4_awaiting_urgency",
@@ -1273,7 +1357,7 @@ function createRoute4UrgencyResponse(
   return {
     artifact: createRoute4HiringProRecommendationArtifact(),
     body:
-      "For 3-4 hires a year and flexible timelines, there's a lighter-touch option designed exactly for this.",
+      "For 3-4 hires a year, there's a lighter-touch option designed exactly for this.",
     nextState: {
       ...state,
       stage: "explore",
@@ -1310,13 +1394,16 @@ function createRoute4HiringProRecommendationArtifact(): AiConciergeMessageArtifa
 // constant when production-bound.
 const ROUTE_5_REDIRECT_HREF = "https://example.com";
 
-// Route 5 B1 — acknowledge + open diagnostic about company context. No chips;
-// the script explicitly avoids chips everywhere in Route 5 to reinforce the
-// "low-structure, exploratory conversation" shape.
+// Route 5 B1 — acknowledge + open diagnostic about company context. No
+// visitor-facing chips; Route 5's script keeps the conversation surface fully
+// open-typed to reinforce the "low-structure, exploratory conversation"
+// shape. The composer-level sample reply below is presenter scaffolding for
+// live-mode demos (same pattern as Routes 1-4) and doesn't change the visitor
+// experience.
 function createRoute5CompanyContextDiagnosticResponse(): AiConciergeAssistantTurn {
   return {
     body:
-      "All kinds do, but the answer depends a lot on your situation. What kind of team are we talking about?",
+      "Plenty of teams use LinkedIn for hiring, and the most relevant examples depend on your setup. What kind of team are we talking about?",
     nextState: {
       ...DEFAULT_STATE,
       stage: "route_5_awaiting_company_context",
@@ -1324,13 +1411,16 @@ function createRoute5CompanyContextDiagnosticResponse(): AiConciergeAssistantTur
       // haven't defined a situation yet. Nothing downstream branches on this
       // field, so adding a new enum variant would be bloat.
     },
-    // No suggestedReplies — this is an open diagnostic, typed input only.
+    suggestedReplies: ROUTE_5_COMPANY_CONTEXT_EXAMPLE,
+    suggestedReplyDisplay: "composer",
   };
 }
 
 // Route 5 B2 + B3 — acknowledge-only bubble (Principle 1 proof) then a gentle
-// role probe. Still no chips: the probe is intentionally open-ended so the
-// visitor isn't forced to commit to a concrete role signal they don't have.
+// role probe. Still no visitor-facing chips: the probe is intentionally
+// open-ended so the visitor isn't forced to commit to a concrete role signal
+// they don't have. Composer-level sample reply is presenter scaffolding for
+// live-mode demos.
 function createRoute5CompanyContextResponse(
   input: string,
   state: AiConciergeConversationState,
@@ -1339,7 +1429,7 @@ function createRoute5CompanyContextResponse(
 
   return {
     priorBubble:
-      "Totally fair — at that stage, the useful question usually isn't which tool, it's what kind of hiring you'll actually need first.",
+      "Totally fair. At that stage, the useful question usually isn't which tool, it's what kind of hiring you'll actually need first.",
     body:
       "When you say you might need to soon, do you have a sense of what that looks like? Specific role in mind, or still up in the air?",
     nextState: {
@@ -1348,6 +1438,8 @@ function createRoute5CompanyContextResponse(
       hiringSummary: roleContext.summary,
       hiringUseCase: roleContext.hiringUseCase,
     },
+    suggestedReplies: ROUTE_5_ROLE_CONTEXT_EXAMPLE,
+    suggestedReplyDisplay: "composer",
   };
 }
 
@@ -1365,7 +1457,7 @@ function createRoute5RoleContextResponse(
   const roleContext = summarizeHiringContext(input);
 
   return {
-    body: `That's a pretty common spot to be in. Here's a good starting point to browse what LinkedIn has for hiring — come back anytime.\n\n[LinkedIn hiring products →](${ROUTE_5_REDIRECT_HREF})`,
+    body: `That's a pretty common spot to be in. Here's a good starting point to browse what LinkedIn has for hiring. Come back anytime.\n\n[LinkedIn hiring products →](${ROUTE_5_REDIRECT_HREF})`,
     nextState: {
       ...state,
       hiringSummary: roleContext.summary || state.hiringSummary,

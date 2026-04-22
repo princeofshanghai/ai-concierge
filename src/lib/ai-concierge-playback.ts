@@ -34,15 +34,17 @@ const PLAYBACK_SCRIPTS: Record<
   PlaybackScript
 > = {
   "high-ae-booking": {
-    // Route 1 (High value, AE booking). Jamie taps the "Help with hiring"
-    // pill, picks "We're hiring a lot right now", then types the canned
-    // driver + specialization replies and picks a timeline bucket. The
-    // card CTA tap (B5) is driven by playback finalization, not a chat
-    // message — see `finalizeTranscript`.
+    // Route 1 (High value, AE booking). Jamie taps the "Discuss my hiring
+    // challenges" flat chip, answers vaguely (B1 → Jamie 1), gets a scope
+    // clarifier from the AI (B2), shares the funding + 40-role context
+    // (Jamie 2), answers the specialization probe (Jamie 3), then picks a
+    // timeline bucket. The card CTA tap (B6) is driven by playback
+    // finalization, not a chat message — see `finalizeTranscript`.
     userInputs: [
-      "We're hiring a lot right now",
-      "Just closed a funding round. About 40 roles to hire across eng, product, sales, and CS over the next 2 quarters.",
-      "Yeah a few. ML engineers, clinical informatics, couple of senior sales leaders. Been open a while.",
+      "Discuss my hiring challenges",
+      "too many open roles rn",
+      "pretty recent. Series C closed in Feb. ~40 roles across eng, clinical, sales, ops over 2 quarters.",
+      "Yeah a few. ML engineers, clinical informatics, couple senior sales leaders. Open a while now.",
       "Specific milestones",
     ],
   },

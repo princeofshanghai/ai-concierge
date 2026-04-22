@@ -31,7 +31,7 @@ export function AiConciergeRecommendationCard({
         widthClassName,
       ].join(" ")}
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           {artifact.tagText ? (
             <Tag className="w-fit" tone="supportive5">

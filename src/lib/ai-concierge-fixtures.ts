@@ -104,5 +104,5 @@ export const DEFAULT_BOOKED_MEETING_DETAILS: RepresentativeMeetingDetails = {
   dateLabel: "Tuesday, April 9",
   formatLabel: "Video call",
   representativeName: DEFAULT_REPRESENTATIVE_NAME,
-  timeLabel: "2:00 PM-2:30 PM PT",
+  timeLabel: "2:00 PM-2:15 PM PT",
 };

@@ -16,6 +16,9 @@ import {
   getPrototypeScenarioAuthGroupLabel,
   getPrototypeScenarioAuthHelperText,
   getPrototypeScenarioAuthLabel,
+  getPrototypeScenarioOnboardingStyleGroupLabel,
+  getPrototypeScenarioOnboardingStyleHelperText,
+  getPrototypeScenarioOnboardingStyleLabel,
   getPrototypeScenarioOpeningPromptLabel,
   type PrototypePlaybackRoute,
   type PrototypeScenario,
@@ -49,6 +52,11 @@ const OPENING_PROMPT_OPTIONS: PrototypeScenario["openingPromptVariant"][] = [
   "inline-prompts",
   "helper-examples",
   "topic-picker",
+];
+
+const ONBOARDING_STYLE_OPTIONS: PrototypeScenario["onboardingStyle"][] = [
+  "direct-to-chat",
+  "confirm-details",
 ];
 
 // The playback picker is a three-tier tree. Parent chips may be leaves
@@ -324,6 +332,37 @@ export function InternalPrototypeNav({
                             className="min-h-9 px-3 text-[12px]"
                           >
                             {getPrototypeScenarioAuthLabel(authState)}
+                          </PrototypeShellChip>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <PrototypeShellLabel className="px-0 pb-0 text-white/48">
+                        {getPrototypeScenarioOnboardingStyleGroupLabel()}
+                      </PrototypeShellLabel>
+                      <PrototypeShellHelperText className="mt-2 max-w-[28ch] text-white/58">
+                        {getPrototypeScenarioOnboardingStyleHelperText()}
+                      </PrototypeShellHelperText>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {ONBOARDING_STYLE_OPTIONS.map((onboardingStyle) => (
+                          <PrototypeShellChip
+                            key={onboardingStyle}
+                            selected={
+                              prototypeScenario.onboardingStyle ===
+                              onboardingStyle
+                            }
+                            onClick={() =>
+                              updatePrototypeScenario(
+                                "onboardingStyle",
+                                onboardingStyle,
+                              )
+                            }
+                            className="min-h-9 px-3 text-[12px]"
+                          >
+                            {getPrototypeScenarioOnboardingStyleLabel(
+                              onboardingStyle,
+                            )}
                           </PrototypeShellChip>
                         ))}
                       </div>

@@ -191,7 +191,7 @@ function OpeningTopicPicker({
     ? "relative flex flex-col"
     : "relative mt-1 flex flex-col gap-3";
   const pillRowClassName = isDocked
-    ? "ai-concierge-pill-row flex flex-nowrap items-center gap-x-1.5 overflow-x-auto whitespace-nowrap"
+    ? "ai-concierge-pill-row flex flex-nowrap items-center gap-x-1 overflow-x-auto whitespace-nowrap"
     : "flex flex-wrap gap-x-1.5 gap-y-2";
 
   return (
@@ -230,7 +230,7 @@ function OpeningTopicPicker({
                   )
                 }
                 className={[
-                  "ai-type-label-xs inline-flex min-h-8 shrink-0 items-center rounded-full border px-2.5 py-1 text-left transition-[background-color,border-color,color,box-shadow] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary",
+                  "font-panel-text inline-flex min-h-8 shrink-0 items-center rounded-full border px-2.5 py-1 text-left text-[13px] font-normal leading-[1.25] transition-[background-color,border-color,color,box-shadow] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary",
                   isActive
                     ? "border-ai-blue-border-soft bg-ai-surface-tint text-ai-text-primary"
                     : "border-ai-border-subtle bg-ai-surface-base text-ai-text-secondary hover:border-ai-border-subtle-hover hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary",

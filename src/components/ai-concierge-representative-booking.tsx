@@ -99,7 +99,7 @@ export function AiConciergeRepresentativeMatchCard({
           widthClassName,
         ].join(" ")}
       >
-        <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex flex-col items-center gap-3">
             <MatchedRepresentativeAvatar size={40} />
             <h3 className="ai-type-body-md-bold w-full whitespace-nowrap text-ai-text-primary">
@@ -130,7 +130,7 @@ export function AiConciergeRepresentativeMatchCard({
           widthClassName,
         ].join(" ")}
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <MatchedRepresentativeAvatar size={32} />
             <h3 className="ai-type-heading-md text-ai-text-primary">

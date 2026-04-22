@@ -20,6 +20,11 @@ import {
 type AiConciergeOnboardingProps = {
   copyVariant?: "default" | "direct-entry";
   details: ConciergeContactDetails;
+  // "full" shows the usual name/company/email/phone/role form. "first-name-only"
+  // is the low-friction fallback used when LinkedIn isn't connected in the
+  // direct-to-chat flow — we just ask "What should I call you?" and collect
+  // email/phone later, inline at the moment we actually need them.
+  fieldSet?: "full" | "first-name-only";
   isPanelExpanded?: boolean;
   isLinkedInConnected?: boolean;
   isValid: boolean;
@@ -58,6 +63,88 @@ function getMissingLinkedInDetails(
   );
 }
 
+function QuickNameForm({
+  details,
+  isPanelExpanded,
+  isValid,
+  onBack,
+  onChange,
+  onStartConversation,
+  showBackButton,
+  submitLabel,
+}: {
+  details: ConciergeContactDetails;
+  isPanelExpanded: boolean;
+  isValid: boolean;
+  onBack: () => void;
+  onChange: (
+    field: keyof ConciergeContactDetails,
+    value: string,
+  ) => void;
+  onStartConversation: () => void;
+  showBackButton: boolean;
+  submitLabel: string;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-y-auto px-5 pb-20 pt-5">
+        <div
+          className={[
+            "mx-auto w-full max-w-[360px]",
+            isPanelExpanded ? "sm:max-w-[448px]" : "",
+          ].join(" ")}
+        >
+          {showBackButton ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="ai-type-heading-sm mb-5 inline-flex items-center gap-2 text-ai-text-meta transition-colors hover:text-ai-text-primary"
+            >
+              <BackArrowIcon className="h-4 w-4" />
+              Back
+            </button>
+          ) : null}
+
+          <div
+            className={[
+              "max-w-[320px]",
+              isPanelExpanded ? "sm:max-w-[384px]" : "",
+            ].join(" ")}
+          >
+            <h3 className="ai-type-heading-xl text-ai-text-primary">
+              What should I call you?
+            </h3>
+            <p className="ai-type-body-md-open mt-3 text-ai-text-primary">
+              Just a first name is fine — we&apos;ll ask for anything else only if we need it.
+            </p>
+          </div>
+
+          <form
+            className="mt-5 flex flex-col gap-4 pb-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onStartConversation();
+            }}
+          >
+            <FormTextField
+              label="First name"
+              autoComplete="given-name"
+              autoFocus
+              value={details.firstName}
+              onValueChange={(value) => onChange("firstName", value)}
+            />
+            <div className="pt-2">
+              <Button type="submit" fullWidth disabled={!isValid}>
+                {submitLabel}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingDetailsForm({
   copyVariant = "default",
   details,
@@ -75,7 +162,7 @@ function OnboardingDetailsForm({
   submitLabel = "Start chat",
 }: Omit<
   AiConciergeOnboardingProps,
-  "onGetStarted"
+  "onGetStarted" | "fieldSet"
 >) {
   const isPrefill = mode === "prefill";
   const [isEditingPrefillDetails, setIsEditingPrefillDetails] = useState(false);
@@ -483,6 +570,7 @@ function LinkedInIdentityPrimaryButton({
 export function AiConciergeOnboarding({
   copyVariant = "default",
   details,
+  fieldSet = "full",
   isPanelExpanded = false,
   isLinkedInConnected = false,
   isValid,
@@ -559,6 +647,21 @@ export function AiConciergeOnboarding({
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (fieldSet === "first-name-only" && mode === "manual") {
+    return (
+      <QuickNameForm
+        details={details}
+        isPanelExpanded={isPanelExpanded}
+        isValid={isValid}
+        onBack={onBack}
+        onChange={onChange}
+        onStartConversation={onStartConversation}
+        showBackButton={showBackButton ?? true}
+        submitLabel={submitLabel}
+      />
     );
   }
 

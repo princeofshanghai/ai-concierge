@@ -10,6 +10,7 @@ import { AiConciergeMeetingCancelDialog } from "@/components/ai-concierge-meetin
 import { AiConciergeMicrophoneNotice } from "@/components/ai-concierge-microphone-notice";
 import { AiConciergeNextStepPanel } from "@/components/ai-concierge-next-step-panel";
 import { AiConciergeOnboarding } from "@/components/ai-concierge-onboarding";
+import { AiConciergeOpeningSupportView } from "@/components/ai-concierge-opening-support";
 import { AiConciergePhoneCallDialog } from "@/components/ai-concierge-phone-call-dialog";
 import { AiConciergePhoneCallPrompt } from "@/components/ai-concierge-phone-call-prompt";
 import { AiConciergePremiumPlanPanel } from "@/components/ai-concierge-premium-plan-panel";
@@ -163,13 +164,31 @@ const SAMPLE_VOICE_OPENING_MESSAGES: AiConciergeMessage[] = [
   {
     id: "assistant-message-1",
     role: "assistant",
-    body: "Hi Jamie, glad you're here. I'm your AI hiring expert from LinkedIn, here to help with Northstar Health's hiring needs. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing. When you're ready, you can start talking or use what's on screen to get started.",
-    openingSupport: {
-      type: "topic-picker",
-      helperText: "",
-      topics: OPENING_PROMPT_TOPICS,
-    },
+    // Mirrors the voice-mode intro produced by `createVoiceModeIntro` with the
+    // current two-line greeting. Voice mode does NOT dock the topic-picker
+    // pills above the composer — the voice dock owns that surface in
+    // production — so this sample intentionally omits `openingSupport`.
+    body: "Hi Jamie, glad you're here. I'm your AI hiring guide for Northstar Health. Tell me what your team is working through and I'll help you find the right fit. When you're ready, you can start talking or use what's on screen to get started.",
     status: "complete",
+  },
+];
+
+// Sample for the default chat opening with flat one-tap chips (the
+// `inline-prompts` variant). Mirrors the output of `createOpeningTurn` when
+// the opening prompt variant is `inline-prompts`.
+const SAMPLE_CHAT_OPENING_MESSAGES: AiConciergeMessage[] = [
+  {
+    id: "assistant-message-1",
+    role: "assistant",
+    body:
+      "Hi Jamie, glad you're here. I'm your AI hiring guide for Northstar Health. Tell me what your team is working through and I'll help you find the right fit.",
+    status: "complete",
+    suggestedReplies: [
+      { id: "find-right-solution", label: "Find the right solution for me" },
+      { id: "discuss-hiring-challenges", label: "Discuss my hiring challenges" },
+      { id: "show-success-stories", label: "Show me success stories" },
+    ],
+    suggestedReplyDisplay: "inline",
   },
 ];
 
@@ -328,12 +347,13 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Entry flow for LinkedIn connection and contact-detail confirmation, including the lighter signed-in review state, the updated cleaner back-arrow style with a 16x16 contact-details arrow, 14px regular darker-neutral edit-mode helper copy, denser read-only summary rows, and the manual intro copy."
+              description="Entry flow for LinkedIn connection and contact-detail confirmation, including the lighter signed-in review state, the updated cleaner back-arrow style with a 16x16 contact-details arrow, 14px regular darker-neutral edit-mode helper copy, denser read-only summary rows, the manual intro copy, and the new first-name-only fallback for the direct-to-chat flow (low-friction path shown when the user isn't signed in to LinkedIn so we only ask for a name and collect email/phone inline when an action needs them)."
               states={[
                 "Signed out",
                 "Signed in",
                 "Confirm details / manual",
                 "Confirm details / prefilled",
+                "Direct-to-chat / first-name only",
               ]}
               title="AiConciergeOnboarding"
             >
@@ -450,6 +470,36 @@ export function AiConciergeComponentGallery() {
                     showBackButton
                   />
                 </PreviewSurface>
+
+                <PreviewSurface
+                  className="overflow-hidden"
+                  label="Direct-to-chat / first-name only"
+                  padded={false}
+                >
+                  <AiConciergeOnboarding
+                    copyVariant="direct-entry"
+                    details={onboardingDetails}
+                    fieldSet="first-name-only"
+                    isLinkedInConnected={false}
+                    isValid={onboardingDetails.firstName.trim().length > 0}
+                    linkedInIdentity={null}
+                    mode="manual"
+                    onBack={() => {}}
+                    onChange={(field, value) =>
+                      setOnboardingDetails((currentDetails) => ({
+                        ...currentDetails,
+                        [field]: value,
+                      }))
+                    }
+                    onContinueWithoutLinkedIn={() => {}}
+                    onContinueWithLinkedIn={() => {}}
+                    onGetStarted={() => {}}
+                    onStartConversation={() => {}}
+                    onUseAnotherAccount={() => {}}
+                    showBackButton
+                    submitLabel="Continue"
+                  />
+                </PreviewSurface>
               </div>
             </ComponentRow>
 
@@ -486,31 +536,53 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Scheduling surface for format choice, slot selection, contact details, and the updated back-arrow style."
-              states={["Scheduling"]}
+              description="Scheduling surface for format choice, slot selection, contact details, and the updated back-arrow style. When the contact value for the chosen format is empty (direct-to-chat flow), the input appears immediately below the 'Add an email address…' / 'Add a phone number…' prompt so the user can fill it in without clicking 'Change'. Once a value is entered and the field blurs, the surface collapses to a one-line summary with a Change affordance; clicking Change re-opens the input."
+              states={["Scheduling / prefilled", "Scheduling / empty contact"]}
               title="AiConciergeNextStepPanel"
             >
-              <PreviewSurface
-                className="h-[760px] overflow-hidden"
-                label="Scheduling"
-                padded={false}
-              >
-                <AiConciergeNextStepPanel
-                  contactDetails={{
-                    email: PREFILLED_CONTACT_DETAILS.email,
-                    phoneNumber: PREFILLED_CONTACT_DETAILS.phoneNumber,
-                  }}
-                  initialSelection={{
-                    contactEmail: PREFILLED_CONTACT_DETAILS.email,
-                    contactPhoneNumber: PREFILLED_CONTACT_DETAILS.phoneNumber,
-                    dateLabel: "Tue, Apr 7",
-                    formatId: "video",
-                    timeLabel: "10:00 AM",
-                  }}
-                  onBackToChat={() => {}}
-                  onConfirmBooking={() => {}}
-                />
-              </PreviewSurface>
+              <div className="grid gap-6">
+                <PreviewSurface
+                  className="h-[760px] overflow-hidden"
+                  label="Scheduling / prefilled"
+                  padded={false}
+                >
+                  <AiConciergeNextStepPanel
+                    contactDetails={{
+                      email: PREFILLED_CONTACT_DETAILS.email,
+                      phoneNumber: PREFILLED_CONTACT_DETAILS.phoneNumber,
+                    }}
+                    initialSelection={{
+                      contactEmail: PREFILLED_CONTACT_DETAILS.email,
+                      contactPhoneNumber: PREFILLED_CONTACT_DETAILS.phoneNumber,
+                      dateLabel: "Tue, Apr 7",
+                      formatId: "video",
+                      timeLabel: "10:00 AM",
+                    }}
+                    onBackToChat={() => {}}
+                    onConfirmBooking={() => {}}
+                  />
+                </PreviewSurface>
+
+                <PreviewSurface
+                  className="h-[760px] overflow-hidden"
+                  label="Scheduling / empty contact (direct-to-chat)"
+                  padded={false}
+                >
+                  <AiConciergeNextStepPanel
+                    contactDetails={{
+                      email: "",
+                      phoneNumber: "",
+                    }}
+                    initialSelection={{
+                      dateLabel: "Tue, Apr 7",
+                      formatId: "video",
+                      timeLabel: "10:00 AM",
+                    }}
+                    onBackToChat={() => {}}
+                    onConfirmBooking={() => {}}
+                  />
+                </PreviewSurface>
+              </div>
             </ComponentRow>
           </GallerySection>
 
@@ -553,10 +625,26 @@ export function AiConciergeComponentGallery() {
 
             <ComponentRow
               description="Conversation thread for assistant, user, system, and rep messages."
-              states={["In-progress chat", "Voice opening"]}
+              states={["Flat-chip opening (default)", "In-progress chat", "Voice opening"]}
               title="AiConciergeBody"
             >
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-3">
+                <StatePreview label="Flat-chip opening (default)">
+                  <PreviewSurface
+                    className="h-[560px] overflow-hidden"
+                    padded={false}
+                  >
+                    <AiConciergeBody
+                      messages={SAMPLE_CHAT_OPENING_MESSAGES}
+                      onBookAgain={() => {}}
+                      onBookMeeting={() => {}}
+                      onManageBooking={() => {}}
+                      onPremiumPlanSelect={() => {}}
+                      onRecommendationPrimaryAction={() => {}}
+                      onSelectSuggestedReply={() => {}}
+                    />
+                  </PreviewSurface>
+                </StatePreview>
                 <StatePreview label="In-progress chat">
                   <PreviewSurface
                     className="h-[560px] overflow-hidden"
@@ -590,6 +678,41 @@ export function AiConciergeComponentGallery() {
                       onRecommendationPrimaryAction={() => {}}
                       onSelectSuggestedReply={() => {}}
                     />
+                  </PreviewSurface>
+                </StatePreview>
+              </div>
+            </ComponentRow>
+
+            <ComponentRow
+              description="Alternate opening variant (not the default). Four topic pills with dropdown starter prompts, docked above the composer. The default `inline-prompts` variant is shown in the AiConciergeBody row above. This variant is kept selectable via the shell UI switcher for side-by-side comparison. The row scrolls horizontally without a visible scrollbar and fades on the right edge when more pills are off-screen."
+              states={["Docked above composer"]}
+              title="AiConciergeOpeningSupportView (topic-picker, docked \u2014 alternate)"
+            >
+              <div className="grid gap-6">
+                <StatePreview label="Docked above composer">
+                  <PreviewSurface
+                    className="overflow-hidden"
+                    padded={false}
+                  >
+                    <div className="flex flex-col gap-2 p-4">
+                      <AiConciergeOpeningSupportView
+                        layout="docked"
+                        onInsertPrompt={() => {}}
+                        support={{
+                          type: "topic-picker",
+                          helperText: "",
+                          topics: OPENING_PROMPT_TOPICS,
+                        }}
+                      />
+                      <AiConciergeComposer
+                        draft=""
+                        onDraftChange={() => {}}
+                        onSend={() => {}}
+                        onStartVoiceMode={() => {}}
+                        onStopResponse={() => {}}
+                        onToggleDictation={() => {}}
+                      />
+                    </div>
                   </PreviewSurface>
                 </StatePreview>
               </div>
@@ -881,7 +1004,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Sales rep message treatment once a human joins the chat."
+              description="Hiring specialist message treatment once a human joins the chat."
               states={["Active reply"]}
               title="ChatLiveAgentMessage"
             >

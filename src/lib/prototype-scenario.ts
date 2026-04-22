@@ -9,6 +9,16 @@ export type PrototypeScenarioOpeningPromptVariant =
   | "helper-examples"
   | "topic-picker";
 
+// `direct-to-chat` (default) is the low-friction happy path: after the
+// welcome screen the user lands straight in chat. Name/company are implied
+// from LinkedIn identity and email/phone are collected just-in-time when
+// an action requires them (e.g. booking a meeting). `confirm-details`
+// preserves the legacy flow where the user sees and confirms a filled-in
+// contact form before starting the conversation.
+export type PrototypeScenarioOnboardingStyle =
+  | "direct-to-chat"
+  | "confirm-details";
+
 // `live` is the default interactive experience. The other five values tell the
 // panel to render a fully pre-built transcript for a scripted route, skipping
 // onboarding and the composer. This is the presenter-only playback mode used
@@ -24,6 +34,7 @@ export type PrototypePlaybackRoute =
 export type PrototypeScenario = {
   authState: PrototypeScenarioAuthState;
   entryVariant: PrototypeScenarioEntryVariant;
+  onboardingStyle: PrototypeScenarioOnboardingStyle;
   openingPromptVariant: PrototypeScenarioOpeningPromptVariant;
   playbackRoute: PrototypePlaybackRoute;
 };
@@ -31,7 +42,8 @@ export type PrototypeScenario = {
 export const DEFAULT_PROTOTYPE_SCENARIO: PrototypeScenario = {
   authState: "linkedin-connected",
   entryVariant: "guided-onboarding",
-  openingPromptVariant: "topic-picker",
+  onboardingStyle: "direct-to-chat",
+  openingPromptVariant: "inline-prompts",
   playbackRoute: "live",
 };
 
@@ -69,6 +81,25 @@ export function getPrototypeScenarioEntryState(
   return "welcome";
 }
 
+export function getPrototypeScenarioOnboardingStyleGroupLabel() {
+  return "Start flow";
+}
+
+export function getPrototypeScenarioOnboardingStyleHelperText() {
+  return "Direct to chat skips the contact form and asks for email/phone only when an action needs it.";
+}
+
+export function getPrototypeScenarioOnboardingStyleLabel(
+  onboardingStyle: PrototypeScenarioOnboardingStyle,
+) {
+  switch (onboardingStyle) {
+    case "direct-to-chat":
+      return "Direct to chat";
+    case "confirm-details":
+      return "Confirm details first";
+  }
+}
+
 export function getPrototypeScenarioAuthLabel(
   authState: PrototypeScenario["authState"],
 ) {
@@ -96,6 +127,7 @@ export function normalizePrototypeScenario(
   return {
     ...scenario,
     entryVariant: "guided-onboarding",
+    onboardingStyle: scenario.onboardingStyle ?? "direct-to-chat",
     playbackRoute: scenario.playbackRoute ?? "live",
   };
 }
