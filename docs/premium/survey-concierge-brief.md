@@ -92,7 +92,7 @@ The goal is to quickly compare different concierge conversation styles, not to b
 - Include one CTA only:
   - `Redeem 1 month for $0`
 - CTA leads to a generic placeholder checkout page.
-- Product copy now comes from `docs/premium-plan-copy-reference.md`.
+- Product copy now comes from `docs/premium/plan-copy-reference.md`.
 
 ## SKU Set
 

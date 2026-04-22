@@ -37,6 +37,15 @@ Short version:
 - diagnostic in the middle
 - specific by later turns
 
+## Design principles
+Three principles describe what the AI Concierge experience should feel like to visitors. Full copy and talking points live in [demo-framing.md](demo-framing.md).
+
+1. **Heard, not qualified.** Behind the scenes, the concierge qualifies. On the surface, it helps. Visitors answer because it sharpens the next answer, not because we asked them to submit.
+2. **Help first, then commit.** The concierge leads with help and asks one gentle question at a time. When the fit is clear, it commits to a specific next step instead of asking permission. Visitors see a recommendation, never a menu in place of one.
+3. **Every route is a good route.** Sales meeting, direct purchase, or helpful redirect. Every visitor leaves with a clear next step, not a dead end.
+
+These principles describe what the visitor *experiences*, not what the system does. Principle 1 maps to the visible / hidden separation in the experience model below. Principle 3 maps to the target routing model further down.
+
 ## Primary goal
 Create a faster, more helpful path from hiring interest to the right next step, while qualifying the lead in the background.
 
@@ -96,6 +105,8 @@ The 5-endings model:
 
 This routing model stays hidden from the user. The visible conversation should feel like guidance, not scoring. Users should not see `AE` or `SDR`. `Representative` is the user-facing umbrella term.
 
+The five endings above are the aspirational model. The current prototype implements a subset — it collapses the two booking paths into one shared surface, triggers the live handoff only from the lighter-touch branch, and has not yet built the redirect path. See [conversation-blueprint.md](conversation-blueprint.md) for what is actually wired up today.
+
 ## MVP scope
 
 ### What we are trying to prove
@@ -110,7 +121,7 @@ Instead of sending a high-intent visitor straight to a static `Contact sales` fo
   - answer common fit and product questions
   - ask a small number of lightweight follow-up questions
   - narrow toward the likely-fit product
-  - suggest a representative when that feels earned
+  - commit to a specific next step when the fit is clear, rather than offering a menu of options
 - Representative handoff flows (AE booking, SDR booking, SDR live)
 - A lower-touch / direct purchase recommendation path
 - A believable booking flow
@@ -168,6 +179,7 @@ Instead of sending a high-intent visitor straight to a static `Contact sales` fo
 - Users understand the right product or next step faster.
 - Qualification feels natural instead of extractive.
 - High-intent users reach stronger handoff outcomes.
+- Every visitor leaves with a clear next step, regardless of fit. Sales meeting, direct purchase, and helpful redirect are all valid outcomes.
 - The experience improves both user experience and routing quality.
 - The prototype is realistic enough for stakeholders to critique and discuss trust, usefulness, and routing quality.
 
@@ -180,8 +192,9 @@ Important longer-term ideas not required for the current prototype:
 - omni-channel re-engagement after incomplete qualification
 
 ## Related docs
-- [conversation-blueprint.md](conversation-blueprint.md): how the conversation works and why
+- [conversation-blueprint.md](conversation-blueprint.md): how the conversation works and why, plus which outcomes the prototype implements today
+- [conversation-language-rules.md](conversation-language-rules.md): product naming, topic boundaries, acronyms, pricing prohibition
 - [conversation-system-prompt.md](conversation-system-prompt.md): external production AI spec (reference only)
 - [persona.md](persona.md): default demo persona
-- [routing-outcomes-worksheet.md](routing-outcomes-worksheet.md): detailed routing design
+- [routing-outcomes-worksheet.md](routing-outcomes-worksheet.md): historical working notes on outcome design
 - [implementation-plan.md](implementation-plan.md): build phases and status

@@ -23,7 +23,7 @@ This is the default expectation even if an older quick component or earlier styl
 Prefer these sources in this order:
 
 - existing shared UI components in `src/components/`
-- implemented typography guidance in `docs/ai-concierge-typography.md`
+- implemented typography guidance in `docs/design/typography.md`
 - implemented typography and color tokens in `src/app/globals.css`
 
 In plain English:

@@ -6,16 +6,23 @@ type AiConciergeRecommendationCardProps = {
   artifact: AiConciergeRecommendationArtifact;
   isPanelExpanded?: boolean;
   isPrimaryActionPending?: boolean;
+  isSecondaryActionPending?: boolean;
   onPrimaryAction: () => void;
+  onSecondaryAction?: () => void;
 };
 
 export function AiConciergeRecommendationCard({
   artifact,
   isPanelExpanded = false,
   isPrimaryActionPending = false,
+  isSecondaryActionPending = false,
   onPrimaryAction,
+  onSecondaryAction,
 }: AiConciergeRecommendationCardProps) {
   const widthClassName = isPanelExpanded ? "max-w-[344px]" : "max-w-full";
+  const hasSecondaryCta = Boolean(artifact.secondaryCtaLabel);
+  const isEitherActionPending =
+    isPrimaryActionPending || isSecondaryActionPending;
 
   return (
     <div
@@ -40,17 +47,35 @@ export function AiConciergeRecommendationCard({
             </p>
           ) : null}
         </div>
-        <Button
-          onClick={onPrimaryAction}
-          size="compact"
-          aria-disabled={isPrimaryActionPending}
-          className={[
-            "w-fit !rounded-[24px]",
-            isPrimaryActionPending ? "pointer-events-none" : "",
-          ].join(" ")}
-        >
-          {isPrimaryActionPending ? "Finding your rep..." : artifact.ctaLabel}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={onPrimaryAction}
+            size="compact"
+            aria-disabled={isEitherActionPending}
+            className={[
+              "w-fit !rounded-[24px]",
+              isEitherActionPending ? "pointer-events-none" : "",
+            ].join(" ")}
+          >
+            {isPrimaryActionPending ? "Finding your rep..." : artifact.ctaLabel}
+          </Button>
+          {hasSecondaryCta && artifact.secondaryCtaLabel ? (
+            <Button
+              onClick={onSecondaryAction}
+              size="compact"
+              variant="secondary"
+              aria-disabled={isEitherActionPending}
+              className={[
+                "w-fit !rounded-[24px]",
+                isEitherActionPending ? "pointer-events-none" : "",
+              ].join(" ")}
+            >
+              {isSecondaryActionPending
+                ? "Finding your rep..."
+                : artifact.secondaryCtaLabel}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

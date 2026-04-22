@@ -24,31 +24,39 @@ export const OPENING_HELPER_EXAMPLES = [
 
 export const OPENING_PROMPT_TOPICS: AiConciergeOpeningPromptTopic[] = [
   {
-    id: "finding-the-right-fit",
-    label: "Finding the right fit",
+    id: "help-with-hiring",
+    label: "Help with hiring",
     prompts: [
-      "We're not sure which hiring solution fits",
+      "We're hiring a lot right now",
+      "We have hard-to-fill roles",
+      "We're hiring across teams",
     ],
   },
   {
-    id: "harder-to-fill-roles",
-    label: "Harder-to-fill roles",
+    id: "find-the-right-fit",
+    label: "Find the right fit",
     prompts: [
-      "We need help with harder-to-fill roles",
+      "Which hiring solution fits my team?",
+      "How is Recruiter different from Hiring Pro?",
+      "Is this meant for teams my size?",
     ],
   },
   {
-    id: "pricing",
-    label: "Pricing",
+    id: "see-customer-stories",
+    label: "See customer stories",
     prompts: [
-      "We have questions about pricing",
+      "Do companies like mine use this?",
+      "What kinds of results do customers see?",
+      "Any examples from my industry?",
     ],
   },
   {
-    id: "just-getting-started",
-    label: "Just getting started",
+    id: "get-started",
+    label: "Get started",
     prompts: [
-      "I'm just getting started",
+      "How fast could we get going?",
+      "Does this connect to our ATS?",
+      "What does onboarding look like?",
     ],
   },
 ];

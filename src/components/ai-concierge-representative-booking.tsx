@@ -134,7 +134,7 @@ export function AiConciergeRepresentativeMatchCard({
           <div className="flex items-center gap-2">
             <MatchedRepresentativeAvatar size={32} />
             <h3 className="ai-type-heading-md text-ai-text-primary">
-              {DEFAULT_REPRESENTATIVE_NAME} is your sales rep
+              {DEFAULT_REPRESENTATIVE_NAME} is your hiring specialist
             </h3>
           </div>
           <Button
@@ -197,7 +197,7 @@ export function AiConciergeRepresentativeReadyBanner({
           <div className="flex min-w-0 items-center gap-2">
             <MatchedRepresentativeAvatar size={28} />
             <h3 className="ai-type-heading-md truncate text-ai-text-primary">
-              {DEFAULT_REPRESENTATIVE_NAME} is your sales rep
+              {DEFAULT_REPRESENTATIVE_NAME} is your hiring specialist
             </h3>
           </div>
           <div

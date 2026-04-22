@@ -18,7 +18,31 @@ type ConversationStage =
   | "awaiting_next_step"
   | "awaiting_handoff_choice"
   | "explore"
-  | "booking_pending";
+  | "booking_pending"
+  // Route 1 (High value, AE booking) — `docs/conversation-scripts.md`.
+  // This is Jamie's canonical high-value flow: pressures → specialization →
+  // timeline → single-CTA rep card → booking surface.
+  | "route_1_awaiting_growth_driver"
+  | "route_1_awaiting_specialization"
+  | "route_1_awaiting_timeline"
+  // Route 2 / Route 3 shared flow (Medium value). Both routes are identical
+  // through bubble 4. The branch happens at the two-CTA recommendation card:
+  // "Chat live now" → Route 2 live chat; "Schedule for later" → Route 3 booking.
+  // Stage naming reflects the diagnostic the assistant is waiting on.
+  | "route_23_awaiting_role_diagnostic"
+  | "route_23_awaiting_timeline"
+  // Route 4 (Low value, product card). Entry via pill "Find the right fit" →
+  // starter prompt "Is this meant for teams my size?". Shortest flow in the
+  // system: volume diagnostic → urgency chip → Hiring Pro product card. No
+  // human handoff; the card CTA opens the external plans page.
+  | "route_4_awaiting_volume_diagnostic"
+  | "route_4_awaiting_urgency"
+  // Route 5 (Low value, redirect link / nurture off-ramp). Entry via pill
+  // "See customer stories" → starter prompt "Do companies like mine use
+  // this?". Pure informational: no sales motion attached. Two typed diagnostic
+  // turns → terminal bubble with an inline redirect link.
+  | "route_5_awaiting_company_context"
+  | "route_5_awaiting_role_context";
 
 type StartingSituation =
   | "solution_fit"
@@ -73,6 +97,12 @@ export type EntryMode = "manual" | "prefill";
 export type AiConciergeAssistantTurn = {
   artifact?: AiConciergeMessageArtifact;
   body: string;
+  // Optional acknowledge-only bubble rendered BEFORE `body` as its own assistant
+  // message. Use this to express the "acknowledge then ask" rhythm from the
+  // conversation scripts without baking both beats into a single bubble. The
+  // acknowledge bubble never carries chips or an artifact — those always
+  // attach to the main `body`.
+  priorBubble?: string;
   nextState: AiConciergeConversationState;
   openingSupport?: AiConciergeOpeningSupport;
   postCompleteEffect?: "live-sales-handoff" | "representative-match";
@@ -82,16 +112,16 @@ export type AiConciergeAssistantTurn = {
 
 const OPENING_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   {
-    id: "solution-fit",
-    label: "We're not sure which hiring solution fits",
+    id: "consistent-hiring",
+    label: "We hire consistently across teams",
   },
   {
     id: "hard-to-fill",
     label: "We need help with harder-to-fill roles",
   },
   {
-    id: "pricing-guidance",
-    label: "We have questions about pricing",
+    id: "occasional-hiring",
+    label: "We're hiring occasionally",
   },
   {
     id: "just-getting-started",
@@ -111,25 +141,6 @@ const HIRING_MOTION_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   {
     id: "occasional-hiring",
     label: "We're hiring occasionally",
-  },
-  {
-    id: "still-figuring-out",
-    label: "We're still figuring that out",
-  },
-];
-
-const PRICING_SCOPE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  {
-    id: "broader-ongoing",
-    label: "Broader ongoing hiring",
-  },
-  {
-    id: "smaller-scope",
-    label: "Smaller number of roles",
-  },
-  {
-    id: "hard-to-fill",
-    label: "Harder-to-fill roles",
   },
   {
     id: "still-figuring-out",
@@ -187,6 +198,68 @@ const LIGHTER_TOUCH_NEXT_SUGGESTIONS: AiConciergeSuggestedReply[] = [
   { id: "keep-exploring", label: "Keep exploring" },
 ];
 
+// Route 1 composer-level scaffolding — the "Example responses" presenter
+// clicks to speak as Jamie during the high-value demo. Single-item arrays are
+// intentional: these are canned typed replies, not bounded choices.
+const ROUTE_1_GROWTH_DRIVER_EXAMPLE: AiConciergeSuggestedReply[] = [
+  {
+    id: "route-1-growth-driver-jamie",
+    label:
+      "Just closed a funding round. About 40 roles to hire across eng, product, sales, and CS over the next 2 quarters.",
+  },
+];
+
+const ROUTE_1_SPECIALIZATION_EXAMPLE: AiConciergeSuggestedReply[] = [
+  {
+    id: "route-1-specialization-jamie",
+    label:
+      "Yeah a few. ML engineers, clinical informatics, couple of senior sales leaders. Been open a while.",
+  },
+];
+
+// Route 1 B4 — bounded timeline options, surfaced at composer level per the
+// script doc (consistent with the existing `URGENCY_SUGGESTIONS` pattern).
+const ROUTE_1_TIMELINE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "route-1-timeline-milestones", label: "Specific milestones" },
+  { id: "route-1-timeline-general", label: "Just general urgency" },
+  { id: "route-1-timeline-both", label: "Bit of both" },
+];
+
+// Route 2/3 composer-level scaffolding. B1 is Jamie's canned typed reply for
+// the diagnostic turn. B3 timeline is surfaced as 4 bounded chips matching the
+// scripts doc.
+const ROUTE_23_ROLE_DIAGNOSTIC_EXAMPLE: AiConciergeSuggestedReply[] = [
+  {
+    id: "route-23-roles-jamie",
+    label:
+      "Senior nursing and clinical informatics mostly. Few of them have been open for months.",
+  },
+];
+
+const ROUTE_23_TIMELINE_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "route-23-timeline-quarter", label: "This quarter" },
+  { id: "route-23-timeline-months", label: "In the next few months" },
+  { id: "route-23-timeline-planning", label: "We're planning ahead" },
+  { id: "route-23-timeline-exploring", label: "Still exploring" },
+];
+
+// Route 4 composer-level scaffolding. B1 is Jamie's canned typed reply for the
+// volume diagnostic. B3 urgency is 4 bounded chips per the scripts doc.
+const ROUTE_4_VOLUME_DIAGNOSTIC_EXAMPLE: AiConciergeSuggestedReply[] = [
+  {
+    id: "route-4-volume-jamie",
+    label:
+      "Pretty light on our end. Maybe 3-4 hires a year. Mostly sales and CS roles.",
+  },
+];
+
+const ROUTE_4_URGENCY_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "route-4-urgency-right-away", label: "Right away" },
+  { id: "route-4-urgency-couple-months", label: "Within a couple months" },
+  { id: "route-4-urgency-depends", label: "Depends on the role" },
+  { id: "route-4-urgency-flexible", label: "We're flexible" },
+];
+
 const LOWER_TOUCH_PLANS_CTA_HREF = "https://example.com";
 
 const DEFAULT_STATE: AiConciergeConversationState = {
@@ -208,26 +281,11 @@ function getCompanyReference(company: string) {
   return trimmedCompany.length > 0 ? trimmedCompany : "your team";
 }
 
-function getCompanyHiringNeedsReference(company: string) {
-  const trimmedCompany = company.trim();
-
-  if (trimmedCompany.length === 0) {
-    return "your hiring needs";
-  }
-
-  const possessiveSuffix = trimmedCompany.toLowerCase().endsWith("s")
-    ? "'"
-    : "'s";
-
-  return `${trimmedCompany}${possessiveSuffix} hiring needs`;
-}
-
 function createOpeningCoreBody(contactDetails: ConciergeContactDetails) {
-  const companyNeedsReference = getCompanyHiringNeedsReference(
-    contactDetails.company,
-  );
+  const company = contactDetails.company.trim();
+  const companyClause = company.length > 0 ? ` for ${company}` : "";
 
-  return `I'm your AI hiring expert from LinkedIn, here to help with ${companyNeedsReference}. Feel free to ask me anything, but my main goal is to understand your hiring needs and help tackle whatever challenges you're facing.`;
+  return `I'm your AI hiring guide${companyClause}.\n\nMy goal is to understand what your team is working through and share how LinkedIn can support you.`;
 }
 
 function createOpeningBody(contactDetails: ConciergeContactDetails) {
@@ -235,7 +293,7 @@ function createOpeningBody(contactDetails: ConciergeContactDetails) {
   const openingCoreBody = createOpeningCoreBody(contactDetails);
 
   if (trimmedFirstName.length > 0) {
-    return `Hi ${trimmedFirstName}, ${openingCoreBody}`;
+    return `Hi ${trimmedFirstName}! ${openingCoreBody}`;
   }
 
   return openingCoreBody;
@@ -366,6 +424,33 @@ export function getAssistantTurn({
         nextState: state,
       };
       break;
+    case "route_1_awaiting_growth_driver":
+      assistantTurn = createRoute1GrowthDriverResponse(input, state);
+      break;
+    case "route_1_awaiting_specialization":
+      assistantTurn = createRoute1SpecializationResponse(input, state);
+      break;
+    case "route_1_awaiting_timeline":
+      assistantTurn = createRoute1TimelineResponse(state, input);
+      break;
+    case "route_23_awaiting_role_diagnostic":
+      assistantTurn = createRoute23RoleDiagnosticResponse(input, state);
+      break;
+    case "route_23_awaiting_timeline":
+      assistantTurn = createRoute23TimelineResponse(input, state);
+      break;
+    case "route_4_awaiting_volume_diagnostic":
+      assistantTurn = createRoute4VolumeDiagnosticResponse(input, state);
+      break;
+    case "route_4_awaiting_urgency":
+      assistantTurn = createRoute4UrgencyResponse(input, state);
+      break;
+    case "route_5_awaiting_company_context":
+      assistantTurn = createRoute5CompanyContextResponse(input, state);
+      break;
+    case "route_5_awaiting_role_context":
+      assistantTurn = createRoute5RoleContextResponse(input, state);
+      break;
   }
 
   if (shouldShowRepresentativeRecommendationCard({ assistantTurn, state })) {
@@ -378,18 +463,68 @@ export function getAssistantTurn({
   return assistantTurn;
 }
 
+// ============================================================================
+// createOpeningResponse — the first-turn classifier.
+//
+// Ordered as follows, top to bottom:
+//
+// 1. Canonical Phase-A route entries (Routes 1-5). Each is the canonical pill
+//    click from `docs/conversation-scripts.md`. Checked FIRST so a canonical
+//    click always beats a generic paraphrase.
+// 2. Legacy pre-Phase-A classifiers. These handle off-canonical typed inputs
+//    (e.g. "pricing?", "I'm just getting started", "we hire consistently")
+//    that don't match any of the five canonical pills. They route into the
+//    legacy engine (`createHiringMotionResponse` → `createFitContextResponse`
+//    → `createUrgencyResponse` → `createNextStepResponse`). That engine is
+//    still used both for these paraphrases AND as a fallback inside
+//    `createHandoffChoiceResponse` for canonical routes 1/2/3.
+// 3. Generic fallback at the bottom — everything else routes to the hiring-
+//    motion picker so the user still gets a helpful response.
+// ============================================================================
+
 function createOpeningResponse(input: string): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
 
+  // --- Canonical Phase-A entries ---------------------------------------------
+
+  // Route 1 (high value) entry — the "Help with hiring" pill's canonical
+  // demo click ("We're hiring a lot right now") and similar phrasings.
+  // Checked first so it doesn't get swallowed by the broader hiring intents.
+  if (isRoute1HiringScaleIntent(normalized)) {
+    return createRoute1PressuresResponse();
+  }
+
+  // Route 4 (low value, product card) entry — the "Find the right fit" pill's
+  // canonical demo click ("Is this meant for teams my size?"). Narrow match so
+  // the other pill-2 prompts still flow into the older solution-fit classifier
+  // below. Checked early so "team size" framings don't accidentally route to
+  // the broader hiring-motion paths.
+  if (isRoute4FitIntent(normalized)) {
+    return createRoute4FitDiagnosticResponse();
+  }
+
+  // Route 5 (low value, nurture off-ramp) entry — the "See customer stories"
+  // pill's canonical demo click ("Do companies like mine use this?"). Checked
+  // early so the peer-validation framing doesn't get misclassified as an
+  // exploration-stage hiring intent further below.
+  if (isRoute5CustomerStoriesIntent(normalized)) {
+    return createRoute5CompanyContextDiagnosticResponse();
+  }
+
+  // --- Legacy pre-Phase-A classifiers (typed-paraphrase fallbacks) ----------
+  // These handle off-canonical typed inputs. They route into the legacy
+  // engine below. Kept for robustness when a visitor types something that
+  // doesn't match any of the five canonical pill clicks.
+
   if (isPricingIntent(normalized)) {
     return {
-      body: "Great question. Pricing really depends on your specific situation, so a specialist would be the best person to walk you through what fits. To make sure I connect you with the right one, can you tell me a bit about your hiring?\n\nIs it more ongoing or more occasional?",
+      body: "Great question. Pricing really depends on your specific situation, so a specialist would be the best person to walk you through what fits. To point you the right way, which is closer to your hiring right now?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_hiring_motion",
         startingSituation: "pricing_guidance",
       },
-      suggestedReplies: PRICING_SCOPE_SUGGESTIONS,
+      suggestedReplies: HIRING_MOTION_SUGGESTIONS,
       suggestedReplyDisplay: "inline",
     };
   }
@@ -421,14 +556,22 @@ function createOpeningResponse(input: string): AiConciergeAssistantTurn {
     };
   }
 
+  // Route 2/3 (medium value) entry — "We have hard-to-fill roles" from the
+  // "Help with hiring" pill and paraphrases like "specialized hiring." Routed to
+  // the shared Route 2/3 diagnostic flow; the branch into live-chat vs.
+  // scheduled-booking happens later when the visitor taps a CTA on the
+  // two-CTA recommendation card.
   if (isHardToFillIntent(normalized)) {
+    return createRoute23RolesDiagnosticResponse();
+  }
+
+  if (isOccasionalHiringIntent(normalized)) {
     return {
-      body: "That's a common challenge. When roles are hard to fill, teams usually need a more proactive sourcing approach instead of relying on inbound applicants. What kinds of roles are giving you the most trouble?",
+      body: "Makes sense. When hiring is more occasional, a lighter-touch option can work better than a full sourcing workflow. What kinds of roles usually come up?",
       nextState: {
         ...DEFAULT_STATE,
         stage: "awaiting_fit_context",
-        startingSituation: "hard_to_fill",
-        hiringMotion: "hard_to_fill",
+        hiringMotion: "occasional_hiring",
       },
       suggestedReplies: ROLE_SUGGESTIONS,
       suggestedReplyDisplay: "composer",
@@ -486,15 +629,34 @@ function createOpeningResponse(input: string): AiConciergeAssistantTurn {
   };
 }
 
+// ============================================================================
+// Legacy pre-Phase-A conversation engine.
+//
+// These four generators (`createHiringMotionResponse`,
+// `createFitContextResponse`, `createUrgencyResponse`, `createNextStepResponse`)
+// form a self-contained flow used in two situations:
+//
+//   1. Typed-paraphrase fallbacks. When a visitor types something that doesn't
+//      match any of the five canonical pill clicks (e.g. "pricing?",
+//      "we hire occasionally", "I'm just getting started"), the opening
+//      classifier routes them into this engine so they still get a helpful
+//      multi-turn experience.
+//   2. Handoff fallback for canonical routes. `createHandoffChoiceResponse`
+//      delegates to `createNextStepResponse` when no other branch matches —
+//      so this code is on the critical path for Routes 1/2/3 too.
+//
+// The canonical five-route experience (Routes 1-5) is implemented further
+// below in dedicated `createRoute1*` / `createRoute23*` / `createRoute4*` /
+// `createRoute5*` functions. See `docs/conversation-scripts.md` for the
+// canonical scripts those functions implement.
+// ============================================================================
+
 function createHiringMotionResponse(
   input: string,
   state: AiConciergeConversationState,
 ): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
-  const hiringMotion =
-    state.startingSituation === "pricing_guidance"
-      ? classifyPricingScope(normalized)
-      : classifyHiringMotion(normalized);
+  const hiringMotion = classifyHiringMotion(normalized);
 
   switch (hiringMotion) {
     case "hard_to_fill":
@@ -568,6 +730,28 @@ function createFitContextResponse(
     hiringUseCase: roleContext.hiringUseCase,
   });
 
+  // Redirect off-ramp: when both motion and role signal are unclear, we do not
+  // have enough to recommend a product or a rep. Point the visitor at a
+  // broader LinkedIn resource and end the scripted flow gracefully.
+  if (
+    state.hiringMotion === "still_figuring_it_out" &&
+    likelySolution === "unknown"
+  ) {
+    return {
+      artifact: createRedirectRecommendationArtifact(),
+      body: "No problem. It sounds like you're still scoping what hiring looks like. It might be worth starting with some background on how teams think about this before we narrow in.",
+      nextState: {
+        ...state,
+        stage: "explore",
+        hiringSummary: roleContext.summary,
+        hiringUseCase: roleContext.hiringUseCase,
+        hiringComplexity: roleContext.hiringComplexity,
+        likelySolution,
+        readiness: "exploring",
+      },
+    };
+  }
+
   const reflection = `Got it, ${roleContext.summary}.`;
 
   return {
@@ -607,6 +791,8 @@ function createUrgencyResponse(
         readiness: "representative",
         urgency,
       },
+      suggestedReplies: LIVE_HANDOFF_BRIDGE_SUGGESTIONS,
+      suggestedReplyDisplay: "inline",
     };
   }
 
@@ -643,7 +829,6 @@ function createNextStepResponse(
 ): AiConciergeAssistantTurn {
   const normalized = normalizeInput(input);
   const roleClause = createRoleClause(state.hiringSummary);
-  const representativeLabel = "sales rep";
   const companyReference = getCompanyReference(contactDetails.company);
 
   if (
@@ -809,6 +994,391 @@ function createHandoffChoiceResponse(
   );
 }
 
+// ----------------------------------------------------------------------------
+// Route 1 — High value (AE booking). See docs/conversation-scripts.md for the
+// canonical script this code implements.
+// ----------------------------------------------------------------------------
+
+// Route 1 B1 — pressures/objectives question (no chips in chat; composer
+// surfaces Jamie's canned reply for presenter scaffolding).
+function createRoute1PressuresResponse(): AiConciergeAssistantTurn {
+  return {
+    body:
+      "That's a real pressure — especially when expectations outpace capacity. Before we talk about options, what's driving the growth right now? Is it a funding round, a product push, a new market — something else?",
+    nextState: {
+      ...DEFAULT_STATE,
+      stage: "route_1_awaiting_growth_driver",
+      startingSituation: "consistent_hiring",
+      hiringMotion: "broader_ongoing",
+      likelySolution: "recruiter",
+    },
+    suggestedReplies: ROUTE_1_GROWTH_DRIVER_EXAMPLE,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 1 B2 + B3 — acknowledge-only bubble (priorBubble) followed by the
+// specialization probe. The acknowledge beat is the Principle 1 proof moment
+// from the scripts doc: concierge listens without immediately asking again.
+function createRoute1GrowthDriverResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const normalized = normalizeInput(input);
+  const mentionsFunding =
+    normalized.includes("funding") ||
+    normalized.includes("series") ||
+    normalized.includes("raised") ||
+    normalized.includes("closed a round");
+
+  const acknowledgeBody = mentionsFunding
+    ? "Makes sense — post-funding growth hiring across multiple functions tends to stretch teams fast, especially when the roles don't all look the same."
+    : "Makes sense — growth like that across multiple functions tends to stretch teams fast, especially when the roles don't all look the same.";
+
+  return {
+    priorBubble: acknowledgeBody,
+    body:
+      "Are any of those roles the kind that are hard to fill — specialized engineering, senior sales, anything niche to healthcare?",
+    nextState: {
+      ...state,
+      stage: "route_1_awaiting_specialization",
+      hiringSummary: "hiring across multiple functions after a funding round",
+    },
+    suggestedReplies: ROUTE_1_SPECIALIZATION_EXAMPLE,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 1 B4 — reflect + timeline question. Three bounded timeline options
+// surface at composer level (matching the existing URGENCY_SUGGESTIONS
+// pattern elsewhere in this file).
+function createRoute1SpecializationResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const roleContext = summarizeHiringContext(input);
+
+  return {
+    body:
+      "Those are roles where active search usually works better than waiting on inbound. And with 40 roles over two quarters, you're working on a tight runway. Is the timing tied to specific milestones, or is it more of a general urgency?",
+    nextState: {
+      ...state,
+      stage: "route_1_awaiting_timeline",
+      hiringSummary: roleContext.summary,
+      hiringUseCase: roleContext.hiringUseCase,
+      hiringComplexity: "specialized",
+    },
+    suggestedReplies: ROUTE_1_TIMELINE_SUGGESTIONS,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 1 B5 — reflect + commit + single-CTA rep card. Tapping the card's
+// "Find a time" CTA runs through the existing representative-match flow
+// (which transforms the artifact into matching → ready → booking surface).
+function createRoute1TimelineResponse(
+  state: AiConciergeConversationState,
+  input: string,
+): AiConciergeAssistantTurn {
+  const urgency = classifyUrgency(input);
+
+  return {
+    artifact: createRoute1RepresentativeRecommendationArtifact(),
+    body:
+      "Given the scale, the specialized roles, and the timeline, this is exactly the kind of hiring setup a specialist can help with. Here's a quick way to set up time with one.",
+    nextState: {
+      ...state,
+      stage: "awaiting_handoff_choice",
+      readiness: "representative",
+      urgency,
+    },
+  };
+}
+
+function createRoute1RepresentativeRecommendationArtifact(): AiConciergeMessageArtifact {
+  return {
+    bodyText: "Talk with someone who knows situations like this",
+    ctaLabel: "Find a time",
+    titleText: "Meet with a hiring specialist",
+    type: "recommendation",
+  };
+}
+
+// ============================================================================
+// Route 2/3 (Medium value) — shared flow; branch decision happens on the card
+// ============================================================================
+
+// Route 2/3 B1 — acknowledge + role diagnostic. No inline chips (the scripts
+// doc mandates typed input for diagnostic turns). The composer example is
+// Jamie's canned healthcare reply so the presenter has a one-click path in
+// live mode.
+function createRoute23RolesDiagnosticResponse(): AiConciergeAssistantTurn {
+  return {
+    body:
+      "Hard-to-fill roles are where hiring usually feels most stuck. What kinds of roles are you running into that with?",
+    nextState: {
+      ...DEFAULT_STATE,
+      stage: "route_23_awaiting_role_diagnostic",
+      startingSituation: "hard_to_fill",
+      hiringMotion: "hard_to_fill",
+      likelySolution: "recruiter",
+    },
+    suggestedReplies: ROUTE_23_ROLE_DIAGNOSTIC_EXAMPLE,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 2/3 B2 + B3 — acknowledge-only bubble (Principle 1 proof moment, same
+// pattern as Route 1 B3) followed by the timeline question. The acknowledge
+// copy mirrors Jamie's healthcare example when detected and falls back to a
+// more generic framing otherwise.
+function createRoute23RoleDiagnosticResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const normalized = normalizeInput(input);
+  const mentionsHealthcare =
+    normalized.includes("nurs") ||
+    normalized.includes("clinical") ||
+    normalized.includes("informatics") ||
+    normalized.includes("healthcare");
+
+  const acknowledgeBody = mentionsHealthcare
+    ? "That tracks — senior nursing and clinical informatics are both narrow talent pools. Waiting on inbound tends to drag those vacancies out."
+    : "That tracks — those are the kind of narrow talent pools where waiting on inbound tends to drag vacancies out.";
+
+  const roleContext = summarizeHiringContext(input);
+
+  return {
+    priorBubble: acknowledgeBody,
+    body:
+      "Active outreach is usually what moves the needle on roles like this. How soon do you need to see progress?",
+    nextState: {
+      ...state,
+      stage: "route_23_awaiting_timeline",
+      hiringSummary: roleContext.summary,
+      hiringUseCase: roleContext.hiringUseCase,
+      hiringComplexity: "specialized",
+    },
+    suggestedReplies: ROUTE_23_TIMELINE_SUGGESTIONS,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 2/3 B4 — reflect + commit + two-CTA rep card. The card's primary CTA
+// ("Chat live now") branches into Route 2 (live-sales handoff); the secondary
+// CTA ("Schedule for later") branches into Route 3 (representative-match →
+// booking surface). The body intentionally reflects the "couple of months"
+// timeline — matches Jamie's canonical reply but still reads reasonably for
+// the other bounded options.
+function createRoute23TimelineResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const urgency = classifyUrgency(input);
+
+  return {
+    artifact: createRoute23RepresentativeRecommendationArtifact(),
+    body:
+      "Roles like these usually need a proactive sourcing approach, and a couple of months is enough time to make real progress. A hiring specialist can help you figure out the right setup.",
+    nextState: {
+      ...state,
+      stage: "awaiting_handoff_choice",
+      readiness: "representative",
+      urgency,
+    },
+  };
+}
+
+// Two-CTA recommendation card for Routes 2 and 3. Primary = "Chat live now"
+// (live-chat intent → live-sales handoff); secondary = "Schedule for later"
+// (book-meeting intent → representative match → booking surface). No body
+// text — the preceding assistant bubble already frames the handoff and the two
+// CTAs are self-explanatory together. Contrast Route 1's single-CTA card,
+// which keeps a body line because one button alone can't carry the context.
+function createRoute23RepresentativeRecommendationArtifact(): AiConciergeMessageArtifact {
+  return {
+    ctaLabel: "Chat live now",
+    primaryCtaIntent: "live-chat",
+    secondaryCtaLabel: "Schedule for later",
+    secondaryCtaIntent: "book-meeting",
+    titleText: "Talk to a hiring specialist",
+    type: "recommendation",
+  };
+}
+
+// ============================================================================
+// Route 4 (Low value, product card) — shortest flow; ends in self-serve card
+// ============================================================================
+
+// Route 4 B1 — acknowledge the fit question + turn it into a diagnostic about
+// hiring volume. No chips (typed input, matching the scripts-doc chip policy
+// for diagnostic turns).
+function createRoute4FitDiagnosticResponse(): AiConciergeAssistantTurn {
+  return {
+    body:
+      "Good question. The right fit depends on how much hiring you typically do. What does a usual year look like for your team?",
+    nextState: {
+      ...DEFAULT_STATE,
+      stage: "route_4_awaiting_volume_diagnostic",
+      startingSituation: "solution_fit",
+      // Don't commit to a hiring motion yet — we learn that from the volume
+      // answer. `likelySolution` stays "unknown" here so the later Route 4
+      // generator can set "lighter_touch" once the lighter cadence is confirmed.
+    },
+    suggestedReplies: ROUTE_4_VOLUME_DIAGNOSTIC_EXAMPLE,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 4 B2 + B3 — acknowledge-only bubble (Principle 1 proof moment) then the
+// urgency question with 4 composer chips. The acknowledge copy reflects the
+// "lighter cadence, narrow mix" framing from the scripts doc; we don't name the
+// product yet — that happens in B4.
+function createRoute4VolumeDiagnosticResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const roleContext = summarizeHiringContext(input);
+
+  return {
+    priorBubble:
+      "Got it — lighter cadence, narrow mix. For teams at that volume, a lighter-touch option usually fits better than a full sourcing workflow.",
+    body:
+      "One more thing — when a role opens up, how fast do you usually need to fill it?",
+    nextState: {
+      ...state,
+      stage: "route_4_awaiting_urgency",
+      hiringMotion: "occasional_hiring",
+      hiringSummary: roleContext.summary,
+      hiringUseCase: roleContext.hiringUseCase,
+      hiringComplexity: "broad",
+      likelySolution: "lighter_touch",
+    },
+    suggestedReplies: ROUTE_4_URGENCY_SUGGESTIONS,
+    suggestedReplyDisplay: "composer",
+  };
+}
+
+// Route 4 B4 — reflect + commit + Hiring Pro product card. Terminal state for
+// this route: `stage: "explore"` so the composer stays open and any typed
+// follow-up routes through the generic next-step handler (the organic "override
+// to rep" path the scripts doc calls out).
+function createRoute4UrgencyResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const urgency = classifyUrgency(input);
+
+  return {
+    artifact: createRoute4HiringProRecommendationArtifact(),
+    body:
+      "For 3-4 hires a year and flexible timelines, there's a lighter-touch option designed exactly for this.",
+    nextState: {
+      ...state,
+      stage: "explore",
+      readiness: "exploring",
+      urgency,
+    },
+  };
+}
+
+// Product recommendation card for Route 4. External CTA — the existing
+// `openRecommendationLink` handler in the panel opens `ctaHref` in a new tab
+// without touching conversation state, matching the scripts doc's "script ends
+// on the card" note.
+function createRoute4HiringProRecommendationArtifact(): AiConciergeMessageArtifact {
+  return {
+    bodyText:
+      "Best for occasional hiring and attracting inbound candidates",
+    ctaHref: LOWER_TOUCH_PLANS_CTA_HREF,
+    ctaLabel: "Explore all plans",
+    tagText: "Recommended for you",
+    titleText: "Hiring Pro",
+    type: "recommendation",
+  };
+}
+
+// ============================================================================
+// Route 5 (Low value, redirect link / nurture off-ramp) — no sales motion,
+// terminates in an inline styled link. Zero chips anywhere in the flow.
+// ============================================================================
+
+// External destination for Route 5's terminal redirect. Using example.com per
+// prototype conventions — we never actually navigate off-app in demos. The
+// scripts doc points at LinkedIn's hire product-overview page; update this
+// constant when production-bound.
+const ROUTE_5_REDIRECT_HREF = "https://example.com";
+
+// Route 5 B1 — acknowledge + open diagnostic about company context. No chips;
+// the script explicitly avoids chips everywhere in Route 5 to reinforce the
+// "low-structure, exploratory conversation" shape.
+function createRoute5CompanyContextDiagnosticResponse(): AiConciergeAssistantTurn {
+  return {
+    body:
+      "All kinds do, but the answer depends a lot on your situation. What kind of team are we talking about?",
+    nextState: {
+      ...DEFAULT_STATE,
+      stage: "route_5_awaiting_company_context",
+      // Leave startingSituation as "unknown" — Route 5 visitors explicitly
+      // haven't defined a situation yet. Nothing downstream branches on this
+      // field, so adding a new enum variant would be bloat.
+    },
+    // No suggestedReplies — this is an open diagnostic, typed input only.
+  };
+}
+
+// Route 5 B2 + B3 — acknowledge-only bubble (Principle 1 proof) then a gentle
+// role probe. Still no chips: the probe is intentionally open-ended so the
+// visitor isn't forced to commit to a concrete role signal they don't have.
+function createRoute5CompanyContextResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const roleContext = summarizeHiringContext(input);
+
+  return {
+    priorBubble:
+      "Totally fair — at that stage, the useful question usually isn't which tool, it's what kind of hiring you'll actually need first.",
+    body:
+      "When you say you might need to soon, do you have a sense of what that looks like? Specific role in mind, or still up in the air?",
+    nextState: {
+      ...state,
+      stage: "route_5_awaiting_role_context",
+      hiringSummary: roleContext.summary,
+      hiringUseCase: roleContext.hiringUseCase,
+    },
+  };
+}
+
+// Route 5 B4 — reflect + commit + inline redirect link. The link is embedded
+// in the body via the `[label](url)` parser in ChatAssistantMessage. No
+// artifact — this is deliberately lighter than Route 4's product card to
+// reinforce "every route is a good route; low value gets a polite bookmark,
+// not a pitch." Terminal state is `explore` so the composer stays open for
+// any typed follow-up (organic re-route to a rep if the visitor decides they
+// want one).
+function createRoute5RoleContextResponse(
+  input: string,
+  state: AiConciergeConversationState,
+): AiConciergeAssistantTurn {
+  const roleContext = summarizeHiringContext(input);
+
+  return {
+    body: `That's a pretty common spot to be in. Here's a good starting point to browse what LinkedIn has for hiring — come back anytime.\n\n[LinkedIn hiring products →](${ROUTE_5_REDIRECT_HREF})`,
+    nextState: {
+      ...state,
+      hiringSummary: roleContext.summary || state.hiringSummary,
+      hiringUseCase: roleContext.hiringUseCase,
+      readiness: "exploring",
+      stage: "explore",
+      urgency: "unknown",
+    },
+  };
+}
+
+// ----------------------------------------------------------------------------
+
 export function createRepresentativeMatchingTurn(
   state: AiConciergeConversationState,
 ): AiConciergeAssistantTurn {
@@ -931,18 +1501,38 @@ function createLighterTouchRecommendationArtifact(): AiConciergeMessageArtifact 
     bodyText:
       "Best for occasional hiring and attracting inbound candidates",
     ctaHref: LOWER_TOUCH_PLANS_CTA_HREF,
-    ctaLabel: "Learn more",
+    ctaLabel: "Explore all plans",
     tagText: "Recommended for you",
     titleText: "Hiring Pro",
     type: "recommendation",
   };
 }
 
-function createRepresentativeMatchingArtifact(): AiConciergeMessageArtifact {
+function createRedirectRecommendationArtifact(): AiConciergeMessageArtifact {
+  return {
+    ctaHref: LOWER_TOUCH_PLANS_CTA_HREF,
+    ctaLabel: "Visit site",
+    titleText: "Learn how teams hire on LinkedIn",
+    type: "recommendation",
+  };
+}
+
+export function createRepresentativeMatchingArtifact(): AiConciergeMessageArtifact {
   return {
     bodyText:
       "This usually takes a minute or two. You can keep chatting in the meantime.",
     titleText: "Connecting you with the right person",
+    type: "representative-match",
+    status: "matching",
+  };
+}
+
+// Matching artifact shown during the live-sales handoff delay (before the agent
+// message appears in the chat). Title is intentionally shorter than the booking
+// variant because the follow-up is immediate (seconds, not minutes).
+export function createLiveSalesMatchingArtifact(): AiConciergeMessageArtifact {
+  return {
+    titleText: "Connecting you now...",
     type: "representative-match",
     status: "matching",
   };
@@ -953,11 +1543,7 @@ function createLiveSalesHandoffTurn(
 ): AiConciergeAssistantTurn {
   return {
     body: "",
-    artifact: {
-      titleText: "Connecting you now...",
-      type: "representative-match",
-      status: "matching",
-    },
+    artifact: createLiveSalesMatchingArtifact(),
     nextState: {
       ...state,
       nextStepMode: null,
@@ -1112,39 +1698,6 @@ function classifyHiringMotion(input: string): HiringMotion {
   return "unknown";
 }
 
-function classifyPricingScope(input: string): HiringMotion {
-  const normalized = normalizeInput(input);
-
-  if (isHardToFillIntent(normalized)) {
-    return "hard_to_fill";
-  }
-
-  if (
-    normalized.includes("broader ongoing") ||
-    normalized.includes("ongoing hiring") ||
-    normalized.includes("across teams")
-  ) {
-    return "broader_ongoing";
-  }
-
-  if (
-    normalized.includes("smaller number of roles") ||
-    normalized.includes("smaller scope") ||
-    normalized.includes("few roles")
-  ) {
-    return "smaller_scope";
-  }
-
-  if (
-    normalized.includes("still figuring") ||
-    normalized.includes("not sure yet")
-  ) {
-    return "still_figuring_it_out";
-  }
-
-  return "unknown";
-}
-
 function classifyUrgency(input: string): Urgency {
   const normalized = normalizeInput(input);
 
@@ -1215,6 +1768,34 @@ function isSolutionFitIntent(normalized: string) {
   );
 }
 
+// Narrow classifier for the Route 4 canonical demo click ("Is this meant for
+// teams my size?"). Intentionally tight so other pill-2 prompts still fall
+// through to the older `isSolutionFitIntent` handler.
+function isRoute4FitIntent(normalized: string) {
+  return (
+    normalized.includes("teams my size") ||
+    normalized.includes("team my size") ||
+    normalized.includes("meant for teams") ||
+    normalized.includes("right size for")
+  );
+}
+
+// Narrow classifier for the Route 5 canonical demo click ("Do companies like
+// mine use this?") and other peer-validation / customer-story framings from the
+// "See customer stories" pill. Narrow on purpose so paraphrases that are really
+// about "I'm just getting started" still fall through to the legacy
+// `isJustGettingStartedIntent` path.
+function isRoute5CustomerStoriesIntent(normalized: string) {
+  return (
+    normalized.includes("companies like mine") ||
+    normalized.includes("companies like ours") ||
+    normalized.includes("companies like us") ||
+    normalized.includes("customer stories") ||
+    normalized.includes("who uses this") ||
+    normalized.includes("who else uses")
+  );
+}
+
 function isConsistentHiringIntent(normalized: string) {
   return (
     normalized.includes("hire consistently") ||
@@ -1223,11 +1804,39 @@ function isConsistentHiringIntent(normalized: string) {
   );
 }
 
+// "We're hiring a lot right now" and phrasings that signal scaled growth
+// hiring without yet naming the shape of the problem. This is Jamie's demo
+// click for Route 1 (high value, AE booking).
+function isRoute1HiringScaleIntent(normalized: string) {
+  return (
+    normalized.includes("hiring a lot") ||
+    normalized.includes("lots of hiring") ||
+    normalized.includes("lot of hiring") ||
+    normalized.includes("hiring a ton") ||
+    normalized.includes("scaling up hiring") ||
+    normalized.includes("scaling fast and hiring")
+  );
+}
+
 function isHardToFillIntent(normalized: string) {
   return (
+    // Accept both hyphenated ("hard-to-fill") and spaced ("hard to fill")
+    // phrasings plus the "harder" comparative. The canonical Route 2/3 pill
+    // prompt is "We have hard-to-fill roles" (hyphenated).
+    normalized.includes("hard-to-fill") ||
     normalized.includes("harder-to-fill") ||
     normalized.includes("hard to fill") ||
+    normalized.includes("harder to fill") ||
     normalized.includes("specialized hiring")
+  );
+}
+
+function isOccasionalHiringIntent(normalized: string) {
+  return (
+    normalized.includes("hiring occasionally") ||
+    normalized.includes("hire occasionally") ||
+    normalized.includes("occasional hiring") ||
+    normalized.includes("occasionally")
   );
 }
 
@@ -1262,6 +1871,8 @@ function isBookMeetingIntent(normalized: string) {
   return (
     normalized.includes("schedule a call") ||
     normalized.includes("schedule call") ||
+    normalized.includes("schedule for later") ||
+    normalized.includes("schedule") ||
     normalized.includes("book meeting") ||
     normalized.includes("book a meeting") ||
     (normalized.includes("book") && normalized.includes("meeting")) ||
@@ -1283,10 +1894,7 @@ function shouldUseLiveSalesHandoff(
   normalized: string,
   state: AiConciergeConversationState,
 ) {
-  if (
-    state.stage !== "awaiting_handoff_choice" ||
-    state.likelySolution !== "lighter_touch"
-  ) {
+  if (state.stage !== "awaiting_handoff_choice") {
     return false;
   }
 

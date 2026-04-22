@@ -1,21 +1,24 @@
 # Routing Outcomes Worksheet
 
+> **Status: historical working notes.**
+> The prototype (`src/lib/ai-concierge-conversation.ts`) is the canonical source for which outcomes are actually implemented, and [conversation-blueprint.md](conversation-blueprint.md) describes how they appear in the conversation. This worksheet captures earlier design exploration — matching card states, timeout behavior, ready-banner patterns, and the AE-vs-SDR distinction — that may still inform future iterations but is no longer authoritative.
+
 ## Purpose
-This document is a working design worksheet for the five hidden routing outcomes in AI Concierge.
+This document is a working design worksheet that explored the five hidden routing outcomes originally proposed for AI Concierge.
 
-Use it to answer:
-- what the five outcomes are
-- what user signals should trigger each one
-- how each outcome should be framed in user-facing language
-- what UI should open next
-- which questions still need design
+It is still useful for:
+- detailed design thinking on the matching state, timeouts, and ready banner
+- the in-thread AI-to-human handoff pattern
+- open design questions on lower-touch and redirect paths
 
-This is not meant to be final copy or final routing logic.
-It is a shared starting point for product and UX design.
+It is no longer the source of truth for:
+- which outcomes exist in the prototype today
+- the user-facing copy for any outcome
+- which surface opens for each outcome
 
 Related docs:
-- [project-overview.md](project-overview.md)
-- [conversation-blueprint.md](conversation-blueprint.md)
+- [project-overview.md](project-overview.md) — strategic framing, including the aspirational 5-outcome model
+- [conversation-blueprint.md](conversation-blueprint.md) — outcomes as implemented in the prototype
 - [implementation-plan.md](implementation-plan.md)
 
 ## Current working decisions

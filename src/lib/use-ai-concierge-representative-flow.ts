@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
+  createLiveSalesMatchingArtifact,
   createRepresentativeMatchingTurn,
   type AiConciergeConversationState,
 } from "@/lib/ai-concierge-conversation";
@@ -34,6 +35,10 @@ type UseRepresentativeFlowParams = {
   >;
   setMessages: Dispatch<SetStateAction<AiConciergeMessage[]>>;
   setThreadScrollSignal: Dispatch<SetStateAction<number>>;
+  // Provided by useLiveSalesFlow. Used when a two-CTA recommendation card's
+  // "Chat live now" button is tapped — the card is swapped for a live-sales
+  // matching artifact, then the live-sales handoff flow takes over.
+  startLiveSalesHandoffFlow: (messageId: string) => void;
   stopDictationRecognition: () => void;
 };
 
@@ -89,6 +94,7 @@ export function useRepresentativeFlow({
   setConversationState,
   setMessages,
   setThreadScrollSignal,
+  startLiveSalesHandoffFlow,
   stopDictationRecognition,
 }: UseRepresentativeFlowParams) {
   const [representativeMatchStatus, setRepresentativeMatchStatus] =
@@ -297,6 +303,67 @@ export function useRepresentativeFlow({
     ],
   );
 
+  // Sibling to handleRecommendationPrimaryAction for the "Chat live now" CTA on a
+  // two-CTA recommendation card (Route 2). Transforms the card artifact into a
+  // live-sales matching artifact in place, then hands off to the live sales flow.
+  // Shares the same pendingRecommendationMessageId guard so only one tap can
+  // fire at a time across both handlers.
+  const handleRecommendationLiveChatAction = useCallback(
+    (messageId: string) => {
+      if (
+        !conversationState ||
+        pendingRecommendationMessageId !== null ||
+        isAssistantResponding ||
+        isLiveAgentReplyPending ||
+        isLiveSalesChatConnecting
+      ) {
+        return;
+      }
+
+      const liveSalesArtifact = createLiveSalesMatchingArtifact();
+
+      clearRecommendationActionTimer();
+      clearRepresentativeMatchTimers();
+      stopDictationRecognition();
+      clearDictateStatusMessage();
+      setIsMatchedBookingSurfaceVisible(false);
+      setIsRepresentativeReadyBannerVisible(false);
+      setRepresentativeBookingDraft(null);
+      setConversationState((currentState) =>
+        currentState
+          ? {
+              ...currentState,
+              nextStepMode: null,
+              readiness: "representative",
+              stage: "explore",
+            }
+          : currentState,
+      );
+      setPendingRecommendationMessageId(messageId);
+
+      recommendationActionTimerRef.current = window.setTimeout(() => {
+        recommendationActionTimerRef.current = null;
+        setPendingRecommendationMessageId(null);
+        replaceAssistantArtifact(messageId, liveSalesArtifact);
+        startLiveSalesHandoffFlow(messageId);
+      }, RECOMMENDATION_ACTION_TRANSITION_MS);
+    },
+    [
+      clearDictateStatusMessage,
+      clearRecommendationActionTimer,
+      clearRepresentativeMatchTimers,
+      conversationState,
+      isAssistantResponding,
+      isLiveAgentReplyPending,
+      isLiveSalesChatConnecting,
+      pendingRecommendationMessageId,
+      replaceAssistantArtifact,
+      setConversationState,
+      startLiveSalesHandoffFlow,
+      stopDictationRecognition,
+    ],
+  );
+
   const handleConfirmMeetingCancellation = useCallback(() => {
     if (
       !representativeBookedSelection ||
@@ -381,6 +448,7 @@ export function useRepresentativeFlow({
     dismissRepresentativeReadyBanner,
     handleConfirmMeetingCancellation,
     handleNextStepConfirmed,
+    handleRecommendationLiveChatAction,
     handleRecommendationPrimaryAction,
     isMatchedBookingSurfaceVisible,
     isMeetingCancelDialogOpen,

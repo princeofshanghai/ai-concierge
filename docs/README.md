@@ -15,13 +15,11 @@ This folder contains the project planning, product, and conversation design docu
 - [implementation-plan.md](implementation-plan.md): execution plan and phase tracker
 - [stakeholder-notes-talk-track.md](stakeholder-notes-talk-track.md): supporting stakeholder communication notes
 
-## Design system
-- [ai-concierge-typography.md](ai-concierge-typography.md): scoped typography system for the AI concierge panel
-- [prototype-shell-ui.md](prototype-shell-ui.md): principles for internal prototype controls and scenario switching
+## Design system (`design/`)
+- [design/typography.md](design/typography.md): scoped typography system for the AI concierge panel
+- [design/prototype-shell-ui.md](design/prototype-shell-ui.md): principles for internal prototype controls and scenario switching
 
-## Premium survey (separate project)
-- [premium-survey-concierge-brief.md](premium-survey-concierge-brief.md): Premium survey prototype spec
-- [premium-survey-boundary-notes.md](premium-survey-boundary-notes.md): boundary rules between Premium and main prototype
-- [premium-plan-copy-reference.md](premium-plan-copy-reference.md): Premium plan product copy
+## Premium survey (`premium/`)
+Separate project. See [premium/README.md](premium/README.md).
 
 `AGENTS.md`, `README.md`, and `CLAUDE.md` stay at the repo root because they act more like repo-level instructions and entry points than project reference docs.

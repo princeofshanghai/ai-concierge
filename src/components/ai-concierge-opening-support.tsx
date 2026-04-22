@@ -8,11 +8,17 @@ import type {
 } from "@/lib/ai-concierge-opening-presentation";
 
 type AiConciergeOpeningSupportProps = {
+  // When `docked`, the topic picker renders as a slim single-row strip meant
+  // for docking above the composer (no helper line, horizontal overflow with
+  // a right-edge fade hint). Otherwise it renders as a wrapping block suitable
+  // for inlining inside an assistant bubble.
+  layout?: "inline" | "docked";
   onInsertPrompt: (prompt: string) => void;
   support: AiConciergeOpeningSupport;
 };
 
 export function AiConciergeOpeningSupportView({
+  layout = "inline",
   onInsertPrompt,
   support,
 }: AiConciergeOpeningSupportProps) {
@@ -34,6 +40,7 @@ export function AiConciergeOpeningSupportView({
   return (
     <OpeningTopicPicker
       helperText={support.helperText}
+      layout={layout}
       onInsertPrompt={onInsertPrompt}
       topics={support.topics}
     />
@@ -42,10 +49,12 @@ export function AiConciergeOpeningSupportView({
 
 function OpeningTopicPicker({
   helperText,
+  layout,
   onInsertPrompt,
   topics,
 }: {
   helperText: string;
+  layout: "inline" | "docked";
   onInsertPrompt: (prompt: string) => void;
   topics: AiConciergeOpeningPromptTopic[];
 }) {
@@ -54,7 +63,9 @@ function OpeningTopicPicker({
     left: number;
     top: number;
   } | null>(null);
+  const [isOverflowingRight, setIsOverflowingRight] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const pillRowRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const topicButtonRefs = useRef<
     Record<string, HTMLButtonElement | null>
@@ -62,6 +73,7 @@ function OpeningTopicPicker({
   const activeTopic =
     topics.find((topic) => topic.id === activeTopicId) ?? null;
   const canUseDOM = typeof document !== "undefined";
+  const isDocked = layout === "docked";
 
   useEffect(() => {
     if (!activeTopicId) {
@@ -138,40 +150,103 @@ function OpeningTopicPicker({
     };
   }, [activeTopicId]);
 
+  // Track horizontal overflow on the docked pill row so we can fade the right
+  // edge as a hint that more pills are scrollable off-screen. The fade hides
+  // itself once the user has scrolled to the end.
+  useEffect(() => {
+    if (!isDocked) {
+      return;
+    }
+
+    const row = pillRowRef.current;
+    if (!row) {
+      return;
+    }
+
+    const updateOverflow = () => {
+      const hasOverflow = row.scrollWidth - row.clientWidth > 1;
+      const notAtEnd =
+        row.scrollLeft + row.clientWidth < row.scrollWidth - 1;
+      setIsOverflowingRight(hasOverflow && notAtEnd);
+    };
+
+    updateOverflow();
+    row.addEventListener("scroll", updateOverflow, { passive: true });
+    window.addEventListener("resize", updateOverflow);
+
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(updateOverflow)
+        : null;
+    resizeObserver?.observe(row);
+
+    return () => {
+      row.removeEventListener("scroll", updateOverflow);
+      window.removeEventListener("resize", updateOverflow);
+      resizeObserver?.disconnect();
+    };
+  }, [isDocked, topics]);
+
+  const containerClassName = isDocked
+    ? "relative flex flex-col"
+    : "relative mt-1 flex flex-col gap-3";
+  const pillRowClassName = isDocked
+    ? "ai-concierge-pill-row flex flex-nowrap items-center gap-x-1.5 overflow-x-auto whitespace-nowrap"
+    : "flex flex-wrap gap-x-1.5 gap-y-2";
+
   return (
-    <div ref={containerRef} className="relative mt-1 flex flex-col gap-3">
-      {helperText ? (
+    <div ref={containerRef} className={containerClassName}>
+      {helperText && !isDocked ? (
         <p className="ai-type-body-xs text-ai-text-meta">{helperText}</p>
       ) : null}
-      <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-        {topics.map((topic) => {
-          const isActive = topic.id === activeTopicId;
+      <div className="relative">
+        <div
+          ref={pillRowRef}
+          className={pillRowClassName}
+          style={
+            isDocked
+              ? {
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                }
+              : undefined
+          }
+        >
+          {topics.map((topic) => {
+            const isActive = topic.id === activeTopicId;
 
-          return (
-            <button
-              key={topic.id}
-              ref={(node) => {
-                topicButtonRefs.current[topic.id] = node;
-              }}
-              type="button"
-              aria-expanded={isActive}
-              aria-haspopup="menu"
-              onClick={() =>
-                setActiveTopicId((currentValue) =>
-                  currentValue === topic.id ? null : topic.id,
-                )
-              }
-              className={[
-                "ai-type-label-xs inline-flex min-h-8 items-center rounded-full border px-2.5 py-1 text-left transition-[background-color,border-color,color,box-shadow] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary",
-                isActive
-                  ? "border-ai-blue-border-soft bg-ai-surface-tint text-ai-text-primary"
-                  : "border-ai-border-subtle bg-ai-surface-base text-ai-text-secondary hover:border-ai-border-subtle-hover hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary",
-              ].join(" ")}
-            >
-              <span>{topic.label}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={topic.id}
+                ref={(node) => {
+                  topicButtonRefs.current[topic.id] = node;
+                }}
+                type="button"
+                aria-expanded={isActive}
+                aria-haspopup="menu"
+                onClick={() =>
+                  setActiveTopicId((currentValue) =>
+                    currentValue === topic.id ? null : topic.id,
+                  )
+                }
+                className={[
+                  "ai-type-label-xs inline-flex min-h-8 shrink-0 items-center rounded-full border px-2.5 py-1 text-left transition-[background-color,border-color,color,box-shadow] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary",
+                  isActive
+                    ? "border-ai-blue-border-soft bg-ai-surface-tint text-ai-text-primary"
+                    : "border-ai-border-subtle bg-ai-surface-base text-ai-text-secondary hover:border-ai-border-subtle-hover hover:bg-ai-surface-overlay-soft hover:text-ai-text-primary",
+                ].join(" ")}
+              >
+                <span>{topic.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {isDocked && isOverflowingRight ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-ai-surface-base to-transparent"
+          />
+        ) : null}
       </div>
       {activeTopic && canUseDOM
         ? createPortal(

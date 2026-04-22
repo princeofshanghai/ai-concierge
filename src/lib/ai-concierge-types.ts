@@ -12,10 +12,22 @@ export type PremiumPlanId =
   | "sales-navigator-core"
   | "recruiter-lite";
 
+// Controls which downstream side effect a recommendation-card CTA triggers when
+// tapped. "book-meeting" runs the representative match → booking flow; "live-chat"
+// runs the live sales handoff flow. When intent is omitted we default to
+// "book-meeting" for back-compat with single-CTA cards (Route 1).
+export type AiConciergeRecommendationCtaIntent = "book-meeting" | "live-chat";
+
 export type AiConciergeRecommendationArtifact = {
   bodyText?: string;
   ctaHref?: string;
   ctaLabel: string;
+  // Present on two-CTA cards (e.g. Routes 2/3: "Chat live now" vs. "Schedule for
+  // later"). When present, the card renders two buttons and each button's intent
+  // determines the side effect.
+  primaryCtaIntent?: AiConciergeRecommendationCtaIntent;
+  secondaryCtaIntent?: AiConciergeRecommendationCtaIntent;
+  secondaryCtaLabel?: string;
   metaText?: string;
   tagText?: string;
   titleText: string;

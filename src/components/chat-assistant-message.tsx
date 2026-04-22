@@ -1,4 +1,56 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
+
+// Matches markdown-style inline links: `[label](url)`. We intentionally keep
+// this minimal (no full markdown parser) — the only formatting an assistant
+// bubble can currently render is a clickable link. Used by Route 5 to embed
+// the "LinkedIn hiring products →" redirect inline in the terminal bubble
+// without needing a dedicated artifact component.
+const INLINE_LINK_PATTERN = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+
+function renderBodyWithLinks(body: string): ReactNode {
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let matchIndex = 0;
+
+  for (const match of body.matchAll(INLINE_LINK_PATTERN)) {
+    const [fullMatch, label, href] = match;
+    const start = match.index ?? 0;
+
+    if (start > cursor) {
+      nodes.push(
+        <Fragment key={`text-${matchIndex}`}>
+          {body.slice(cursor, start)}
+        </Fragment>,
+      );
+    }
+
+    nodes.push(
+      <a
+        key={`link-${matchIndex}`}
+        className="font-medium text-ai-text-primary underline underline-offset-[3px] decoration-ai-text-tertiary transition-[text-decoration-color] hover:decoration-ai-text-primary focus-visible:decoration-ai-text-primary"
+        href={href}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {label}
+      </a>,
+    );
+
+    cursor = start + fullMatch.length;
+    matchIndex += 1;
+  }
+
+  if (cursor < body.length) {
+    nodes.push(
+      <Fragment key={`text-${matchIndex}`}>{body.slice(cursor)}</Fragment>,
+    );
+  }
+
+  // When there are no matches, return the original string so React renders it
+  // exactly as it did before the parser existed (avoids changing the DOM shape
+  // for every other bubble).
+  return nodes.length === 0 ? body : nodes;
+}
 
 type ChatAssistantMessageProps = {
   body: string;
@@ -90,7 +142,7 @@ export function ChatAssistantMessage({
             ? streamedChunks.map((chunk, index) => (
                 <StreamedMessageChunk key={`${index}-${chunk}`} chunk={chunk} />
               ))
-            : body}
+            : renderBodyWithLinks(body)}
         </p>
       </div>
     </div>

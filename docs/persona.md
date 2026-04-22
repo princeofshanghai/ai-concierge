@@ -57,7 +57,7 @@ The job-to-be-done for this user, stated from their perspective:
 - Northstar Health is planning to hire about 40 roles over the next 2 quarters, driven by the new funding round.
 - The hiring plan is already slipping. The team is behind, and the pressure is real.
 - The team is hiring across engineering, product, sales, and customer success.
-- Jamie's team already uses LinkedIn Jobs, referrals, and an ATS.
+- Jamie's team already uses Hiring Pro, referrals, and an ATS.
 - The biggest pain point is proactive sourcing for harder-to-fill roles, especially specialized ones like ML engineering, clinical informatics, and enterprise sales.
 
 ### Buying context
@@ -88,7 +88,7 @@ Jamie is not looking for a generic sales pitch.
 
 Jamie is trying to understand:
 - what LinkedIn Recruiter actually helps with
-- how it differs from LinkedIn Jobs
+- how it differs from Hiring Pro
 - whether it would help the team fill harder-to-fill roles more effectively
 - whether the value is strong enough to justify talking to a representative
 
@@ -103,10 +103,12 @@ Jamie is:
 
 ## Example opening questions Jamie might ask
 - What is LinkedIn Recruiter?
-- How is Recruiter different from LinkedIn Jobs?
+- How is Recruiter different from Hiring Pro?
 - Would this actually help with specialized hiring?
 - Is this meant for teams like mine, or mostly for large enterprises?
 - Can I see whether this would fit before talking to sales?
+
+Product names follow [conversation-language-rules.md](conversation-language-rules.md). Avoid legacy names like "LinkedIn Jobs" even in reference copy.
 
 ## Why not other default personas
 
@@ -128,7 +130,7 @@ When walking through the prototype, we should frame the story like this:
 - Jamie lands on the LinkedIn Recruiter microsite because the team is actively hiring and is struggling with proactive sourcing.
 - Jamie is interested, but not ready to jump straight into a sales conversation.
 - Jamie opens AI Concierge to understand whether Recruiter fits the team's hiring needs.
-- The assistant helps Jamie learn, asks a few lightweight follow-ups, and earns the right to recommend a conversation with a representative.
+- The assistant helps Jamie learn, asks a few lightweight follow-ups, and commits to a specific recommendation once the fit is clear, rather than asking Jamie to pick from a menu of options.
 
 ## Working decisions
 - Use Jamie Chen as the default walkthrough persona.

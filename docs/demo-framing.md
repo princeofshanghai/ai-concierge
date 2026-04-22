@@ -7,6 +7,9 @@ Related docs:
 - [persona.md](persona.md): full persona and JTBD rationale
 - [project-overview.md](project-overview.md): overall product concept
 - [routing-outcomes-worksheet.md](routing-outcomes-worksheet.md): the five hidden routing outcomes
+- [conversation-scripts.md](conversation-scripts.md): canonical copy for all five demo routes (every bubble, chip, and artifact). This is the prototype's source of truth for words — use it when rehearsing what Jamie types and what the concierge says.
+- [conversation-blueprint.md](conversation-blueprint.md): the principles behind the conversation shape (why each bubble exists, chip policy, opening pattern).
+- [conversation-system-prompt.md](conversation-system-prompt.md): external reference for the production AI prompt. The prototype deliberately differs from this in a few places (proactive routing, pricing handling). Do not edit.
 
 ## Audience
 Primary audience: product leadership.
@@ -27,11 +30,12 @@ The presentation and demo are structured around these expectations.
 
 ## Presentation flow
 1. Problem
-2. Solution
-3. Persona and JTBD
-4. Design principles
-5. [Demo: Flow 1 then Flow 2, each with one deep decision]
-6. What this should move
+2. Today on `/hire`
+3. Solution
+4. Persona and JTBD
+5. Design principles
+6. [Demo: Flow 1 then Flow 2, each with one deep decision]
+7. What this should move
 
 Principles are placed right before the demo on purpose, so the audience walks into the demo with a critical framework to watch through.
 
@@ -40,27 +44,45 @@ Principles are placed right before the demo on purpose, so the audience walks in
 ## Slide 1: Problem
 
 ### On the slide
-**The problem**
-LinkedIn loses high-intent `/hire` visitors at the moment of intent, because Contact Sales is still a static form.
+A short opener line establishing scale, followed by one strong heading that delivers the contrast. Minimal. Let it breathe.
 
-**Stakes**
-- 55% of visitors abandon static sales forms
-- Buyers are 10x less likely to convert without a 5-minute response
-- Reps spend time on low-intent leads while high-intent cools off
+*$1.3B in annual bookings. LTS is 69% of web conversions from the Lobby.*
 
-**Why now**
-Buyers expect AI-led guidance, not forms. Static Contact Sales is becoming a credibility gap, not just a friction point.
+**Yet LinkedIn meets its highest-intent `/hire` visitors with a static form.**
+
+Cite the motivation stats in small text on the slide.
+
+### Talking points
+- Marketing Websites are one of LinkedIn's most valuable demand surfaces. $1.3B in annual bookings, 20 microsites, 33 regions.
+- Within that, `/hire` is 69% of web conversions from the Lobby. Hiring is our single biggest lever.
+- And yet, at the moment of highest intent, the way we meet those visitors is a static Contact Sales form.
+- That is the disconnect this prototype addresses. The problem is not a UX complaint about forms. It is a business problem about what LinkedIn loses at the moment of highest intent.
+
+---
+
+## Slide 2: Today on `/hire`
+
+### On the slide
+Two columns. Stats on the left, screenshot of the current Contact Sales form on the right.
+
+**Left column, four bullets:**
+- 55% of visitors abandon the form before submitting
+- 10x less likely to convert when response takes longer than 5 minutes
+- Sales time wasted on low-intent while high-intent cools off
+- AI-led guidance is now table stakes; a static form signals lag
+
+**Right column:** screenshot of the current `/hire` Contact Sales form.
 
 Cite all stats in small text on the slide.
 
 ### Talking points
-- The problem is not "forms are bad in general." It is specifically that LinkedIn's primary conversion path on `/hire` treats a high-intent moment as a low-effort form submission.
-- The cost shows up in two places. Revenue lost to the competition, and a frustrating first impression for the exact users we most want to help.
-- Why now matters. The bar for AI-led product guidance has moved. A static form at the moment of intent now reads as "LinkedIn is behind," not just "LinkedIn is cautious."
+- These are the concrete consequences of the disconnect. Each bullet is a different axis of the same loss: conversion, speed, sales capacity, market positioning.
+- The last bullet is the "why now." A static form at the moment of intent now reads as "LinkedIn is behind," not just "LinkedIn is cautious."
+- The screenshot is here on purpose. This is the actual artifact that greets visitors today. Seeing it alongside the numbers makes the disconnect impossible to miss.
 
 ---
 
-## Slide 2: Solution
+## Slide 3: Solution
 
 ### On the slide
 **The bold version**
@@ -75,7 +97,7 @@ Keep the slide clean, one strong sentence.
 
 ---
 
-## Slide 3: Persona and JTBD
+## Slide 4: Persona and JTBD
 
 ### On the slide
 **Persona**
@@ -92,20 +114,27 @@ Jamie Chen, Director of Talent Acquisition at Northstar Health. A ~1,500-person 
 
 ---
 
-## Slide 4: Design principles
+## Slide 5: Design principles
 
 ### On the slide
-Two principles, each with a one-line description.
+Three cards, each a headline and one short line of supporting copy. Cover beginning, middle, and end of the visitor experience (qualification, conversation, routing).
 
-1. **Earn the right to qualify**
-   The conversation should feel helpful, not like a form in disguise. Qualification happens in the background. Sales roles stay hidden from the user.
+1. **Heard, not qualified**
+   Behind the scenes, the concierge qualifies. On the surface, it helps. Visitors answer because it sharpens the next answer, not because we asked them to submit.
 
-2. **Guided, not scripted**
-   Not a pure open-ended chat. Not a rigid prompt tree. A middle path where the assistant diagnoses the situation and offers suggested directions when useful.
+2. **Help first, then commit**
+   The concierge leads with help and asks one gentle question at a time. When the fit is clear, it commits to a specific next step instead of asking permission. Visitors see a recommendation, never a menu in place of one.
+
+3. **Every route is a good route**
+   Sales meeting, direct purchase, or helpful redirect. Every visitor leaves with a clear next step, not a dead end.
 
 ### Talking points
-- These two principles are the lens to watch the demo through.
-- If the demo ever feels like interrogation, or ever feels random and directionless, that is a failure of these principles. Watch for both.
+- These three principles are the lens to watch the demo through. Each covers a different part of the visitor experience:
+  - Principle 1 is about how qualification *feels* to the visitor. If at any moment the demo starts feeling like a form in disguise, that is a failure of Principle 1.
+  - Principle 2 is about the rhythm of the conversation AND the moment of recommendation. The concierge acknowledges, answers, and asks one gentle question when it needs context. When the fit is clear, it commits to a specific next step, not a "would you like to?" question and not a menu of options. If the demo ever feels interrogating OR ever asks permission at the moment it should commit, that is a failure of Principle 2.
+  - Principle 3 is about the ending. Not every visitor gets a booked sales meeting, and that is by design. If any routing path ever feels like a rejection, that is a failure of Principle 3.
+- All three principles describe what the visitor *experiences*, not what the system does under the hood. They are design principles, not implementation rules.
+- The commit behavior on Principle 2 is concrete and demonstrable. In Flow 1, watch for the recommendation card appearing inline with a single "Get connected" CTA, no "would you like to book?" question in front of it. That card is the commit in action.
 
 ---
 
@@ -146,7 +175,9 @@ Gather qualification signals through natural conversation, not through explicit 
 
 **What to watch for in the demo**
 - Moments where Jamie is being qualified without noticing
-- Suggested prompts that feel helpful, not leading
+- The acknowledge-answer-ask rhythm: no stacked questions, no bare ones, one gentle follow-up at a time
+- Suggested prompts that help the visitor move, never gate the conversation (the composer is always open to free typing)
+- The commit moment: when the fit is clear, a recommendation card appears inline with a single "Get connected" CTA, no "would you like to book?" question in front of it
 - The absence of form-field patterns
 
 ### Flow 2: Direct online sales (the lower-touch path)
@@ -216,7 +247,7 @@ The JTBD describes who we are designing for. The routing model describes how the
 No. A prettier form would still be extractive. The concierge's job is to be useful first. In Flow 2 we explicitly show the system deciding not to sell, which no form does.
 
 ### "How real is the AI here?"
-Scripted and state-driven, not production AI. The prototype is meant to pressure-test the experience pattern, not the model.
+Scripted and state-driven, not production AI. The prototype is meant to pressure-test the experience pattern, not the model. Every line of copy in the demo is authored in [conversation-scripts.md](conversation-scripts.md), which is the prototype's source of truth. The production LLM will be guided by [conversation-system-prompt.md](conversation-system-prompt.md), which is an external reference from another team — the prototype deliberately diverges from it in a few narrow places (proactive routing at the commit moment, the pricing flow).
 
 ### "Why these two flows and not others?"
 They are the two extremes of the routing model. Together they demonstrate that the system can handle both the highest-value path and the path where the system chooses not to sell. Everything in between is a variation of these two.
@@ -239,6 +270,6 @@ Based on the exec's known preferences, verify before the session:
 
 ## Open items for later iteration
 - Decide whether Flow 2 needs a brief alternative persona introduced at the start, or can be framed as "a different visitor" without a named persona.
-- Decide whether to show a visual of the `/hire` page to concierge entry on Slide 2.
-- Decide whether Slide 4 shows both principles side by side or stacked vertically.
+- Add the actual `/hire` Contact Sales form screenshot on Slide 2. Placeholder reserved at `public/presentation/contact-sales-form.png`.
+- Confirm Slide 5 uses the three-card layout from the existing template.
 - Decide whether the closing slide stays qualitative or includes directional numbers.

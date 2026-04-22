@@ -1,9 +1,11 @@
 # Conversation Blueprint
 
 ## Purpose
-This document defines how the AI Concierge conversation works and why it is designed that way.
+This document defines how the AI Concierge conversation is *shaped* and *why*. It is the principles doc.
 
-Use it to answer:
+For the exact copy in each route (every assistant bubble, every chip, every artifact), see [conversation-scripts.md](conversation-scripts.md). This doc deliberately avoids duplicating that copy so there is only one source of truth for words.
+
+Use this doc to answer:
 - what the assistant should do in the first few turns
 - why each message exists
 - when to use chips vs open text
@@ -11,6 +13,7 @@ Use it to answer:
 - how the visible conversation connects to hidden lead routing
 
 For project context, BANT approach, and the routing model, see [project-overview.md](project-overview.md).
+For product naming, topic boundaries, acronym handling, and the pricing prohibition, see [conversation-language-rules.md](conversation-language-rules.md). Those rules apply to all assistant copy and are not repeated here.
 
 ## Design rationale
 
@@ -25,15 +28,18 @@ The guiding principle: chips reduce cognitive load at decision points; open text
 
 | Moment | Prefer chips | Prefer open text | Why |
 |---|---|---|---|
-| Opening | Yes, 2-3 situational chips | Still allow typing | Reduces "what do I even say" anxiety |
-| Diagnostic middle | Yes, 3-4 options | Allow typing as escape hatch | Keeps momentum, prevents long answers that are hard to route |
+| Opening | Yes, topic pills with starter prompts underneath | Still allow typing | Reduces "what do I even say" anxiety |
+| Pure diagnostic middle ("what kind of roles?" / "what does a usual year look like?") | No | Yes, typed | Routing the user through chips on open diagnostics feels like a form; free typing is what surfaces real signal |
+| Bounded-answer middle (urgency, timeline) | Yes, 3-4 options | Allow typing as escape hatch | Keeps momentum when the answer space is genuinely small |
 | User asks a question | No | Let them type freely | Chips feel dismissive when the user has a real question |
-| After a long AI answer | Yes, 1-2 follow-up chips | Allow typing | Gives the user a "what's next" nudge |
-| Near handoff | Yes, clear action chips | Less open text | The goal is commitment, not drift |
+| Near handoff / branch decision | Yes, clear action buttons on a card | No typing in this moment | The goal is commitment; the two-CTA handoff card is the clearest shape |
+
+This is sometimes called a **surgical chip policy**: chips only appear where the answer is genuinely bounded or where the user is making a branch decision. Everywhere else, the visitor types. See [conversation-scripts.md](conversation-scripts.md) for the exact moments each route uses chips.
 
 Common mistakes:
 - Using chips everywhere makes the experience feel like a phone tree.
 - Using chips nowhere makes the experience feel like talking into a void.
+- Using chips on open diagnostic turns ("what kind of roles?") hides real signal behind canned answers.
 
 ### Opening message principles
 The opening message is the highest-leverage moment in the conversation.
@@ -52,20 +58,25 @@ What to avoid:
 
 Keep it short. Most users skim the opening and go straight to the chips.
 
-### Situational chips over topic chips
-Opening chips should describe where the user is, not what they want to learn about.
+The exact opening line lives in [conversation-scripts.md](conversation-scripts.md#shared-opening-all-five-routes) and mirrors the production spec in [conversation-system-prompt.md](conversation-system-prompt.md).
 
-**Situational (recommended):**
-- `We're not sure which hiring solution fits`
-- `We need help with harder-to-fill roles`
+### Opening pills: a two-tier pattern
+The opening uses a **two-tier pill + starter-prompt structure**, not a flat row of chips:
 
-**Topic (not recommended):**
-- `Tell me about Recruiter`
-- `Compare hiring products`
+1. **Top tier — topic pills.** A small, stable set of 4 pills (e.g. "Help with hiring", "Find the right fit", "See customer stories", "Get started"). These frame broad entry points. Tapping a pill doesn't submit anything — it reveals a set of starter prompts underneath.
+2. **Second tier — situational starter prompts.** Once a pill is tapped, the visitor sees 2-3 situational prompts in first-person voice (e.g. *"We're hiring a lot right now"*, *"We have hard-to-fill roles"*). Tapping a prompt submits it as the visitor's first message.
 
-Situational chips sound like things a real person would say, give diagnostic signal, and put the user in "help me" mode. Topic chips make the assistant feel like a FAQ.
+**Why this shape rather than flat situational chips:**
+- Flat situational chips force every situation to share the same visual weight — noisy, and makes low-value routes look just as prominent as high-value ones.
+- Two tiers let us group situations by intent (hiring help vs. fit research vs. exploration) without cluttering the surface.
+- The prompts inside each pill stay first-person and situational — that's where the "sounds like a real person" work happens.
 
-Chips should use first-person voice. Three chips is a good default, four is fine. Include one lower-commitment option for users who aren't ready.
+Common mistakes at the opening:
+- Topic pills with **topic prompts underneath** ("Tell me about Recruiter") make the assistant feel like a FAQ rather than a consultant.
+- Too many pills at the top tier dilutes the pattern; 3-5 is the sweet spot.
+- Prompts that are too specific (naming a product or quoting a number) make the visitor feel boxed in.
+
+See [conversation-scripts.md](conversation-scripts.md#shared-opening-all-five-routes) for the canonical pill labels and the exact starter prompts under each.
 
 ### Balancing helpfulness with qualification
 Every AI response should do two things:
@@ -101,6 +112,8 @@ The intended shape:
 6. reflected recommendation
 7. next-step routing
 
+[conversation-scripts.md](conversation-scripts.md) shows each step in full wording, broken down per route.
+
 ## Primary persona
 The default walkthrough persona is Jamie Chen from [persona.md](persona.md):
 - Director of Talent Acquisition, Northstar Health
@@ -108,164 +121,31 @@ The default walkthrough persona is Jamie Chen from [persona.md](persona.md):
 - Dealing with some harder-to-fill roles
 - High intent, but not immediately ready for a handoff
 
-## Message-by-message flow
+Jamie appears in all five scripted routes, even the medium and low value ones where she is slightly out of character. That is deliberate: one persona across routes keeps leadership demos focused, with the presenter narrating the context when the fit is looser.
 
-### Step 1: Opening
-Example (prefill):
+## Outcomes in the prototype
+Five routes are scripted in full in [conversation-scripts.md](conversation-scripts.md). They map onto the aspirational outcome model from [project-overview.md](project-overview.md) as follows:
 
-> Hi Jamie, I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a representative if that becomes useful.
->
-> Here are a few ways to get started:
+| Script | Aspirational outcome | Visible artifact |
+|---|---|---|
+| Route 1 — High value | AE booking | Rep card → matching → booking surface |
+| Route 2 — Medium · Live chat | SDR live handoff | Rep card → matching → inline live agent |
+| Route 3 — Medium · Book meeting | SDR booking | Rep card → matching → booking surface |
+| Route 4 — Low · Product card | Lower-touch / direct purchase | Hiring Pro recommendation card |
+| Route 5 — Low · Redirect link | Redirect / no-sales | Minimal external link card |
 
-Example (manual entry):
+Chat copy for Routes 1, 2, and 3 is identical up to the recommendation card; the visitor cannot tell whether they are being routed to an AE, an SDR booking, or a live SDR.
 
-> Hi Jamie, thanks for sharing your details. I can help you figure out which hiring solutions could make sense for Northstar Health, answer questions about how they fit different hiring needs, and connect you with a representative if that becomes useful.
->
-> Here are a few ways to get started:
+## Divergences from the production spec
+The prototype intentionally differs from [conversation-system-prompt.md](conversation-system-prompt.md) in a few places. Keep these in mind when auditing:
+- **Proactive routing.** The prototype proactively recommends a representative or a lighter-touch product once signals are strong enough. The production spec is more conservative — it waits for both hiring need and timeline before offering to connect. This is retained because it maps directly to the "Help first, then commit" principle in [demo-framing.md](demo-framing.md) and produces the commit moment leadership wants to see.
+- **Opening message.** The prototype uses the production-spec opening line verbatim (see [conversation-scripts.md](conversation-scripts.md#shared-opening-all-five-routes)).
+- **Pricing flow.** Both docs agree the assistant must never quote prices (see [conversation-language-rules.md](conversation-language-rules.md)). The prototype acknowledges the question, captures the budget signal silently, and offers a specialist — without an explicit pricing-scope sub-question.
 
-Visible purpose: orient the user, show the onboarding mattered, reduce blank-chat anxiety.
-Hidden signal: confirmed persona and company context.
-
-### Step 2: Starting situation
-User chooses one of the opening prompts.
-
-Visible purpose: help the user start without writing a full prompt.
-Hidden signal: `starting_situation`.
-
-### Step 3: Hiring motion diagnosis
-This is the most important middle step.
-
-If the user starts with `We're not sure which hiring solution fits`:
-
-> I can help with that. The right fit usually depends on whether your team is hiring consistently across teams, needs more proactive sourcing for harder-to-fill roles, or is looking for a lighter-touch option.
->
-> Which is closer to your situation right now?
-
-Suggested replies:
-- `We hire consistently across teams`
-- `We need help with harder-to-fill roles`
-- `We're hiring occasionally`
-- `We're still figuring that out`
-
-Visible purpose: help before qualifying, give the user a simple decision lens.
-Hidden signal: `hiring_motion`.
-
-### Step 4: Specific fit diagnosis
-Once hiring motion is clearer, the assistant asks for role or team context.
-
-If `We hire consistently across teams`:
-
-> That helps. Teams hiring consistently across multiple functions usually need a more structured, proactive approach than teams hiring occasionally.
->
-> Which teams or roles are most affected right now?
-
-If `We need help with harder-to-fill roles`:
-
-> That helps. When teams are struggling with harder-to-fill roles, they often need a more proactive sourcing approach instead of relying only on inbound applicants.
->
-> What kinds of roles are most affected right now?
-
-Suggested replies:
-- `Engineering`
-- `Sales`
-- `Mix of roles`
-- `Hard-to-fill roles`
-
-Visible purpose: move from broad motion into concrete fit diagnosis.
-Hidden signals: `hiring_use_case`, `hiring_complexity`.
-
-### Step 5: Urgency / priority
-Once role context is clear, the assistant adds one timing signal.
-
-> That gives me a better sense of the hiring pattern.
->
-> How soon do you need to make progress on this?
-
-Suggested replies:
-- `This quarter`
-- `In the next few months`
-- `We're planning ahead`
-- `Still exploring`
-
-Visible purpose: add a timing signal without sounding like sales discovery.
-Hidden signal: `timeline / urgency`.
-
-### Step 6: Reflected recommendation
-The assistant reflects what it learned and introduces the likely-fit product.
-
-Preferred version:
-
-> It sounds like Northstar Health is hiring consistently across engineering and product, and the need is fairly near-term. A more proactive sourcing approach is usually what helps in that situation, which is where Recruiter tends to be most useful.
-
-Visible purpose: translate user context into a likely-fit recommendation.
-Hidden effect: stronger confidence in likely solution category.
-
-### Step 7: Next-step routing
-The prototype now proactively routes based on signal strength rather than offering a generic menu.
-
-**Strong recruiter-fit signal:** The assistant presents a recommendation card and moves directly toward connection.
-
-> [recommendation] A quick conversation with someone on our team could help you figure out the right setup.
-
-**Strong lighter-touch signal:** The assistant presents a product recommendation card.
-
-> [recommendation] Here's what I'd recommend.
-
-**Weak or unclear signal:** The assistant offers a choice.
-
-> Would it be more helpful to keep exploring, get pricing guidance, or talk with a representative?
-
-## Alternate entry paths
-
-### Consistent hiring
-If the user starts with `We hire consistently across teams`, skip the decision-lens step and go directly to role or team context.
-
-### Harder-to-fill roles
-If the user starts with `We need help with harder-to-fill roles`, skip the broader decision lens and move into role context.
-
-### Pricing guidance
-If the user starts with `We have questions about pricing`:
-- Acknowledge the question and let them know a specialist can walk them through options tailored to their needs
-- Use the follow-up to understand fit
-
-### Just getting started
-If the user starts with `I'm just getting started`:
-- Respond with a relaxed, low-pressure framing
-- Ask one broad question to understand their situation
-
-## Alternate conversation modes
-
-### Curious but not ready
-Pattern: answer clearly first, ask one soft context question, keep the CTA soft.
-
-### Wrong intent
-Pattern: acknowledge the mismatch, redirect clearly, do not force the sales path.
-
-## Outcome variants
-Each outcome uses the same high-level transition:
-1. The assistant recommends a next step in chat.
-2. The right-side next-step surface opens.
-3. The user can complete the action or go back to chat.
-
-### AE booking
-When to use: strong fit, senior buyer, broader hiring needs.
-Next-step surface: booking surface with more decisive framing.
-
-### SDR live handoff
-When to use: medium-value lead, human help useful now, live SDR available.
-Next-step surface: live-connect in the same chat thread.
-
-### SDR booking
-When to use: medium-value lead, good fit for follow-up, no live SDR.
-Next-step surface: booking surface.
-
-### Lower-touch / direct purchase
-When to use: smaller scope, lighter hiring need, high confidence a lighter path fits.
-Next-step surface: recommendation card, not booking.
-
-### Redirect / no-sales
-When to use: wrong audience, support or job-seeker intent, low commercial value.
-Next-step surface: redirect card or destination.
+Where the prototype follows the production spec, there should be no drift:
+- product naming and terminology (see language rules)
+- deflection of non-hiring topics (see language rules)
+- "one question at a time," acknowledge-then-ask, and short response length
 
 ## How to explain this flow to stakeholders
 The clearest explanation is by message purpose, not exact wording:
@@ -280,7 +160,9 @@ The clearest explanation is by message purpose, not exact wording:
 The routing story: we are not designing five unrelated chats. We are designing one guided conversation with five possible end states. The visible experience stays consultative. The hidden system chooses the right next-step surface.
 
 ## Related docs
-- [project-overview.md](project-overview.md): project context, BANT approach, routing model, scope
+- [conversation-scripts.md](conversation-scripts.md): canonical copy for all five routes
+- [conversation-language-rules.md](conversation-language-rules.md): product naming, topic boundaries, acronyms, pricing prohibition
 - [conversation-system-prompt.md](conversation-system-prompt.md): external production AI spec (reference only)
-- [routing-outcomes-worksheet.md](routing-outcomes-worksheet.md): detailed routing design
+- [project-overview.md](project-overview.md): project context, BANT approach, routing model, scope
 - [persona.md](persona.md): Jamie Chen persona
+- [routing-outcomes-worksheet.md](routing-outcomes-worksheet.md): historical working notes

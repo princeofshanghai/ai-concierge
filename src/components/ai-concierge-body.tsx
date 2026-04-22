@@ -25,7 +25,16 @@ type AiConciergeBodyProps = {
   onInsertOpeningPrompt?: (prompt: string) => void;
   onManageBooking: () => void;
   onPremiumPlanSelect: (planId: PremiumPlanId) => void;
+  // Fired when a recommendation-card CTA tap should start the booking/
+  // representative-match flow. Single-CTA cards (Route 1) always use this
+  // handler. Two-CTA cards (Routes 2/3) use this for whichever CTA has
+  // primary/secondary intent `book-meeting` (typically "Schedule for later").
   onRecommendationPrimaryAction: (messageId: string) => void;
+  // Fired when a recommendation-card CTA tap should start the live-sales
+  // handoff flow. Used by two-CTA cards (Routes 2/3) for whichever CTA has
+  // intent `live-chat` (typically "Chat live now"). Omit for surfaces that
+  // don't need live-chat routing (e.g. gallery stubs).
+  onRecommendationLiveChatAction?: (messageId: string) => void;
   pendingRecommendationMessageId?: string | null;
   onRepresentativeReadyCardVisibilityChange?: (
     isVisible: boolean | null,
@@ -45,6 +54,7 @@ export function AiConciergeBody({
   onInsertOpeningPrompt = () => {},
   onManageBooking,
   onPremiumPlanSelect,
+  onRecommendationLiveChatAction,
   onRecommendationPrimaryAction,
   pendingRecommendationMessageId = null,
   onRepresentativeReadyCardVisibilityChange,
@@ -257,18 +267,42 @@ export function AiConciergeBody({
                     </div>
                   ) : null}
                   {message.status === "complete" &&
-                  message.artifact?.type === "recommendation" ? (
-                    <AiConciergeRecommendationCard
-                      artifact={message.artifact}
-                      isPanelExpanded={isPanelExpanded}
-                      isPrimaryActionPending={
-                        message.id === pendingRecommendationMessageId
+                  message.artifact?.type === "recommendation" ? (() => {
+                    // Route each CTA tap to the correct flow based on the intent
+                    // declared on the artifact. Single-CTA cards leave both
+                    // intents undefined, so they always hit the primary (booking)
+                    // handler — back-compat with Route 1 and older cards.
+                    const artifact = message.artifact;
+                    const dispatchCta = (
+                      intent: typeof artifact.primaryCtaIntent,
+                    ) => {
+                      if (
+                        intent === "live-chat" &&
+                        onRecommendationLiveChatAction
+                      ) {
+                        onRecommendationLiveChatAction(message.id);
+                        return;
                       }
-                      onPrimaryAction={() =>
-                        onRecommendationPrimaryAction(message.id)
-                      }
-                    />
-                  ) : null}
+                      onRecommendationPrimaryAction(message.id);
+                    };
+                    return (
+                      <AiConciergeRecommendationCard
+                        artifact={artifact}
+                        isPanelExpanded={isPanelExpanded}
+                        isPrimaryActionPending={
+                          message.id === pendingRecommendationMessageId
+                        }
+                        onPrimaryAction={() =>
+                          dispatchCta(artifact.primaryCtaIntent)
+                        }
+                        onSecondaryAction={
+                          artifact.secondaryCtaLabel
+                            ? () => dispatchCta(artifact.secondaryCtaIntent)
+                            : undefined
+                        }
+                      />
+                    );
+                  })() : null}
                   {message.status === "complete" &&
                   message.artifact?.type === "premium-plan-recommendations" ? (
                     <AiConciergePremiumPlanRecommendations

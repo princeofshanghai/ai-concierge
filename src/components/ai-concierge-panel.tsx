@@ -77,8 +77,11 @@ import {
 import {
   DEFAULT_PROTOTYPE_SCENARIO,
   getPrototypeScenarioEntryState,
+  isPrototypePlaybackMode,
+  type PrototypePlaybackRoute,
   type PrototypeScenario,
 } from "@/lib/prototype-scenario";
+import { buildPlaybackTranscript } from "@/lib/ai-concierge-playback";
 import { getPremiumPlanCheckoutHref } from "@/lib/premium-plan-details";
 
 type AiConciergePanelProps = {
@@ -134,6 +137,13 @@ type PendingIdentityAction =
   | {
       messageId: string;
       type: "recommendation-card";
+    }
+  | {
+      // Route 2 card-tap variant. Like "recommendation-card" but routes to the
+      // live-chat CTA handler (transforms card → "Connecting you now...", hands
+      // off to live sales flow) after the identity gate clears.
+      messageId: string;
+      type: "recommendation-card-live-chat";
     }
   | {
       messageId: string;
@@ -283,8 +293,11 @@ export function AiConciergePanel({
   disablePhoneCall = false,
   disableVoiceMode = false,
 }: AiConciergePanelProps) {
+  const isPlaybackMode = isPrototypePlaybackMode(prototypeScenario);
   const [storedEntrySession] = useState(() =>
-    authReturnNonce === undefined ? readStoredAiConciergeEntrySession() : null,
+    !isPlaybackMode && authReturnNonce === undefined
+      ? readStoredAiConciergeEntrySession()
+      : null,
   );
   const initialIdentityKey = getAiConciergeEntryIdentityKey({
     isLinkedInConnected: prototypeScenario.authState === "linkedin-connected",
@@ -294,10 +307,27 @@ export function AiConciergePanel({
         : null,
   });
   const shouldResumeConversationFromStoredEntry =
-    storedEntrySession?.identityKey === initialIdentityKey;
-  const initialContactDetails = shouldResumeConversationFromStoredEntry
-    ? { ...storedEntrySession.contactDetails }
-    : getContactDetailsForScenario(prototypeScenario, signedInContactDetails);
+    !isPlaybackMode && storedEntrySession?.identityKey === initialIdentityKey;
+  // Playback always uses Jamie's prefilled contact details so the scripted
+  // transcript renders consistently, regardless of the sign-in scenario.
+  const initialContactDetails = isPlaybackMode
+    ? { ...signedInContactDetails }
+    : shouldResumeConversationFromStoredEntry
+      ? { ...storedEntrySession.contactDetails }
+      : getContactDetailsForScenario(prototypeScenario, signedInContactDetails);
+  const initialPlaybackMessages = useState(() => {
+    if (!isPlaybackMode || prototypeScenario.playbackRoute === "live") {
+      return null;
+    }
+
+    return buildPlaybackTranscript({
+      contactDetails: { ...signedInContactDetails },
+      route: prototypeScenario.playbackRoute as Exclude<
+        PrototypePlaybackRoute,
+        "live"
+      >,
+    });
+  })[0];
   const storedEntryOpeningTurn = shouldResumeConversationFromStoredEntry
     ? (customOpeningTurn ?? createOpeningTurn)({
         contactDetails: initialContactDetails,
@@ -308,7 +338,7 @@ export function AiConciergePanel({
     prototypeScenario.authState === "linkedin-connected",
   );
   const [panelState, setPanelState] = useState<AiConciergePanelState>(
-    shouldResumeConversationFromStoredEntry
+    isPlaybackMode || shouldResumeConversationFromStoredEntry
       ? "chat"
       : getPrototypeScenarioEntryState(prototypeScenario),
   );
@@ -321,9 +351,11 @@ export function AiConciergePanel({
   const [pendingIdentityAction, setPendingIdentityAction] =
     useState<PendingIdentityAction | null>(null);
   const [messages, setMessages] = useState<AiConciergeMessage[]>(
-    shouldResumeConversationFromStoredEntry
-      ? [createThinkingAssistantMessage(1)]
-      : [],
+    initialPlaybackMessages
+      ? initialPlaybackMessages
+      : shouldResumeConversationFromStoredEntry
+        ? [createThinkingAssistantMessage(1)]
+        : [],
   );
   const [conversationState, setConversationState] =
     useState<AiConciergeConversationState | null>(
@@ -677,6 +709,7 @@ export function AiConciergePanel({
     dismissRepresentativeReadyBanner,
     handleConfirmMeetingCancellation,
     handleNextStepConfirmed,
+    handleRecommendationLiveChatAction,
     handleRecommendationPrimaryAction,
     isMatchedBookingSurfaceVisible,
     isMeetingCancelDialogOpen,
@@ -706,6 +739,7 @@ export function AiConciergePanel({
     setConversationState,
     setMessages,
     setThreadScrollSignal,
+    startLiveSalesHandoffFlow,
     stopDictationRecognition,
   });
   const isContactDetailsValid = REQUIRED_CONTACT_FIELDS.every(
@@ -756,12 +790,25 @@ export function AiConciergePanel({
     },
     [dismissPhoneCallPrompt, startLiveSalesHandoffFlow],
   );
+  // Wrapper for the recommendation-card "Chat live now" tap so the phone-call
+  // prompt dismissal matches what happens when the chat composer triggers a
+  // live-sales handoff. Body component routes here based on CTA intent.
+  const handleCardLiveChatAction = useCallback(
+    (messageId: string) => {
+      dismissPhoneCallPrompt();
+      handleRecommendationLiveChatAction(messageId);
+    },
+    [dismissPhoneCallPrompt, handleRecommendationLiveChatAction],
+  );
   const isLiveSalesChatActive = liveSalesChatStatus === "active";
   const isLiveSalesChatConnecting = liveSalesChatStatus === "connecting";
   const isDockedNextStepSurface = shouldShowNextStepSurface && !isExpanded;
   const isPresentationExpanded = isExpanded || shouldShowNextStepSurface;
   const canRestartConversation =
-    panelState === "chat" && messages.length > 1 && !shouldShowNextStepSurface;
+    !isPlaybackMode &&
+    panelState === "chat" &&
+    messages.length > 1 &&
+    !shouldShowNextStepSurface;
   const composerSuggestedReplies = getComposerSuggestedReplies(
     messages,
     isAssistantResponding || isLiveAgentReplyPending,
@@ -771,6 +818,7 @@ export function AiConciergePanel({
     isAssistantResponding || isLiveAgentReplyPending,
   );
   const shouldShowComposerExampleResponses =
+    !isPlaybackMode &&
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
     !isLiveSalesChatActive &&
@@ -778,6 +826,7 @@ export function AiConciergePanel({
     composerSuggestedReplies.length > 0 &&
     composerDraft.trim().length === 0;
   const shouldShowPhoneCallPromptEntryPoint =
+    !isPlaybackMode &&
     !disablePhoneCall &&
     panelState === "chat" &&
     !shouldShowNextStepSurface &&
@@ -1094,38 +1143,89 @@ export function AiConciergePanel({
       assistantMessageId: string,
       streamMode: AssistantStreamMode = "text",
     ) => {
-      streamAssistantTurnPlayback({
-        assistantTurn,
-        assistantMessageId,
-        onComplete: () => {
-          pendingAssistantResponseRef.current = null;
-          setConversationState(assistantTurn.nextState);
-          setIsAssistantResponding(false);
-          if (assistantTurn.postCompleteEffect === "representative-match") {
-            if (!isContactDetailsValid) {
-              openRepresentativeIdentityGate({
-                messageId: assistantMessageId,
-                type: "representative-match",
-              });
-              return;
-            }
-
-            startRepresentativeMatchFlow(assistantMessageId);
+      // When a turn includes an acknowledge-only `priorBubble`, we stream it
+      // into the thinking message that was already appended, then spawn a
+      // second thinking message and stream the main body into that. The main
+      // body is the one that carries chips/artifact/postCompleteEffect.
+      const handleMainComplete = (finalMessageId: string) => {
+        pendingAssistantResponseRef.current = null;
+        setConversationState(assistantTurn.nextState);
+        setIsAssistantResponding(false);
+        if (assistantTurn.postCompleteEffect === "representative-match") {
+          if (!isContactDetailsValid) {
+            openRepresentativeIdentityGate({
+              messageId: finalMessageId,
+              type: "representative-match",
+            });
             return;
           }
 
-          if (assistantTurn.postCompleteEffect === "live-sales-handoff") {
-            if (!isContactDetailsValid) {
-              openRepresentativeIdentityGate({
-                messageId: assistantMessageId,
-                type: "live-sales-handoff",
-              });
-              return;
-            }
+          startRepresentativeMatchFlow(finalMessageId);
+          return;
+        }
 
-            handleStartLiveSalesHandoff(assistantMessageId);
+        if (assistantTurn.postCompleteEffect === "live-sales-handoff") {
+          if (!isContactDetailsValid) {
+            openRepresentativeIdentityGate({
+              messageId: finalMessageId,
+              type: "live-sales-handoff",
+            });
+            return;
           }
-        },
+
+          handleStartLiveSalesHandoff(finalMessageId);
+        }
+      };
+
+      if (assistantTurn.priorBubble) {
+        const priorBubbleTurn: AiConciergeAssistantTurn = {
+          body: assistantTurn.priorBubble,
+          nextState: assistantTurn.nextState,
+        };
+
+        streamAssistantTurnPlayback({
+          assistantTurn: priorBubbleTurn,
+          assistantMessageId,
+          onComplete: () => {
+            const secondaryMessageNumber =
+              nextAssistantMessageNumberRef.current;
+            const secondaryMessageId = createAssistantMessageId(
+              secondaryMessageNumber,
+            );
+            nextAssistantMessageNumberRef.current += 2;
+
+            setMessages((currentMessages) => [
+              ...currentMessages,
+              createThinkingAssistantMessage(secondaryMessageNumber),
+            ]);
+
+            const mainTurn: AiConciergeAssistantTurn = {
+              ...assistantTurn,
+              priorBubble: undefined,
+            };
+
+            streamAssistantTurnPlayback({
+              assistantTurn: mainTurn,
+              assistantMessageId: secondaryMessageId,
+              onComplete: () => handleMainComplete(secondaryMessageId),
+              setMessages,
+              streamMode,
+              streamingTimerRef,
+              thinkingTimerRef,
+            });
+          },
+          setMessages,
+          streamMode,
+          streamingTimerRef,
+          thinkingTimerRef,
+        });
+        return;
+      }
+
+      streamAssistantTurnPlayback({
+        assistantTurn,
+        assistantMessageId,
+        onComplete: () => handleMainComplete(assistantMessageId),
         setMessages,
         streamMode,
         streamingTimerRef,
@@ -1377,6 +1477,7 @@ export function AiConciergePanel({
       authState: "linkedin-connected",
       entryVariant: prototypeScenario.entryVariant,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
+      playbackRoute: prototypeScenario.playbackRoute,
     });
     setOnboardingFlowIntent("entry");
     setPendingIdentityAction(null);
@@ -1393,6 +1494,7 @@ export function AiConciergePanel({
       authState: "signed-out",
       entryVariant: prototypeScenario.entryVariant,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
+      playbackRoute: prototypeScenario.playbackRoute,
     });
     setPanelState("manual");
   };
@@ -1434,6 +1536,7 @@ export function AiConciergePanel({
       authState: "signed-out",
       entryVariant: prototypeScenario.entryVariant,
       openingPromptVariant: prototypeScenario.openingPromptVariant,
+      playbackRoute: prototypeScenario.playbackRoute,
     });
     if (onboardingFlowIntent === "entry") {
       setPanelState("welcome");
@@ -1530,6 +1633,11 @@ export function AiConciergePanel({
         return;
       }
 
+      if (nextAction.type === "recommendation-card-live-chat") {
+        handleCardLiveChatAction(nextAction.messageId);
+        return;
+      }
+
       if (nextAction.type === "representative-match") {
         startRepresentativeMatchFlow(nextAction.messageId);
         return;
@@ -1569,6 +1677,28 @@ export function AiConciergePanel({
       handleRecommendationPrimaryAction,
       isContactDetailsValid,
       openRecommendationLink,
+      openRepresentativeIdentityGate,
+    ],
+  );
+
+  // Gated wrapper for the card's "Chat live now" CTA (Routes 2). Same identity
+  // gate logic as the booking variant — if contact details aren't captured yet,
+  // bounce into the identity form first and resume after it clears.
+  const handleRecommendationLiveChatActionWithIdentityGate = useCallback(
+    (messageId: string) => {
+      if (!isContactDetailsValid) {
+        openRepresentativeIdentityGate({
+          messageId,
+          type: "recommendation-card-live-chat",
+        });
+        return;
+      }
+
+      handleCardLiveChatAction(messageId);
+    },
+    [
+      handleCardLiveChatAction,
+      isContactDetailsValid,
       openRepresentativeIdentityGate,
     ],
   );
@@ -2045,6 +2175,9 @@ export function AiConciergePanel({
                       onInsertOpeningPrompt={handleOpeningPromptInsert}
                       onManageBooking={openMatchedBookingSurface}
                       onPremiumPlanSelect={handlePremiumPlanSelect}
+                      onRecommendationLiveChatAction={
+                        handleRecommendationLiveChatActionWithIdentityGate
+                      }
                       onRecommendationPrimaryAction={
                         handleRecommendationPrimaryActionWithIdentityGate
                       }
@@ -2100,6 +2233,9 @@ export function AiConciergePanel({
                       onInsertOpeningPrompt={handleOpeningPromptInsert}
                       onManageBooking={openMatchedBookingSurface}
                       onPremiumPlanSelect={handlePremiumPlanSelect}
+                      onRecommendationLiveChatAction={
+                        handleRecommendationLiveChatActionWithIdentityGate
+                      }
                       onRecommendationPrimaryAction={
                         handleRecommendationPrimaryActionWithIdentityGate
                       }
@@ -2115,7 +2251,9 @@ export function AiConciergePanel({
                     />
                   </>
                 )}
-                {!shouldShowNextStepSurface && shouldShowPhoneCallPrompt ? (
+                {!isPlaybackMode &&
+                !shouldShowNextStepSurface &&
+                shouldShowPhoneCallPrompt ? (
                   <AiConciergePhoneCallPrompt
                     isPanelExpanded={isExpanded}
                     onDismiss={dismissPhoneCallPrompt}
@@ -2128,16 +2266,16 @@ export function AiConciergePanel({
                     }
                   />
                 ) : null}
-                {shouldShowMicrophoneNotice ? (
+                {!isPlaybackMode && shouldShowMicrophoneNotice ? (
                   <AiConciergeMicrophoneNotice
                     isPanelExpanded={isExpanded}
                     message={systemNoticeMessage ?? ""}
                     onDismiss={clearMicrophoneBlockedNotice}
                   />
                 ) : null}
-                {!disableVoiceMode &&
-                isVoiceComposerTransitioning &&
-                !shouldShowNextStepSurface ? (
+                {isPlaybackMode ? null : !disableVoiceMode &&
+                  isVoiceComposerTransitioning &&
+                  !shouldShowNextStepSurface ? (
                   <ComposerToVoiceTransitionShell
                     isPanelExpanded={isExpanded}
                   />
@@ -2166,7 +2304,7 @@ export function AiConciergePanel({
                       isLiveAgentReplyPending
                         ? `${DEFAULT_REPRESENTATIVE_NAME} is replying...`
                         : isLiveSalesChatConnecting
-                          ? "Connecting to your sales rep..."
+                          ? "Connecting to your hiring specialist..."
                           : "Responding..."
                     }
                     draft={composerDraft}

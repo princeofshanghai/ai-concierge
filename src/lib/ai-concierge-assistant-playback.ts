@@ -71,6 +71,40 @@ export function createAssistantMessageFromTurn(
   };
 }
 
+// Playback pre-render uses this to flatten a turn (which may contain an
+// acknowledge-only `priorBubble`) into the list of rendered messages. The
+// prior bubble becomes its own message with no chips or artifact; the main
+// body gets all the bells (chips, artifact, openingSupport).
+export function createAssistantMessagesFromTurn(
+  assistantTurn: AiConciergeAssistantTurn,
+  firstMessageNumber: number,
+): AiConciergeMessage[] {
+  if (!assistantTurn.priorBubble) {
+    return [createAssistantMessageFromTurn(assistantTurn, firstMessageNumber)];
+  }
+
+  const priorMessage = createAssistantMessage(
+    assistantTurn.priorBubble,
+    undefined,
+    undefined,
+    undefined,
+    firstMessageNumber,
+  );
+
+  const mainMessage: AiConciergeMessage = {
+    ...createAssistantMessage(
+      assistantTurn.body,
+      assistantTurn.openingSupport,
+      assistantTurn.suggestedReplies,
+      assistantTurn.suggestedReplyDisplay,
+      firstMessageNumber + 1,
+    ),
+    artifact: assistantTurn.artifact,
+  };
+
+  return [priorMessage, mainMessage];
+}
+
 export function createThinkingAssistantMessage(
   messageNumber: number,
 ): AiConciergeMessage {
