@@ -37,32 +37,34 @@ const PLAYBACK_SCRIPTS: Record<
     // Route 1 (High value, AE booking). Jamie taps the "Discuss my hiring
     // challenges" flat chip, answers vaguely (B1 → Jamie 1), gets a scope
     // clarifier from the AI (B2), shares the funding + 40-role context
-    // (Jamie 2), answers the specialization probe (Jamie 3), then picks a
-    // timeline bucket. The card CTA tap (B6) is driven by playback
-    // finalization, not a chat message — see `finalizeTranscript`.
+    // (Jamie 2), answers the specialization probe (Jamie 3), then picks the
+    // "Bit of both" timeline bucket — the canonical demo tap per the scripts
+    // doc. The card CTA tap (B6) is driven by playback finalization, not a
+    // chat message — see `finalizeTranscript`.
     userInputs: [
       "Discuss my hiring challenges",
       "too many open roles rn",
       "pretty recent. Series C closed in Feb. ~40 roles across eng, clinical, sales, ops over 2 quarters.",
       "Yeah a few. ML engineers, clinical informatics, couple senior sales leaders. Open a while now.",
-      "Specific milestones",
+      "Bit of both",
     ],
   },
   // Route 2 (Medium value, SDR live chat). Routes 2 and 3 share the same
   // transcript up to the two-CTA card (B4) — the branch happens when the
   // presenter taps a CTA on the card during demo. "Chat live now" triggers
   // the live-sales handoff; "Schedule for later" triggers the booking flow.
-  // See `docs/conversation-scripts.md` Route 2 / Route 3.
+  // Entry is the canonical flat chip "Find the right solution for me" per
+  // `docs/conversation-scripts.md` Route 2 / Route 3.
   "medium-sdr-live": {
     userInputs: [
-      "We have hard-to-fill roles",
+      "Find the right solution for me",
       "Senior nursing and clinical informatics mostly. Few of them have been open for months.",
       "In the next few months",
     ],
   },
   "medium-sdr-booking": {
     userInputs: [
-      "We have hard-to-fill roles",
+      "Find the right solution for me",
       "Senior nursing and clinical informatics mostly. Few of them have been open for months.",
       "In the next few months",
     ],
@@ -79,12 +81,12 @@ const PLAYBACK_SCRIPTS: Record<
     ],
   },
   "low-redirect-link": {
-    // Jamie's canonical Route 5 click + two typed diagnostic turns. Script
-    // ends on the inline redirect link embedded in the final assistant bubble
-    // — no artifact, no chips, no handoff. See Route 5 in
-    // `docs/conversation-scripts.md`.
+    // Jamie's canonical Route 5 chip tap ("Show me success stories") + two
+    // typed diagnostic turns. Script ends on the inline redirect link embedded
+    // in the final assistant bubble — no artifact, no chips, no handoff. See
+    // Route 5 in `docs/conversation-scripts.md`.
     userInputs: [
-      "Do companies like mine use this?",
+      "Show me success stories",
       "Startup, 15ish people. Haven't really hired much yet, but figuring we might need to soon.",
       "Honestly still up in the air. Maybe engineering and sales? No concrete plan yet.",
     ],

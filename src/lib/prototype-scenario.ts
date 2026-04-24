@@ -14,10 +14,13 @@ export type PrototypeScenarioOpeningPromptVariant =
 // from LinkedIn identity and email/phone are collected just-in-time when
 // an action requires them (e.g. booking a meeting). `confirm-details`
 // preserves the legacy flow where the user sees and confirms a filled-in
-// contact form before starting the conversation.
+// contact form before starting the conversation. `welcome-contact-form`
+// keeps the welcome copy but combines it with a shorter first-name /
+// last-name / work-email / phone-number form before chat starts.
 export type PrototypeScenarioOnboardingStyle =
   | "direct-to-chat"
-  | "confirm-details";
+  | "confirm-details"
+  | "welcome-contact-form";
 
 // `live` is the default interactive experience. The other five values tell the
 // panel to render a fully pre-built transcript for a scripted route, skipping
@@ -86,7 +89,7 @@ export function getPrototypeScenarioOnboardingStyleGroupLabel() {
 }
 
 export function getPrototypeScenarioOnboardingStyleHelperText() {
-  return "Direct to chat skips the contact form and asks for email/phone only when an action needs it.";
+  return "Choose whether the first screen jumps into chat, confirms full details, or collects just first name, last name, work email, and phone.";
 }
 
 export function getPrototypeScenarioOnboardingStyleLabel(
@@ -97,6 +100,8 @@ export function getPrototypeScenarioOnboardingStyleLabel(
       return "Direct to chat";
     case "confirm-details":
       return "Confirm details first";
+    case "welcome-contact-form":
+      return "Welcome + 4 fields";
   }
 }
 
@@ -111,7 +116,7 @@ export function getPrototypeScenarioAuthGroupLabel() {
 }
 
 export function getPrototypeScenarioAuthHelperText() {
-  return "Changes whether the welcome shows Sign in to LinkedIn or Continue as Jamie.";
+  return "Changes whether entry details start blank or prefilled from LinkedIn, depending on the selected start flow.";
 }
 
 export function getPrototypeScenarioEntryLabel(

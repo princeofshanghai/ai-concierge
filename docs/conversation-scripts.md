@@ -149,11 +149,10 @@ The chip is pain-led and high-intent — a direct match for Jamie's persona (urg
 
 **Chips (composer):**
 - `Specific milestones`
-- `General urgency`
-- `Both`
-- `Still flexible`
+- `Just general urgency`
+- `Bit of both`
 
-**User (chip):** `Both`
+**User (chip):** `Bit of both`
 
 ---
 
@@ -414,7 +413,7 @@ Route 4 isn't bound to a flat chip — its entry is a typed fit question. The `i
 - Tag: `Recommended for you`
 - Title: `Hiring Pro`
 - Body: `Best for occasional hiring and attracting inbound candidates`
-- CTA: `Explore all plans` *(opens external plans page)*
+- CTA: `View product` *(opens external plans page)*
 
 *Script ends on the card. No escape chips, no rep handoff, no booking surface. The composer remains open; if the visitor types a rep request explicitly, the concierge can re-route organically.*
 
@@ -548,7 +547,7 @@ Route 5 is not driving a purchase. Sending a pre-hiring visitor to a Premium pla
 - **Three distinct card artifacts are in play:**
   1. Single-CTA rep card (Route 1, `Find a time`)
   2. Two-CTA rep card (Routes 2/3, `Chat live now` + `Schedule for later`)
-  3. Product recommendation card (Route 4, `Explore all plans`)
+  3. Product recommendation card (Route 4, `View product`)
   4. Minimal styled link (Route 5, `LinkedIn hiring products →`)
 - **No route quotes a price**, per [conversation-language-rules.md](conversation-language-rules.md). If a visitor asks about pricing, the assistant acknowledges, captures the budget signal silently, and offers to connect them with a specialist — without asking a scoping sub-question.
 - **Only Route 4 names a product in the flow** (on the card, not in bubble copy). All other routes either defer product introduction to a human (Routes 1-3) or avoid product naming entirely (Route 5).

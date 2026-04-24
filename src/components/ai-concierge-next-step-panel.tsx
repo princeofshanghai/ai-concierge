@@ -272,7 +272,6 @@ export function AiConciergeNextStepPanel({
                         }
                         value={selectedContactValue}
                         onFocus={() => setIsContactDestinationEditing(true)}
-                        onBlur={() => setIsContactDestinationEditing(false)}
                         onValueChange={(value) => {
                           if (selectedContactChannel === "email") {
                             setMeetingEmailDraft(value);
@@ -281,6 +280,16 @@ export function AiConciergeNextStepPanel({
                           }
                         }}
                       />
+                      <Button
+                        type="button"
+                        size="compact"
+                        variant="tertiary"
+                        disabled={!hasSelectedContactValue}
+                        onClick={() => setIsContactDestinationEditing(false)}
+                        className="!h-7 !px-2 shrink-0"
+                      >
+                        <span className="ai-type-label-xs">Done</span>
+                      </Button>
                     </div>
                   )
                 ) : null}

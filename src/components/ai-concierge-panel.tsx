@@ -857,6 +857,8 @@ export function AiConciergePanel({
   const onboardingCopyVariant = "direct-entry";
   const isDirectToChatOnboarding =
     prototypeScenario.onboardingStyle === "direct-to-chat";
+  const isWelcomeContactFormOnboarding =
+    prototypeScenario.onboardingStyle === "welcome-contact-form";
   // In the direct-to-chat flow, the signed-out fallback is a single
   // "What should I call you?" field. The rep-gate always uses the full
   // form so we can collect the contact info an action needs.
@@ -866,12 +868,26 @@ export function AiConciergePanel({
     panelState === "manual" &&
     !isLinkedInConnected &&
     prototypeScenario.authState !== "linkedin-connected";
-  const onboardingFieldSet: "full" | "first-name-only" = isQuickNameEntry
-    ? "first-name-only"
-    : "full";
-  const isOnboardingValid = isQuickNameEntry
-    ? contactDetails.firstName.trim().length > 0
-    : isContactDetailsValid;
+  const isWelcomeContactBasicsEntry =
+    isWelcomeContactFormOnboarding &&
+    onboardingFlowIntent === "entry" &&
+    panelState === "welcome";
+  const onboardingFieldSet: "full" | "first-name-only" | "contact-basics" =
+    isWelcomeContactBasicsEntry
+      ? "contact-basics"
+      : isQuickNameEntry
+        ? "first-name-only"
+        : "full";
+  const isWelcomeContactBasicsValid = [
+    contactDetails.firstName,
+    contactDetails.lastName,
+    contactDetails.email,
+  ].every((value) => value.trim().length > 0);
+  const isOnboardingValid = isWelcomeContactBasicsEntry
+    ? isWelcomeContactBasicsValid
+    : isQuickNameEntry
+      ? contactDetails.firstName.trim().length > 0
+      : isContactDetailsValid;
   const onboardingSubmitLabel =
     pendingIdentityAction !== null
       ? "Continue to rep"

@@ -24,7 +24,8 @@ type AiConciergeOnboardingProps = {
   // is the low-friction fallback used when LinkedIn isn't connected in the
   // direct-to-chat flow — we just ask "What should I call you?" and collect
   // email/phone later, inline at the moment we actually need them.
-  fieldSet?: "full" | "first-name-only";
+  // "contact-basics" is the combined welcome + 4-field form variant.
+  fieldSet?: "full" | "first-name-only" | "contact-basics";
   isPanelExpanded?: boolean;
   isLinkedInConnected?: boolean;
   isValid: boolean;
@@ -133,6 +134,104 @@ function QuickNameForm({
               value={details.firstName}
               onValueChange={(value) => onChange("firstName", value)}
             />
+            <div className="pt-2">
+              <Button type="submit" fullWidth disabled={!isValid}>
+                {submitLabel}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WelcomeContactForm({
+  details,
+  isPanelExpanded,
+  isValid,
+  onChange,
+  onStartConversation,
+  submitLabel,
+}: {
+  details: ConciergeContactDetails;
+  isPanelExpanded: boolean;
+  isValid: boolean;
+  onChange: (
+    field: keyof ConciergeContactDetails,
+    value: string,
+  ) => void;
+  onStartConversation: () => void;
+  submitLabel: string;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-y-auto px-5 pb-10 pt-8">
+        <div className="mx-auto w-full max-w-[360px]">
+          <div
+            className={[
+              "max-w-[320px]",
+              isPanelExpanded ? "sm:max-w-[384px]" : "",
+            ].join(" ")}
+          >
+            <h3 className="ai-type-display-md text-ai-text-primary">
+              Welcome to AI Concierge
+            </h3>
+            <p className="ai-type-body-md-open mt-4 text-ai-text-primary">
+              Share a few details to start chatting about your hiring needs.
+            </p>
+          </div>
+
+          <form
+            className="mt-8 flex flex-col gap-4 pb-6 sm:mt-10"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onStartConversation();
+            }}
+          >
+            <div
+              className={[
+                "grid gap-4",
+                isPanelExpanded ? "sm:grid-cols-2" : "",
+              ].join(" ")}
+            >
+              <FormTextField
+                label="First name"
+                autoComplete="given-name"
+                autoFocus
+                value={details.firstName}
+                onValueChange={(value) => onChange("firstName", value)}
+              />
+              <FormTextField
+                label="Last name"
+                autoComplete="family-name"
+                value={details.lastName}
+                onValueChange={(value) => onChange("lastName", value)}
+              />
+            </div>
+
+            <div
+              className={[
+                "grid gap-4",
+                isPanelExpanded ? "sm:grid-cols-2" : "",
+              ].join(" ")}
+            >
+              <FormTextField
+                label="Work email"
+                autoComplete="email"
+                type="email"
+                value={details.email}
+                onValueChange={(value) => onChange("email", value)}
+              />
+              <FormTextField
+                label="Phone number (optional)"
+                autoComplete="tel"
+                type="tel"
+                value={details.phoneNumber}
+                onValueChange={(value) => onChange("phoneNumber", value)}
+              />
+            </div>
+
             <div className="pt-2">
               <Button type="submit" fullWidth disabled={!isValid}>
                 {submitLabel}
@@ -589,6 +688,19 @@ export function AiConciergeOnboarding({
   welcomeVariant = "legacy",
 }: AiConciergeOnboardingProps) {
   if (mode === "welcome") {
+    if (fieldSet === "contact-basics") {
+      return (
+        <WelcomeContactForm
+          details={details}
+          isPanelExpanded={isPanelExpanded}
+          isValid={isValid}
+          onChange={onChange}
+          onStartConversation={onStartConversation}
+          submitLabel={submitLabel}
+        />
+      );
+    }
+
     const welcomeTitle = "Hire the right people, faster";
     const welcomeDescription =
       "Chat with our AI to find the right hiring solution for your team, and connect with a sales rep when you're ready.";

@@ -67,7 +67,7 @@ const SAMPLE_RECOMMENDATION_ARTIFACT = {
 const SAMPLE_LOWER_TOUCH_RECOMMENDATION_ARTIFACT = {
   bodyText: "Best for occasional hiring and attracting inbound candidates",
   ctaHref: "https://example.com",
-  ctaLabel: "Explore all plans",
+  ctaLabel: "View product",
   tagText: "Recommended for you",
   titleText: "Hiring Pro",
   type: "recommendation" as const,
@@ -347,10 +347,11 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Entry flow for LinkedIn connection and contact-detail confirmation, including the lighter signed-in review state, the updated cleaner back-arrow style with a 16x16 contact-details arrow, 14px regular darker-neutral edit-mode helper copy, denser read-only summary rows, the manual intro copy, and the new first-name-only fallback for the direct-to-chat flow (low-friction path shown when the user isn't signed in to LinkedIn so we only ask for a name and collect email/phone inline when an action needs them)."
+              description="Entry flow for LinkedIn connection and contact-detail confirmation, including the lighter signed-in review state, the updated cleaner back-arrow style with a 16x16 contact-details arrow, 14px regular darker-neutral edit-mode helper copy, denser read-only summary rows, the manual intro copy, the welcome-plus-4-fields variant, and the first-name-only fallback for the direct-to-chat flow."
               states={[
                 "Signed out",
                 "Signed in",
+                "Welcome / 4-field form",
                 "Confirm details / manual",
                 "Confirm details / prefilled",
                 "Direct-to-chat / first-name only",
@@ -413,6 +414,37 @@ export function AiConciergeComponentGallery() {
                     />
                   </PreviewSurface>
                 </div>
+
+                <PreviewSurface
+                  className="overflow-hidden"
+                  label="Welcome / 4-field form"
+                  padded={false}
+                >
+                  <AiConciergeOnboarding
+                    details={onboardingDetails}
+                    fieldSet="contact-basics"
+                    isLinkedInConnected={false}
+                    isValid={
+                      onboardingDetails.firstName.trim().length > 0 &&
+                      onboardingDetails.lastName.trim().length > 0 &&
+                      onboardingDetails.email.trim().length > 0
+                    }
+                    linkedInIdentity={null}
+                    mode="welcome"
+                    onBack={() => {}}
+                    onChange={(field, value) =>
+                      setOnboardingDetails((currentDetails) => ({
+                        ...currentDetails,
+                        [field]: value,
+                      }))
+                    }
+                    onContinueWithoutLinkedIn={() => {}}
+                    onContinueWithLinkedIn={() => {}}
+                    onGetStarted={() => {}}
+                    onStartConversation={() => {}}
+                    onUseAnotherAccount={() => {}}
+                  />
+                </PreviewSurface>
 
                 <PreviewSurface
                   className="overflow-hidden"
@@ -536,7 +568,7 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Scheduling surface for format choice, slot selection, contact details, and the updated back-arrow style. When the contact value for the chosen format is empty (direct-to-chat flow), the input appears immediately below the 'Add an email address…' / 'Add a phone number…' prompt so the user can fill it in without clicking 'Change'. Once a value is entered and the field blurs, the surface collapses to a one-line summary with a Change affordance; clicking Change re-opens the input."
+              description="Scheduling surface for format choice, slot selection, contact details, and the updated back-arrow style. When the contact value for the chosen format is empty (direct-to-chat flow), the input appears immediately below the 'Add an email address…' / 'Add a phone number…' prompt so the user can fill it in without clicking 'Change'. A compact 'Done' button below the input (disabled while empty) collapses the surface to a one-line summary with a Change affordance; clicking Change re-opens the input."
               states={["Scheduling / prefilled", "Scheduling / empty contact"]}
               title="AiConciergeNextStepPanel"
             >

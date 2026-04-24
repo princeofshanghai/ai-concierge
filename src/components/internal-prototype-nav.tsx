@@ -56,6 +56,7 @@ const OPENING_PROMPT_OPTIONS: PrototypeScenario["openingPromptVariant"][] = [
 
 const ONBOARDING_STYLE_OPTIONS: PrototypeScenario["onboardingStyle"][] = [
   "direct-to-chat",
+  "welcome-contact-form",
   "confirm-details",
 ];
 

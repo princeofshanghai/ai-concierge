@@ -1376,7 +1376,7 @@ function createRoute4HiringProRecommendationArtifact(): AiConciergeMessageArtifa
     bodyText:
       "Best for occasional hiring and attracting inbound candidates",
     ctaHref: LOWER_TOUCH_PLANS_CTA_HREF,
-    ctaLabel: "Explore all plans",
+    ctaLabel: "View product",
     tagText: "Recommended for you",
     titleText: "Hiring Pro",
     type: "recommendation",
@@ -1593,7 +1593,7 @@ function createLighterTouchRecommendationArtifact(): AiConciergeMessageArtifact 
     bodyText:
       "Best for occasional hiring and attracting inbound candidates",
     ctaHref: LOWER_TOUCH_PLANS_CTA_HREF,
-    ctaLabel: "Explore all plans",
+    ctaLabel: "View product",
     tagText: "Recommended for you",
     titleText: "Hiring Pro",
     type: "recommendation",
