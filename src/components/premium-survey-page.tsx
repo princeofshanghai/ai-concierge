@@ -1,10 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useId, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
-import { IconButton } from "@/components/icon-button";
 import { InternalPrototypeNav } from "@/components/internal-prototype-nav";
 import { PremiumSurveyConciergePanel } from "@/components/premium-survey-concierge-panel";
 import {
@@ -18,12 +17,24 @@ import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 const SURVEY_OPTIONS = [
   {
-    id: "personal-goals",
-    label: "I'd use Premium for my personal goals",
+    id: "land-right-job",
+    label: "Stand out and land the right job",
   },
   {
-    id: "work",
-    label: "I'd use Premium as part of my job",
+    id: "advance-career",
+    label: "Stay competitive and advance my career",
+  },
+  {
+    id: "expand-network",
+    label: "Expand my network, business, or visibility",
+  },
+  {
+    id: "find-leads",
+    label: "Find and reach new leads",
+  },
+  {
+    id: "hire-people",
+    label: "Hire the right people",
   },
   {
     id: "other",
@@ -31,65 +42,91 @@ const SURVEY_OPTIONS = [
   },
 ] as const;
 
-const DEFAULT_SURVEY_OPTION_ID = "work";
+const ENTRY_VARIANT_OPTIONS = [
+  {
+    id: "companion",
+    label: "Companion",
+  },
+  {
+    id: "inline-help",
+    label: "Inline help",
+  },
+  {
+    id: "selection-nudge",
+    label: "Selection nudge",
+  },
+] as const;
+
 const PROGRESS_LABEL = "Choose plan";
 const PROGRESS_VALUE_LABEL = "60%";
 const PROGRESS_FILL_WIDTH_PERCENT = 81;
 
-const CANDIDATE_SWITCHER_OPTIONS = [
-  {
-    id: "candidate-1",
-    label: "Candidate 1",
-  },
-  {
-    id: "candidate-2",
-    label: "Candidate 2",
-  },
-] as const;
-
-const LAUNCHER_SWITCHER_OPTIONS = [
-  {
-    id: "default",
-    label: "Default FAB",
-  },
-  {
-    id: "bubble",
-    label: "Candidate 3 bubble",
-  },
-] as const;
-
 export type PremiumSurveyCandidate = "candidate-1" | "candidate-2";
-export type PremiumSurveyLauncherVariant = "default" | "bubble";
+export type PremiumSurveyEntryVariant =
+  | "companion"
+  | "inline-help"
+  | "selection-nudge";
 
 type PremiumSurveyPageProps = {
   candidate: PremiumSurveyCandidate;
-  launcher: PremiumSurveyLauncherVariant;
+  entryVariant: PremiumSurveyEntryVariant;
 };
 
 export function PremiumSurveyPage({
   candidate,
-  launcher,
+  entryVariant,
 }: PremiumSurveyPageProps) {
-  const radioGroupName = useId();
-  const [selectedOptionId, setSelectedOptionId] = useState<string>(
-    DEFAULT_SURVEY_OPTION_ID,
+  const checkboxGroupName = useId();
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+  const [overlayLaunchNonce, setOverlayLaunchNonce] = useState(0);
+  const [isOverlayChatMounted, setIsOverlayChatMounted] = useState(false);
+  const [isOverlayChatOpen, setIsOverlayChatOpen] = useState(false);
+  const hasSelectedOptions = selectedOptionIds.length > 0;
+  const isCompanionVariant = entryVariant === "companion";
+  const shouldShowInlineHelp = entryVariant === "inline-help";
+  const shouldShowSelectionNudge =
+    entryVariant === "selection-nudge" && hasSelectedOptions;
+
+  useBodyScrollLock(isOverlayChatMounted);
+
+  const openOverlayChat = () => {
+    setOverlayLaunchNonce((currentValue) => currentValue + 1);
+    setIsOverlayChatMounted(true);
+    setIsOverlayChatOpen(true);
+  };
+
+  const closeOverlayChat = () => {
+    setIsOverlayChatOpen(false);
+  };
+
+  const toggleSurveyOption = (optionId: string) => {
+    setSelectedOptionIds((currentOptionIds) =>
+      currentOptionIds.includes(optionId)
+        ? currentOptionIds.filter((currentOptionId) => currentOptionId !== optionId)
+        : [...currentOptionIds, optionId],
+    );
+  };
+
+  const helperSlot = (
+    <>
+      {shouldShowInlineHelp ? (
+        <PremiumSurveyAiHelperCard
+          body="I found a likely Premium fit from the context here, so you do not have to compare every plan yourself."
+          ctaLabel="View recommendation"
+          onOpen={openOverlayChat}
+          title="AI recommendation ready"
+        />
+      ) : null}
+      {shouldShowSelectionNudge ? (
+        <PremiumSurveyAiHelperCard
+          body="I can use this as a starting point and show the plan I would begin with."
+          ctaLabel="View recommendation"
+          onOpen={openOverlayChat}
+          title="Want help choosing?"
+        />
+      ) : null}
+    </>
   );
-  const [chatLaunchNonce, setChatLaunchNonce] = useState(0);
-  const [isChatMounted, setIsChatMounted] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const isBubbleLauncher = launcher === "bubble";
-
-  useBodyScrollLock(isChatMounted);
-
-  const openChat = () => {
-    setChatLaunchNonce((currentValue) => currentValue + 1);
-    setIsChatMounted(true);
-    setIsChatOpen(true);
-  };
-
-  const closeChat = () => {
-    setIsChatOpen(false);
-  };
 
   return (
     <main className="relative min-h-screen bg-ai-surface-neutral-soft text-ai-text-primary">
@@ -97,10 +134,10 @@ export function PremiumSurveyPage({
         drawerSections={
           <PremiumSurveyDrawerSections
             candidate={candidate}
-            launcher={launcher}
+            entryVariant={entryVariant}
           />
         }
-        hidden={isChatMounted}
+        hidden={isOverlayChatMounted}
         pageLinks={[]}
       />
       <div className="min-h-screen bg-ai-surface-neutral-soft">
@@ -134,96 +171,34 @@ export function PremiumSurveyPage({
               size={28}
             />
           </div>
-
-          <div className="border-t border-ai-divider-subtle">
-            <div className="mx-auto flex w-full max-w-[762px] flex-col items-center gap-4 px-6 py-6 text-center sm:py-8">
-              <div className="max-w-[676px]">
-                <h1 className="ai-type-heading-xl text-ai-text-primary">
-                  Premium members are 2.6x more likely to get hired on average
-                </h1>
-                <p className="ai-type-body-md-open mt-2 text-ai-text-primary">
-                  Enjoy 1-month free on us. Cancel anytime. We&apos;ll remind
-                  you 7 days before your trial ends.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <AvatarStack />
-                <p className="ai-type-body-sm text-ai-text-meta">
-                  Millions of members use Premium
-                </p>
-              </div>
-            </div>
-          </div>
         </header>
 
-        <section className="mx-auto w-full max-w-[1440px] px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
-          <div className="flex justify-center">
-            <div className="w-full max-w-[558px]">
-              <div className="rounded-[8px] bg-ai-surface-base px-6 py-6 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] sm:px-8">
-                <div className="max-w-[494px]">
-                  <h2 className="ai-type-heading-lg text-ai-text-primary">
-                    Alex, are you interested in Premium for personal or
-                    professional use?
-                  </h2>
-                  <p className="ai-type-body-sm mt-3 text-ai-text-meta">
-                    We&apos;ll find the best plan for you.
-                  </p>
-                </div>
-
-                <fieldset className="mt-6 flex flex-col gap-2">
-                  <legend className="sr-only">Premium survey question</legend>
-                  {SURVEY_OPTIONS.map((option) => {
-                    const isSelected = option.id === selectedOptionId;
-
-                    return (
-                      <SurveyOptionCard
-                        key={option.id}
-                        checked={isSelected}
-                        label={option.label}
-                        name={radioGroupName}
-                        value={option.id}
-                        onSelect={setSelectedOptionId}
-                      />
-                    );
-                  })}
-                </fieldset>
-              </div>
-
-              <div className="mt-6 flex items-center justify-between rounded-[8px]">
-                <div className="h-12 w-[50px]" aria-hidden="true" />
-                <Button size="small" className="min-w-[76px]">
-                  Next
-                </Button>
-              </div>
-            </div>
+        <section className="mx-auto w-full max-w-[1320px] px-4 pb-20 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+          <div className="mx-auto max-w-[558px]">
+            <PremiumSurveyQuestionCard
+              checkboxGroupName={checkboxGroupName}
+              helperSlot={helperSlot}
+              selectedOptionIds={selectedOptionIds}
+              onToggleOption={toggleSurveyOption}
+            />
+            <PremiumSurveyStepControls />
           </div>
         </section>
       </div>
-      {!isChatMounted ? (
-        isBubbleLauncher ? (
-          <PremiumSurveyBubbleLauncher onOpen={openChat} />
-        ) : (
-          <IconButton
-            ariaLabel="Open AI concierge"
-            className="fixed bottom-6 right-6 z-40 shadow-[0px_4px_12px_rgba(0,0,0,0.3),0px_0px_1px_rgba(0,0,0,0.16)]"
-            iconClassName="h-6 w-6"
-            onClick={openChat}
-            size="medium"
-            variant="primary"
-          >
-            <PremiumSurveyFabIcon />
-          </IconButton>
-        )
+
+      {isCompanionVariant && !isOverlayChatMounted ? (
+        <PremiumSurveyRecommendationLauncher onOpen={openOverlayChat} />
       ) : null}
-      {isChatMounted ? (
+
+      {isOverlayChatMounted ? (
         <PremiumSurveyConciergePanel
-          key={`${candidate}-${chatLaunchNonce}`}
+          key={`${candidate}-${entryVariant}-${overlayLaunchNonce}`}
           candidate={candidate}
           contactDetails={PREMIUM_ALEX_CONTACT_DETAILS}
-          isOpen={isChatOpen}
-          onClose={closeChat}
-          onClosed={() => setIsChatMounted(false)}
+          isOpen={isOverlayChatOpen}
+          onClose={closeOverlayChat}
+          onClosed={() => setIsOverlayChatMounted(false)}
+          presentationMode="overlay"
         />
       ) : null}
     </main>
@@ -232,10 +207,10 @@ export function PremiumSurveyPage({
 
 function PremiumSurveyDrawerSections({
   candidate,
-  launcher,
+  entryVariant,
 }: {
   candidate: PremiumSurveyCandidate;
-  launcher: PremiumSurveyLauncherVariant;
+  entryVariant: PremiumSurveyEntryVariant;
 }) {
   return (
     <section className="mt-7 border-t border-white/8 pt-6">
@@ -243,120 +218,159 @@ function PremiumSurveyDrawerSections({
         Premium survey
       </h3>
 
-      <div className="mt-4 space-y-5">
-        <div>
-          <PrototypeShellLabel className="px-0 pb-0 text-white/48">
-            Conversation
-          </PrototypeShellLabel>
-          <PrototypeShellChipRow className="mt-2 flex-wrap gap-1.5">
-            {CANDIDATE_SWITCHER_OPTIONS.map((option) => (
-              <PrototypeShellLinkChip
-                key={option.id}
-                href={getConversationSwitcherHref(option.id)}
-                selected={candidate === option.id}
-                prefetch={false}
-                className="min-h-9 px-3 text-[12px]"
-              >
-                {option.label}
-              </PrototypeShellLinkChip>
-            ))}
-          </PrototypeShellChipRow>
-        </div>
-
-        <div>
-          <PrototypeShellLabel className="px-0 pb-0 text-white/48">
-            Launcher
-          </PrototypeShellLabel>
-          <PrototypeShellChipRow className="mt-2 flex-wrap gap-1.5">
-            {LAUNCHER_SWITCHER_OPTIONS.map((option) => (
-              <PrototypeShellLinkChip
-                key={option.id}
-                href={getLauncherSwitcherHref(option.id, candidate)}
-                selected={launcher === option.id}
-                prefetch={false}
-                className="min-h-9 px-3 text-[12px]"
-              >
-                {option.label}
-              </PrototypeShellLinkChip>
-            ))}
-          </PrototypeShellChipRow>
-        </div>
+      <div className="mt-4">
+        <PrototypeShellLabel className="px-0 pb-0 text-white/48">
+          Candidate 1 variants
+        </PrototypeShellLabel>
+        <PrototypeShellChipRow className="mt-2 flex-wrap gap-1.5">
+          {ENTRY_VARIANT_OPTIONS.map((option) => (
+            <PrototypeShellLinkChip
+              key={option.id}
+              href={getEntryVariantHref(option.id)}
+              selected={candidate === "candidate-1" && entryVariant === option.id}
+              prefetch={false}
+              className="min-h-9 px-3 text-[12px]"
+            >
+              {option.label}
+            </PrototypeShellLinkChip>
+          ))}
+        </PrototypeShellChipRow>
       </div>
 
       <PrototypeShellHelperText className="mt-4 max-w-[28ch] text-white/58">
-        Candidate 3 reuses Candidate 1 underneath and only changes the entry
-        hook. Switching modes resets the chat so each review starts clean.
+        All three variants reuse Candidate 1 recommendations. The survey stays
+        static while the AI explains the likely plan fit.
       </PrototypeShellHelperText>
     </section>
   );
 }
 
-function getConversationSwitcherHref(candidate: PremiumSurveyCandidate) {
-  return `/prototype/premium-survey?candidate=${candidate === "candidate-2" ? "2" : "1"}`;
+function getEntryVariantHref(entryVariant: PremiumSurveyEntryVariant) {
+  return `/prototype/premium-survey?variant=${entryVariant}`;
 }
 
-function getLauncherSwitcherHref(
-  launcher: PremiumSurveyLauncherVariant,
-  candidate: PremiumSurveyCandidate,
-) {
-  if (launcher === "bubble") {
-    return "/prototype/premium-survey?candidate=3";
-  }
-
-  return getConversationSwitcherHref(candidate);
-}
-
-function AvatarStack() {
+function PremiumSurveyQuestionCard({
+  checkboxGroupName,
+  helperSlot,
+  selectedOptionIds,
+  onToggleOption,
+}: {
+  checkboxGroupName: string;
+  helperSlot: ReactNode;
+  selectedOptionIds: string[];
+  onToggleOption: (optionId: string) => void;
+}) {
   return (
-    <div className="flex items-center pr-2">
-      <Avatar
-        decorative
-        size={24}
-        src="/figma/chat/linkedin-avatar.png"
-        className="border border-ai-surface-base"
-      />
-      <Avatar
-        decorative
-        size={24}
-        fallbackSrc="/figma/avatar/entity-initials-02.svg"
-        className="-ml-2 border border-ai-surface-base"
-      />
-      <Avatar
-        decorative
-        size={24}
-        fallbackSrc="/figma/avatar/entity-initials-05.svg"
-        className="-ml-2 border border-ai-surface-base"
-      />
+    <div className="rounded-[8px] border border-ai-border-faint bg-ai-surface-base px-6 py-6 shadow-[0_0_0_1px_rgba(0,0,0,0.02)] sm:px-8">
+      <div className="max-w-[680px]">
+        <h1 className="ai-type-heading-lg text-ai-text-primary">
+          Premium subscribers get up to 11x more profile views. What do you
+          need help with?
+        </h1>
+        <p className="ai-type-body-sm mt-3 text-ai-text-meta">
+          We use AI to tailor your plan
+        </p>
+      </div>
+
+      <fieldset className="mt-6 flex flex-col gap-2">
+        <legend className="sr-only">Premium plan goals</legend>
+        {SURVEY_OPTIONS.map((option) => (
+          <SurveyOptionCard
+            key={option.id}
+            checked={selectedOptionIds.includes(option.id)}
+            label={option.label}
+            name={checkboxGroupName}
+            value={option.id}
+            onToggle={onToggleOption}
+          />
+        ))}
+      </fieldset>
+
+      <div className="mt-6 space-y-5">
+        {helperSlot}
+      </div>
     </div>
   );
 }
 
-function PremiumSurveyBubbleLauncher({
+function PremiumSurveyStepControls() {
+  return (
+    <div className="mt-6 flex items-center justify-between gap-4">
+      <Button
+        aria-label="Back to previous Premium survey step"
+        className="min-w-[96px]"
+        variant="secondary"
+      >
+        Back
+      </Button>
+      <Button
+        aria-label="Continue to next Premium survey step"
+        className="min-w-[96px]"
+      >
+        Next
+      </Button>
+    </div>
+  );
+}
+
+function PremiumSurveyAiHelperCard({
+  body,
+  ctaLabel,
+  onOpen,
+  title,
+}: {
+  body: string;
+  ctaLabel: string;
+  onOpen: () => void;
+  title: string;
+}) {
+  return (
+    <div className="rounded-[16px] border border-ai-blue-border-soft bg-ai-blue-fill px-5 py-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="ai-type-heading-sm text-ai-text-primary">{title}</p>
+          <p className="ai-type-body-sm-open mt-1 max-w-[48rem] text-ai-text-secondary">
+            {body}
+          </p>
+        </div>
+        <Button
+          aria-label={`${ctaLabel} with AI Concierge`}
+          className="shrink-0"
+          leadingVisual={<PremiumSurveyAiIcon className="h-4 w-4" />}
+          onClick={onOpen}
+          size="small"
+        >
+          {ctaLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PremiumSurveyRecommendationLauncher({
   onOpen,
 }: {
   onOpen: () => void;
 }) {
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex max-w-[calc(100vw-48px)] items-center gap-2">
-      <button
-        type="button"
-        onClick={onOpen}
-        className="flex min-w-0 items-center rounded-full border border-ai-border-faint bg-ai-surface-base px-4 py-3 text-left shadow-[0px_4px_12px_rgba(0,0,0,0.18),0px_0px_1px_rgba(0,0,0,0.1)] transition-[border-color,background-color] duration-150 hover:border-ai-border-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai-blue-primary"
+    <div className="fixed bottom-6 right-6 z-40 flex max-w-[calc(100vw-48px)] flex-col items-end gap-2">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none animate-[ai-concierge-panel-enter_320ms_cubic-bezier(0.22,1,0.36,1)_900ms_both] rounded-[14px] border border-ai-blue-border-soft bg-ai-surface-base px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.16),0_0_1px_rgba(0,0,0,0.12)] motion-reduce:animate-none"
       >
-        <span className="ai-type-body-sm-bold min-w-0 truncate text-ai-text-primary">
-          Find the right Premium plan
-        </span>
-      </button>
-      <IconButton
-        ariaLabel="Open AI concierge"
+        <p className="ai-type-body-sm-bold text-ai-text-primary">
+          Plan picked for you
+        </p>
+      </div>
+      <Button
+        aria-label="Open AI recommendation"
         className="shadow-[0px_4px_12px_rgba(0,0,0,0.3),0px_0px_1px_rgba(0,0,0,0.16)]"
-        iconClassName="h-6 w-6"
+        leadingVisual={<PremiumSurveyAiIcon className="h-4 w-4" />}
         onClick={onOpen}
-        size="medium"
-        variant="primary"
+        size="small"
       >
-        <PremiumSurveyFabIcon />
-      </IconButton>
+        AI recommendation
+      </Button>
     </div>
   );
 }
@@ -365,7 +379,7 @@ type SurveyOptionCardProps = {
   checked: boolean;
   label: string;
   name: string;
-  onSelect: (value: string) => void;
+  onToggle: (value: string) => void;
   value: string;
 };
 
@@ -373,7 +387,7 @@ function SurveyOptionCard({
   checked,
   label,
   name,
-  onSelect,
+  onToggle,
   value,
 }: SurveyOptionCardProps) {
   return (
@@ -388,10 +402,10 @@ function SurveyOptionCard({
       <input
         checked={checked}
         name={name}
-        type="radio"
+        type="checkbox"
         value={value}
         className="sr-only"
-        onChange={() => onSelect(value)}
+        onChange={() => onToggle(value)}
       />
       <span
         aria-hidden="true"
@@ -399,7 +413,7 @@ function SurveyOptionCard({
           "flex size-6 shrink-0 items-center justify-center rounded-[4px] border",
           checked
             ? "border-ai-checked-primary bg-ai-checked-primary text-ai-text-inverse"
-            : "border-ai-border-subtle bg-ai-surface-base text-transparent",
+            : "border-ai-border-strong bg-ai-surface-base text-transparent",
         ].join(" ")}
       >
         <CheckIcon />
@@ -430,16 +444,16 @@ function CheckIcon() {
   );
 }
 
-function PremiumSurveyFabIcon() {
+function PremiumSurveyAiIcon({ className = "h-full w-full" }: { className?: string }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-full w-full"
+      className={className}
       fill="none"
     >
       <path
-        d="M19.4 4.65L5.73 10.46C4.8 10.86 4.83 12.19 5.78 12.53L10.98 14.39L12.84 19.59C13.18 20.54 14.51 20.57 14.91 19.64L20.72 5.97C21.06 5.16 20.21 4.31 19.4 4.65ZM12.03 13.04L8.2 11.67L17.33 7.79L12.03 13.04ZM13.7 15.77L12.33 11.94L17.58 6.64L13.7 15.77Z"
+        d="M12 2.75L13.18 6.03C13.35 6.5 13.72 6.87 14.19 7.04L17.47 8.22L14.19 9.4C13.72 9.57 13.35 9.94 13.18 10.41L12 13.69L10.82 10.41C10.65 9.94 10.28 9.57 9.81 9.4L6.53 8.22L9.81 7.04C10.28 6.87 10.65 6.5 10.82 6.03L12 2.75ZM18.25 11.5L18.88 13.2C18.98 13.47 19.19 13.68 19.46 13.78L21.16 14.41L19.46 15.04C19.19 15.14 18.98 15.35 18.88 15.62L18.25 17.32L17.62 15.62C17.52 15.35 17.31 15.14 17.04 15.04L15.34 14.41L17.04 13.78C17.31 13.68 17.52 13.47 17.62 13.2L18.25 11.5ZM6.14 13.77L6.83 15.61C6.93 15.88 7.14 16.09 7.41 16.19L9.25 16.88L7.41 17.57C7.14 17.67 6.93 17.88 6.83 18.15L6.14 19.99L5.45 18.15C5.35 17.88 5.14 17.67 4.87 17.57L3.03 16.88L4.87 16.19C5.14 16.09 5.35 15.88 5.45 15.61L6.14 13.77Z"
         fill="currentColor"
       />
     </svg>

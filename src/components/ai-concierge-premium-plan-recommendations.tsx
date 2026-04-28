@@ -26,16 +26,18 @@ export function AiConciergePremiumPlanRecommendations({
           variant="primary"
           onPlanSelect={onPlanSelect}
         />
-        <div className="flex flex-col gap-2 pt-1">
-          {artifact.secondaryRecommendations.map((recommendation) => (
-            <RecommendationCard
-              key={recommendation.id}
-              recommendation={recommendation}
-              variant="secondary"
-              onPlanSelect={onPlanSelect}
-            />
-          ))}
-        </div>
+        {artifact.secondaryRecommendations.length > 0 ? (
+          <div className="flex flex-col gap-2 pt-1">
+            {artifact.secondaryRecommendations.map((recommendation) => (
+              <RecommendationCard
+                key={recommendation.id}
+                recommendation={recommendation}
+                variant="secondary"
+                onPlanSelect={onPlanSelect}
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -25,8 +25,12 @@ const PREMIUM_DEFAULT_STATE: AiConciergeConversationState = {
   urgency: "unknown",
 };
 
+const PREMIUM_CANDIDATE_ONE_OPENING_SUGGESTIONS: AiConciergeSuggestedReply[] = [
+  { id: "premium-other-plans", label: "Show other plans" },
+];
+
 const PREMIUM_CANDIDATE_ONE_FOLLOW_UP_SUGGESTIONS: AiConciergeSuggestedReply[] = [
-  { id: "premium-plan-fit", label: "Show plan options" },
+  { id: "premium-other-plans", label: "Show other plans" },
   { id: "premium-benefits", label: "How Premium can help" },
   { id: "premium-trial", label: "Tell me about the free trial" },
 ];
@@ -186,7 +190,16 @@ const PREMIUM_PLAN_RECOMMENDATION_CONTENT: Record<
   },
 };
 
-const PREMIUM_CANDIDATE_ONE_ARTIFACT: AiConciergePremiumPlanRecommendationsArtifact =
+const PREMIUM_CANDIDATE_ONE_PRIMARY_ARTIFACT: AiConciergePremiumPlanRecommendationsArtifact =
+  createPremiumPlanRecommendationsArtifact({
+    primary: {
+      fitLabel: "Best overall fit",
+      planId: "all-in-one",
+    },
+    secondary: [],
+  });
+
+const PREMIUM_CANDIDATE_ONE_COMPARE_ARTIFACT: AiConciergePremiumPlanRecommendationsArtifact =
   createPremiumPlanRecommendationsArtifact({
     primary: {
       fitLabel: "Best overall fit",
@@ -220,18 +233,18 @@ export const PREMIUM_ALEX_LINKEDIN_IDENTITY: LinkedInIdentity = {
   email: PREMIUM_ALEX_CONTACT_DETAILS.email,
 };
 
-export function createPremiumCandidateOneOpeningTurn({
-  contactDetails,
-}: {
+export function createPremiumCandidateOneOpeningTurn(_args: {
   contactDetails: ConciergeContactDetails;
   openingPromptVariant: PrototypeScenario["openingPromptVariant"];
 }): AiConciergeAssistantTurn {
-  const greetingName = contactDetails.firstName.trim() || "there";
+  void _args;
 
   return {
-    artifact: PREMIUM_CANDIDATE_ONE_ARTIFACT,
-    body: `Hi ${greetingName}, I can help you find the right LinkedIn Premium plan.\n\nBased on what you're looking for from Premium, Premium All-in-One is where I'd start. It's the strongest overall fit if you want support across growth, stronger networking, and some early hiring needs. I also included two more focused options below.`,
+    artifact: PREMIUM_CANDIDATE_ONE_PRIMARY_ARTIFACT,
+    body: "I'd start with Premium All-in-One because it covers the widest mix of goals here.",
     nextState: PREMIUM_DEFAULT_STATE,
+    suggestedReplies: PREMIUM_CANDIDATE_ONE_OPENING_SUGGESTIONS,
+    suggestedReplyDisplay: "inline",
   };
 }
 
@@ -244,61 +257,29 @@ export function getPremiumCandidateOneAssistantTurn({
 }): AiConciergeAssistantTurn {
   const normalizedInput = normalizeInput(input);
 
-  if (normalizedInput.includes("all-in-one") || normalizedInput.includes("all in one")) {
-    return {
-      body: "Premium All-in-One is the broadest Premium option in this prototype. The side panel lets you dig into why it fits, what you get, and the 1 month free trial offer without leaving the chat flow.",
-      nextState: PREMIUM_DEFAULT_STATE,
-      suggestedReplies: PREMIUM_CANDIDATE_ONE_FOLLOW_UP_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
-    };
-  }
-
-  if (normalizedInput.includes("business")) {
-    return {
-      body: "Premium Business is the lighter networking-focused option in this ranking. It's a better fit when visibility, relationship-building, and finding the right people matter more than the broader All-in-One bundle.",
-      nextState: PREMIUM_DEFAULT_STATE,
-      suggestedReplies: PREMIUM_CANDIDATE_ONE_FOLLOW_UP_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
-    };
-  }
-
-  if (normalizedInput.includes("recruiter lite") || normalizedInput.includes("recruiterlite")) {
-    return {
-      body: "Recruiter Lite is the hiring-focused alternative in this recommendation set. It's there in case sourcing and candidate outreach become the priority instead of a broader Premium workflow.",
-      nextState: PREMIUM_DEFAULT_STATE,
-      suggestedReplies: PREMIUM_CANDIDATE_ONE_FOLLOW_UP_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
-    };
-  }
-
   if (
-    normalizedInput.includes("trial") ||
-    normalizedInput.includes("$0") ||
-    normalizedInput.includes("free")
+    normalizedInput.includes("show other plans") ||
+    normalizedInput.includes("other plans") ||
+    normalizedInput.includes("show plan options") ||
+    normalizedInput.includes("plan options") ||
+    normalizedInput.includes("compare")
   ) {
     return {
-      body: "For this prototype, every plan can redeem 1 month free. After that, monthly pricing depends on which Premium plan fits your goals best.",
+      artifact: PREMIUM_CANDIDATE_ONE_COMPARE_ARTIFACT,
+      body: "Here are the other plans I considered alongside Premium All-in-One. I'd still start with All-in-One, but Premium Business is worth comparing if networking is the main goal, and Recruiter Lite is worth comparing if hiring becomes the priority.",
       nextState: PREMIUM_DEFAULT_STATE,
       suggestedReplies: PREMIUM_CANDIDATE_ONE_FOLLOW_UP_SUGGESTIONS,
       suggestedReplyDisplay: "composer",
     };
   }
 
-  if (
-    normalizedInput.includes("compare") ||
-    normalizedInput.includes("difference") ||
-    normalizedInput.includes("plan")
-  ) {
-    return {
-      body: "I can help compare Premium options. In Candidate 1, the main idea is that I surface a recommendation immediately and then let you dig into details or checkout from there.",
-      nextState: PREMIUM_DEFAULT_STATE,
-      suggestedReplies: PREMIUM_CANDIDATE_ONE_FOLLOW_UP_SUGGESTIONS,
-      suggestedReplyDisplay: "composer",
-    };
-  }
+  return createPremiumCandidateOneChatFollowUpTurn();
+}
 
+function createPremiumCandidateOneChatFollowUpTurn(): AiConciergeAssistantTurn {
   return {
-    body: "I can help with that. This Candidate 1 prototype is focused on proactive plan recommendations, so the fastest path is to explore one of the plans I surfaced above.",
+    artifact: PREMIUM_CANDIDATE_ONE_COMPARE_ARTIFACT,
+    body: "That helps. I’d still keep Premium All-in-One as the best starting point, with Premium Business and Recruiter Lite as alternatives if networking or hiring becomes the clearer priority.",
     nextState: PREMIUM_DEFAULT_STATE,
     suggestedReplies: PREMIUM_CANDIDATE_ONE_FOLLOW_UP_SUGGESTIONS,
     suggestedReplyDisplay: "composer",

@@ -80,6 +80,9 @@ type AiConciergeHeaderProps = {
   onClose: () => void;
   onOpenPhoneCall?: () => void;
   onToggleExpand?: () => void;
+  recommendationAvatarFallbackSrc?: string;
+  recommendationAvatarName?: string;
+  recommendationTitle?: string;
   variant?: "default" | "welcome";
 };
 
@@ -89,9 +92,14 @@ export function AiConciergeHeader({
   onClose,
   onOpenPhoneCall,
   onToggleExpand,
+  recommendationAvatarFallbackSrc,
+  recommendationAvatarName,
+  recommendationTitle,
   variant = "default",
 }: AiConciergeHeaderProps) {
   const isWelcome = variant === "welcome";
+  const shouldShowRecommendationHeader =
+    !liveAgentName && Boolean(recommendationTitle);
 
   return (
     <header
@@ -104,7 +112,21 @@ export function AiConciergeHeader({
       ].join(" ")}
     >
       <div className="flex min-w-0 flex-1 items-center">
-        <AiConciergeSignalIcon className="h-6 w-6 text-ai-blue-primary" />
+        {shouldShowRecommendationHeader ? (
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar
+              decorative
+              fallbackSrc={recommendationAvatarFallbackSrc}
+              name={recommendationAvatarName}
+              size={28}
+            />
+            <p className="ai-type-body-sm-bold truncate text-ai-text-primary">
+              {recommendationTitle}
+            </p>
+          </div>
+        ) : (
+          <AiConciergeSignalIcon className="h-6 w-6 text-ai-blue-primary" />
+        )}
         {liveAgentName ? (
           <div className="ml-4 flex min-w-0 items-center gap-3">
             <Avatar

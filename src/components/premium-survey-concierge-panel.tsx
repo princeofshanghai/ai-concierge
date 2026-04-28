@@ -51,6 +51,7 @@ type PremiumSurveyConciergePanelProps = {
   onClose: () => void;
   onClosed?: () => void;
   onExpandedChange?: (isExpanded: boolean) => void;
+  presentationMode?: "overlay" | "companion";
 };
 
 type PendingAssistantResponse = {
@@ -65,7 +66,10 @@ export function PremiumSurveyConciergePanel({
   onClose,
   onClosed,
   onExpandedChange,
+  presentationMode = "overlay",
 }: PremiumSurveyConciergePanelProps) {
+  const isCompanionMode = presentationMode === "companion";
+  const contactFirstName = contactDetails.firstName.trim() || "Alex";
   const openingTurnFactory =
     candidate === "candidate-2"
       ? createPremiumCandidateTwoOpeningTurn
@@ -109,6 +113,7 @@ export function PremiumSurveyConciergePanel({
     isAssistantResponding,
   );
   const shouldShowComposerExampleResponses =
+    !isCompanionMode &&
     activePremiumPlanId === null &&
     !isAssistantResponding &&
     composerSuggestedReplies.length > 0 &&
@@ -267,6 +272,123 @@ export function PremiumSurveyConciergePanel({
     window.location.assign(getPremiumPlanCheckoutHref(planId));
   };
 
+  const panelElement = (
+    <section
+      id={
+        isCompanionMode
+          ? "premium-survey-concierge-panel-companion"
+          : "premium-survey-concierge-panel"
+      }
+      role={isCompanionMode ? "region" : "dialog"}
+      aria-label="Premium plan helper"
+      aria-hidden={isCompanionMode ? undefined : !isOpen}
+      aria-modal={isCompanionMode ? undefined : isOpen && isExpanded}
+      className={[
+        "relative flex h-full w-full flex-col overflow-hidden border border-ai-border-faint bg-ai-surface-base transition-[border-radius,height,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none",
+        "shadow-[0px_0px_1px_rgba(140,140,140,0.2),0px_4px_12px_rgba(140,140,140,0.2)]",
+        isCompanionMode
+          ? "min-h-[680px] rounded-[24px]"
+          : isOpen
+            ? "animate-[ai-concierge-panel-enter_260ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none"
+            : "pointer-events-none animate-[ai-concierge-panel-exit_220ms_ease-in_both] motion-reduce:animate-none",
+        !isCompanionMode && isDockedPlanSurface
+          ? "sm:rounded-[28px]"
+          : !isCompanionMode && isExpanded
+            ? "sm:h-[calc(100vh-32px)] sm:max-h-full sm:rounded-[32px]"
+            : !isCompanionMode
+              ? "sm:rounded-[24px]"
+              : "",
+        !isCompanionMode && isDockedPlanSurface
+          ? "sm:w-[960px] sm:translate-x-0"
+          : !isCompanionMode && isExpanded
+            ? "sm:w-[min(1480px,calc(100vw-32px))] sm:translate-x-[calc((min(1480px,calc(100vw-32px))+32px-100vw)/2)]"
+            : !isCompanionMode
+              ? "sm:w-[432px] sm:translate-x-0"
+              : "",
+      ].join(" ")}
+    >
+      <AiConciergeHeader
+        isExpanded={isExpanded}
+        onClose={handlePanelClose}
+        onToggleExpand={isCompanionMode ? undefined : handleToggleExpand}
+        recommendationAvatarFallbackSrc="/figma/avatar/entity-initials-04.svg"
+        recommendationAvatarName={contactFirstName}
+        recommendationTitle={
+          candidate === "candidate-1"
+            ? `${contactFirstName}'s recommendation`
+            : undefined
+        }
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col animate-[ai-concierge-chat-surface-in_320ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none">
+        {activePremiumPlanId ? (
+          <div
+            className={[
+              "flex min-h-0 flex-1 flex-col",
+              isCompanionMode
+                ? ""
+                : "sm:grid sm:grid-cols-[420px_minmax(0,1fr)]",
+            ].join(" ")}
+          >
+            {!isCompanionMode ? (
+              <div className="hidden min-h-0 border-r border-ai-divider bg-ai-surface-base sm:flex sm:flex-col sm:animate-[ai-concierge-chat-column-in_260ms_ease-out]">
+                <AiConciergeBody
+                  messages={messages}
+                  onBookAgain={noop}
+                  onBookMeeting={noop}
+                  onInsertOpeningPrompt={handleOpeningPromptInsert}
+                  onManageBooking={noop}
+                  onPremiumPlanSelect={handlePremiumPlanSelect}
+                  onRecommendationPrimaryAction={noop}
+                  onSelectSuggestedReply={handleSelectSuggestedReply}
+                />
+              </div>
+            ) : null}
+            <AiConciergePremiumPlanPanel
+              onBackToChat={() => setActivePremiumPlanId(null)}
+              onRedeem={handlePremiumPlanRedeem}
+              planId={activePremiumPlanId}
+            />
+          </div>
+        ) : (
+          <>
+            <AiConciergeBody
+              isPanelExpanded={isExpanded}
+              messages={messages}
+              onBookAgain={noop}
+              onBookMeeting={noop}
+              onInsertOpeningPrompt={handleOpeningPromptInsert}
+              onManageBooking={noop}
+              onPremiumPlanSelect={handlePremiumPlanSelect}
+              onRecommendationPrimaryAction={noop}
+              onSelectSuggestedReply={handleSelectSuggestedReply}
+            />
+            <AiConciergeComposer
+              key={composerKey}
+              disabled={isAssistantResponding}
+              draft={composerDraft}
+              focusComposerSignal={focusComposerSignal}
+              isPanelExpanded={isExpanded}
+              isResponding={isAssistantResponding}
+              idlePlaceholder="Ask about these plans"
+              onDraftChange={setComposerDraft}
+              onSend={handleSendMessage}
+              onStartVoiceMode={noop}
+              onStopResponse={handleStopAssistantResponse}
+              onToggleDictation={noop}
+              showDictationAction={false}
+              showVoiceModeAction={false}
+            />
+          </>
+        )}
+      </div>
+    </section>
+  );
+
+  if (isCompanionMode) {
+    return panelElement;
+  }
+
   return (
     <div
       className={[
@@ -292,90 +414,7 @@ export function PremiumSurveyConciergePanel({
           />
         ) : null}
 
-        <section
-          id="premium-survey-concierge-panel"
-          role="dialog"
-          aria-label="Premium plan helper"
-          aria-hidden={!isOpen}
-          aria-modal={isOpen && isExpanded}
-          className={[
-            "relative flex h-full w-full flex-col overflow-hidden border border-ai-border-faint bg-ai-surface-base transition-[border-radius,height,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none",
-            "shadow-[0px_0px_1px_rgba(140,140,140,0.2),0px_4px_12px_rgba(140,140,140,0.2)]",
-            isOpen
-              ? "animate-[ai-concierge-panel-enter_260ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none"
-              : "pointer-events-none animate-[ai-concierge-panel-exit_220ms_ease-in_both] motion-reduce:animate-none",
-            isDockedPlanSurface
-              ? "sm:rounded-[28px]"
-              : isExpanded
-                ? "sm:h-[calc(100vh-32px)] sm:max-h-full sm:rounded-[32px]"
-                : "sm:rounded-[24px]",
-            isDockedPlanSurface
-              ? "sm:w-[960px] sm:translate-x-0"
-              : isExpanded
-                ? "sm:w-[min(1480px,calc(100vw-32px))] sm:translate-x-[calc((min(1480px,calc(100vw-32px))+32px-100vw)/2)]"
-                : "sm:w-[432px] sm:translate-x-0",
-          ].join(" ")}
-        >
-          <AiConciergeHeader
-            isExpanded={isExpanded}
-            onClose={handlePanelClose}
-            onToggleExpand={handleToggleExpand}
-          />
-
-          <div className="flex min-h-0 flex-1 flex-col animate-[ai-concierge-chat-surface-in_320ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none">
-            {activePremiumPlanId ? (
-              <div className="flex min-h-0 flex-1 flex-col sm:grid sm:grid-cols-[420px_minmax(0,1fr)]">
-                <div className="hidden min-h-0 border-r border-ai-divider bg-ai-surface-base sm:flex sm:flex-col sm:animate-[ai-concierge-chat-column-in_260ms_ease-out]">
-                  <AiConciergeBody
-                    messages={messages}
-                    onBookAgain={noop}
-                    onBookMeeting={noop}
-                    onInsertOpeningPrompt={handleOpeningPromptInsert}
-                    onManageBooking={noop}
-                    onPremiumPlanSelect={handlePremiumPlanSelect}
-                    onRecommendationPrimaryAction={noop}
-                    onSelectSuggestedReply={handleSelectSuggestedReply}
-                  />
-                </div>
-                <AiConciergePremiumPlanPanel
-                  onBackToChat={() => setActivePremiumPlanId(null)}
-                  onRedeem={handlePremiumPlanRedeem}
-                  planId={activePremiumPlanId}
-                />
-              </div>
-            ) : (
-              <>
-                <AiConciergeBody
-                  isPanelExpanded={isExpanded}
-                  messages={messages}
-                  onBookAgain={noop}
-                  onBookMeeting={noop}
-                  onInsertOpeningPrompt={handleOpeningPromptInsert}
-                  onManageBooking={noop}
-                  onPremiumPlanSelect={handlePremiumPlanSelect}
-                  onRecommendationPrimaryAction={noop}
-                  onSelectSuggestedReply={handleSelectSuggestedReply}
-                />
-                <AiConciergeComposer
-                  key={composerKey}
-                  disabled={isAssistantResponding}
-                  draft={composerDraft}
-                  focusComposerSignal={focusComposerSignal}
-                  isPanelExpanded={isExpanded}
-                  isResponding={isAssistantResponding}
-                  idlePlaceholder="Ask about these plans"
-                  onDraftChange={setComposerDraft}
-                  onSend={handleSendMessage}
-                  onStartVoiceMode={noop}
-                  onStopResponse={handleStopAssistantResponse}
-                  onToggleDictation={noop}
-                  showDictationAction={false}
-                  showVoiceModeAction={false}
-                />
-              </>
-            )}
-          </div>
-        </section>
+        {panelElement}
       </div>
     </div>
   );

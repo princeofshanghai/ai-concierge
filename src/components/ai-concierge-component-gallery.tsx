@@ -325,22 +325,36 @@ export function AiConciergeComponentGallery() {
             </ComponentRow>
 
             <ComponentRow
-              description="Premium-specific concierge panel that reuses the shared chat UI language and assistant playback behavior while keeping recommendation behavior separate from the sales lead qualification prototype."
-              states={["Premium survey prototype"]}
+              description="Premium-specific survey route with three Candidate 1 entry variants. Candidate 1 opens with an avatar-backed recommendation header, a focused one-plan recommendation, and a fake follow-up chat loop that can re-surface additional plan recommendations."
+              states={["Companion", "Inline help", "Selection nudge"]}
               title="PremiumSurveyConciergePanel"
             >
-              <PreviewSurface label="Routes">
+              <PreviewSurface label="Candidate 1 variants">
                 <div className="flex flex-col gap-4">
-                  <Link
-                    href="/prototype/premium-survey"
-                    className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
-                  >
-                    Premium survey prototype
-                  </Link>
+                  <div className="flex flex-wrap gap-3">
+                    {[
+                      ["Companion", "/prototype/premium-survey?variant=companion"],
+                      ["Inline help", "/prototype/premium-survey?variant=inline-help"],
+                      [
+                        "Selection nudge",
+                        "/prototype/premium-survey?variant=selection-nudge",
+                      ],
+                    ].map(([label, href]) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        className="ai-type-heading-sm w-fit text-ai-blue-primary transition-colors hover:text-ai-blue-hover"
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
                   <p className="ai-type-body-sm max-w-[28rem] text-ai-text-meta">
-                    This route keeps the same panel styling, loading rhythm, and
-                    message streaming feel, but its behavior is fully self-serve
-                    and limited to plan and product recommendations.
+                    These route links keep the same panel styling, loading
+                    rhythm, message streaming feel, personalized recommendation
+                    header, focused first-plan recommendation, fake continued
+                    chat path, and realistic survey navigation, but test three
+                    ways to make Candidate 1 feel connected to the survey.
                   </p>
                 </div>
               </PreviewSurface>

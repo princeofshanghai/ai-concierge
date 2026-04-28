@@ -1,13 +1,14 @@
 import {
   PremiumSurveyPage,
   type PremiumSurveyCandidate,
-  type PremiumSurveyLauncherVariant,
+  type PremiumSurveyEntryVariant,
 } from "@/components/premium-survey-page";
 
 type PremiumSurveyPageProps = {
   searchParams: Promise<{
     candidate?: string | string[] | undefined;
     launcher?: string | string[] | undefined;
+    variant?: string | string[] | undefined;
   }>;
 };
 
@@ -20,27 +21,41 @@ function getFirstQueryValue(
 function resolvePremiumSurveyPrototypeMode({
   candidateParam,
   launcherParam,
+  variantParam,
 }: {
   candidateParam: string | string[] | undefined;
   launcherParam: string | string[] | undefined;
+  variantParam: string | string[] | undefined;
 }): {
   candidate: PremiumSurveyCandidate;
-  launcher: PremiumSurveyLauncherVariant;
+  entryVariant: PremiumSurveyEntryVariant;
 } {
   const rawCandidate = getFirstQueryValue(candidateParam);
   const rawLauncher = getFirstQueryValue(launcherParam);
+  const rawVariant = getFirstQueryValue(variantParam);
+
+  if (
+    rawVariant === "inline-help" ||
+    rawVariant === "selection-nudge" ||
+    rawVariant === "companion"
+  ) {
+    return {
+      candidate: "candidate-1",
+      entryVariant: rawVariant,
+    };
+  }
 
   if (rawCandidate === "3" || rawCandidate === "candidate-3") {
     return {
       candidate: "candidate-1",
-      launcher: "bubble",
+      entryVariant: "inline-help",
     };
   }
 
   if (rawLauncher === "bubble" || rawLauncher === "candidate-3") {
     return {
       candidate: "candidate-1",
-      launcher: "bubble",
+      entryVariant: "inline-help",
     };
   }
 
@@ -51,13 +66,13 @@ function resolvePremiumSurveyPrototypeMode({
   ) {
     return {
       candidate: "candidate-2",
-      launcher: "default",
+      entryVariant: "inline-help",
     };
   }
 
   return {
     candidate: "candidate-1",
-    launcher: "default",
+    entryVariant: "companion",
   };
 }
 
@@ -65,16 +80,17 @@ export default async function PremiumSurveyPrototypePage({
   searchParams,
 }: PremiumSurveyPageProps) {
   const resolvedSearchParams = await searchParams;
-  const { candidate, launcher } = resolvePremiumSurveyPrototypeMode({
+  const { candidate, entryVariant } = resolvePremiumSurveyPrototypeMode({
     candidateParam: resolvedSearchParams.candidate,
     launcherParam: resolvedSearchParams.launcher,
+    variantParam: resolvedSearchParams.variant,
   });
 
   return (
     <PremiumSurveyPage
-      key={`${candidate}-${launcher}`}
+      key={`${candidate}-${entryVariant}`}
       candidate={candidate}
-      launcher={launcher}
+      entryVariant={entryVariant}
     />
   );
 }
